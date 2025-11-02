@@ -1,0 +1,969 @@
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
+import 'package:tarif_defteri/tarifler_data/tarif_data.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
+import 'package:flutter/services.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as path;
+import 'package:url_launcher/url_launcher.dart';
+
+class TarifOlusturma extends StatefulWidget {
+  @override
+  State<TarifOlusturma> createState() => _TarifOlusturmaState();
+  TarifData tarifData;
+
+  TarifOlusturma({required this.tarifData});
+}
+
+class _TarifOlusturmaState extends State<TarifOlusturma> {
+  var tfTaridAdi = TextEditingController();
+  final FocusNode _aciklamaFocus = FocusNode();
+  List<Map<String, dynamic>> sections = [];
+  List<XFile> photos = [];
+  final ImagePicker _picker = ImagePicker();
+  
+  // Her section için TextField controller'ı
+  Map<int, TextEditingController> sectionControllers = {};
+
+  // Görseli kalıcı klasöre kopyala
+  Future<String> _copyImageToPermanentLocation(String sourcePath) async {
+    try {
+      final Directory appDir = await getApplicationDocumentsDirectory();
+      final String imagesDir = path.join(appDir.path, 'tarif_images');
+      
+      // Eğer dosya zaten kalıcı klasördeyse, tekrar kopyalama
+      if (sourcePath.contains('tarif_images')) {
+        print('Görsel zaten kalıcı klasörde: $sourcePath');
+        // Dosyanın hala var olduğunu kontrol et
+        if (await File(sourcePath).exists()) {
+          return sourcePath;
+        }
+        // Dosya yoksa devam et (tekrar kopyalamaya çalış)
+      }
+      
+      // Images klasörünü oluştur
+      final Directory imagesDirectory = Directory(imagesDir);
+      if (!await imagesDirectory.exists()) {
+        await imagesDirectory.create(recursive: true);
+      }
+      
+      // Kaynak dosyanın var olduğunu kontrol et
+      final File sourceFile = File(sourcePath);
+      if (!await sourceFile.exists()) {
+        print('HATA: Kaynak dosya bulunamadı: $sourcePath');
+        throw Exception('Kaynak dosya bulunamadı');
+      }
+      
+      // Benzersiz dosya adı oluştur
+      final String fileName = '${DateTime.now().millisecondsSinceEpoch}_${path.basename(sourcePath)}';
+      final String destinationPath = path.join(imagesDir, fileName);
+      
+      // Dosyayı kopyala
+      print('Görsel kopyalanıyor: $sourcePath -> $destinationPath');
+      final File destinationFile = await sourceFile.copy(destinationPath);
+      
+      // Kopyalanan dosyanın var olduğunu doğrula
+      if (await destinationFile.exists()) {
+        print('Görsel başarıyla kopyalandı: $destinationPath');
+        return destinationFile.path;
+      } else {
+        throw Exception('Dosya kopyalanamadı');
+      }
+    } catch (e) {
+      print('HATA - Görsel kopyalama hatası: $e');
+      print('HATA - Kaynak yol: $sourcePath');
+      // Hata durumunda boş string döndür (çarpı işareti yerine görsel gösterme)
+      return '';
+    }
+  }
+
+  Future<void> tarifiKaydet(String tarif_adi, String tarif_aciklama) async {
+    print("Tarif Kayıt Edildi: ${tarif_adi} - ${tarif_aciklama}");
+  }
+  @override
+  void initState() {
+    super.initState();
+    var tarifData = widget.tarifData;
+    tfTaridAdi.text = tarifData.tarif_adi;
+    // Mevcut tarif açıklamasını sections'a dönüştür
+    _parseExistingTarif(tarifData.tarif_aciklama);
+    // Mevcut görselleri yükle
+    _loadExistingImages(tarifData.tarif_resimler);
+  }
+
+  // Mevcut görselleri yükle
+  void _loadExistingImages(List<String> existingImagePaths) {
+    if (existingImagePaths.isNotEmpty) {
+      setState(() {
+        photos = existingImagePaths.map((path) => XFile(path)).toList();
+      });
+    }
+  }
+  @override
+  void dispose() {
+    _aciklamaFocus.dispose();
+    // Section controller'larını temizle
+    for (var controller in sectionControllers.values) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+  void _parseExistingTarif(String tarifAciklama) {
+    if (tarifAciklama.isEmpty) return;
+    
+    final lines = tarifAciklama.split('\n');
+    String currentSection = '';
+    String currentType = '';
+    List<String> currentItems = [];
+    
+    for (String line in lines) {
+      final trimmed = line.trim();
+      if (trimmed.isEmpty) continue;
+      
+      // Başlık kontrolü
+      if (trimmed.toLowerCase() == 'malzemeler') {
+        _addSectionIfNotEmpty(currentSection, currentType, currentItems);
+        currentSection = 'Malzemeler';
+        currentType = 'malzemeler';
+        currentItems = [];
+      } else if (trimmed.toLowerCase() == 'harç') {
+        _addSectionIfNotEmpty(currentSection, currentType, currentItems);
+        currentSection = 'Harç';
+        currentType = 'harc';
+        currentItems = [];
+      } else if (trimmed.toLowerCase() == 'hamuru') {
+        _addSectionIfNotEmpty(currentSection, currentType, currentItems);
+        currentSection = 'Hamuru';
+        currentType = 'hamur';
+        currentItems = [];
+      } else if (trimmed.toLowerCase() == 'şerbeti') {
+        _addSectionIfNotEmpty(currentSection, currentType, currentItems);
+        currentSection = 'Şerbeti';
+        currentType = 'serbet';
+        currentItems = [];
+      } else if (trimmed.toLowerCase() == 'yapılışı') {
+        _addSectionIfNotEmpty(currentSection, currentType, currentItems);
+        currentSection = 'Yapılışı';
+        currentType = 'yapilis';
+        currentItems = [];
+      } else if (trimmed.toLowerCase() == 'linkler') {
+        _addSectionIfNotEmpty(currentSection, currentType, currentItems);
+        currentSection = 'Linkler';
+        currentType = 'linkler';
+        currentItems = [];
+      } else if (trimmed.startsWith('*') || trimmed.startsWith('•') || trimmed.startsWith('🔗') || RegExp(r'^\d+\.').hasMatch(trimmed)) {
+        // Madde ekle
+        String item = trimmed;
+        if (trimmed.startsWith('*') || trimmed.startsWith('•')) {
+          item = trimmed.substring(1).trim();
+        } else if (trimmed.startsWith('🔗')) {
+          // Emoji'yi güvenli şekilde kaldır
+          item = trimmed.replaceFirst('🔗', '').trim();
+        } else {
+          item = trimmed.replaceFirst(RegExp(r'^\d+\.\s*'), '').trim();
+        }
+        if (item.isNotEmpty) {
+          currentItems.add(item);
+        }
+      }
+    }
+    
+    // Son section'ı ekle
+    _addSectionIfNotEmpty(currentSection, currentType, currentItems);
+  }
+  
+  void _addSectionIfNotEmpty(String title, String type, List<String> items) {
+    if (title.isNotEmpty && items.isNotEmpty) {
+      sections.add({
+        'title': title,
+        'type': type,
+        'items': List.from(items),
+      });
+    }
+  }
+  
+
+
+  void _showBigPhoto(File file) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: GestureDetector(
+          onTap: () => Navigator.of(context).pop(),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              color: Colors.black,
+            ),
+            padding: const EdgeInsets.all(8),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.file(file, fit: BoxFit.contain),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return WillPopScope(
+      onWillPop: () async {
+        // Geri tuşuna basıldığında uyarı göster
+        if (tfTaridAdi.text.isNotEmpty || sections.isNotEmpty || photos.isNotEmpty) {
+          // İlk kez oluşturuyor mu yoksa düzenliyor mu kontrol et
+          bool isEditing = widget.tarifData.tarif_adi.isNotEmpty;
+          
+          final result = await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              contentPadding: const EdgeInsets.all(24),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // İkon
+                  Container(
+                    width: 60,
+                    height: 60,
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.warning_amber_rounded,
+                      color: Colors.orange,
+                      size: 32,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  // Başlık
+                  Text(
+                    'Değişiklikler kaybolacak!',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).textTheme.bodyLarge?.color,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 12),
+                  // Açıklama
+                  Text(
+                    'Geri dönmek istediğinize emin misiniz?',
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: Theme.of(context).textTheme.bodyMedium?.color,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24),
+                  // Butonlar
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.pop(context, false),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            side: BorderSide(
+                              color: Theme.of(context).primaryColor,
+                              width: 1.5,
+                            ),
+                          ),
+                          child: Text(
+                            'Devam Et',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Theme.of(context).primaryColor,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () => Navigator.pop(context, true),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 0,
+                          ),
+                          child: const Text(
+                            'Geri Dön',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          );
+          return result ?? false;
+        }
+        return true; // Hiçbir veri yoksa direkt çık
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(widget.tarifData.tarif_id > 0 ? "Tarif Düzenleme" : "Tarif Ekleme"),
+          actions: [
+            // Görsel ekleme özelliği geçici olarak devre dışı
+            /* IconButton(
+              icon: Icon(Icons.photo_camera, color: Theme.of(context).iconTheme.color),
+              onPressed: () async {
+                final picked = await _picker.pickMultiImage();
+                if (picked != null && picked.isNotEmpty) {
+                  setState(() {
+                    photos.addAll(picked);
+                  });
+                }
+              },
+              tooltip: 'Fotoğraf Ekle',
+            ), */
+          ],
+          backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
+        ),
+        body: Container(
+          color: Theme.of(context).scaffoldBackgroundColor,
+          child: Center(
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Görsel önizleme kartı - geçici olarak devre dışı
+                    /* if (photos.isNotEmpty)
+                      Card(
+                        margin: const EdgeInsets.only(bottom: 16),
+                        color: Theme.of(context).cardColor,
+                        child: Padding(
+                          padding: const EdgeInsets.all(12.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Text('Fotoğraflar', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Theme.of(context).textTheme.bodyLarge?.color)),
+                                  const Spacer(),
+                                  IconButton(
+                                    icon: const Icon(Icons.delete, color: Colors.red),
+                                    onPressed: () {
+                                      setState(() {
+                                        photos.clear();
+                                      });
+                                    },
+                                  ),
+                                ],
+                              ),
+                              Wrap(
+                                spacing: 8,
+                                children: photos.map((photo) => Stack(
+                                  alignment: Alignment.topRight,
+                                  children: [
+                                    GestureDetector(
+                                      onTap: () {
+                                        if (File(photo.path).existsSync()) {
+                                          _showBigPhoto(File(photo.path));
+                                        }
+                                      },
+                                      child: File(photo.path).existsSync()
+                                        ? Image.file(
+                                            File(photo.path),
+                                            width: 80,
+                                            height: 80,
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (context, error, stackTrace) {
+                                              return Container(
+                                                width: 80,
+                                                height: 80,
+                                                color: Colors.grey[300],
+                                                child: Icon(Icons.broken_image, color: Colors.grey[600]),
+                                              );
+                                            },
+                                          )
+                                        : Container(
+                                            width: 80,
+                                            height: 80,
+                                            color: Colors.grey[300],
+                                            child: Icon(Icons.image_not_supported, color: Colors.grey[600]),
+                                          ),
+                                    ),
+                                    GestureDetector(
+                                      onTap: () {
+                                        setState(() {
+                                          photos.remove(photo);
+                                        });
+                                      },
+                                      child: Container(
+                                        color: Colors.black,
+                                        child: const Icon(Icons.close, color: Colors.white, size: 18),
+                                      ),
+                                    ),
+                                  ],
+                                )).toList(),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ), */
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).cardColor,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.04),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "Tarif Adı",
+                            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16, color: Theme.of(context).textTheme.bodyLarge?.color),
+                          ),
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: tfTaridAdi,
+                            decoration: InputDecoration(
+                              hintText: "Tarif Adı Giriniz",
+                              filled: true,
+                              fillColor: Theme.of(context).cardColor,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                borderSide: BorderSide.none,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      "Tarif Bölümleri",
+                                      style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16, color: Theme.of(context).textTheme.bodyLarge?.color),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    
+                                  
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              ElevatedButton.icon(
+                                onPressed: () {
+                                  _showSectionMenu();
+                                },
+                                icon: const Icon(Icons.add, size: 20),
+                                label: const Text('Bölüm Ekle'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Theme.of(context).primaryColor,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                   // Dinamik başlık ve içerik ekleme alanları açıklama kutusunun ALTINA taşındı
+                   ...sections.asMap().entries.map((entry) {
+                      int secIndex = entry.key;
+                      var section = entry.value;
+                      return Card(
+                        margin: const EdgeInsets.symmetric(vertical: 12),
+                        color: Theme.of(context).cardColor,
+                        elevation: 3,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Başlık ve silme butonu
+                              Row(
+                                children: [
+                                  Icon(
+                                    _getSectionIcon(section['type']),
+                                    color: Theme.of(context).primaryColor,
+                                    size: 24,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      section['title'],
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 18,
+                                        color: Theme.of(context).textTheme.bodyLarge?.color
+                                      ),
+                                    ),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.delete, color: Colors.red),
+                                    onPressed: () {
+                                      setState(() {
+                                        sections.removeAt(secIndex);
+                                      });
+                                    },
+                                  ),
+                                ],
+                              ),
+                              const Divider(height: 24),
+                              // İçerik listesi - daha kompakt tasarım
+                              if (section['items'].isNotEmpty) ...[
+                                ...List.generate(section['items'].length, (i) {
+                                  return Padding(
+                                    padding: const EdgeInsets.only(bottom: 8),
+                                    child: Row(
+                                      children: [
+                                        // Numaralandırma veya bullet point
+                                        Container(
+                                          width: 28,
+                                          height: 28,
+                                          decoration: BoxDecoration(
+                                            color: Theme.of(context).primaryColor.withOpacity(0.1),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: Center(
+                                            child: section['type'] == 'yapilis'
+                                                ? Text(
+                                                    "${i + 1}",
+                                                    style: TextStyle(
+                                                      fontWeight: FontWeight.bold,
+                                                      color: Theme.of(context).primaryColor,
+                                                      fontSize: 14,
+                                                    ),
+                                                  )
+                                                : const Icon(
+                                                    Icons.circle,
+                                                    size: 10,
+                                                    color: Colors.grey,
+                                                  ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 16),
+                                        // Madde metni
+                                        Expanded(
+                                          child: section['type'] == 'linkler' && _isValidUrl(section['items'][i])
+                                              ? InkWell(
+                                                  onTap: () => _launchUrl(section['items'][i]),
+                                                  borderRadius: BorderRadius.circular(4),
+                                                  child: Padding(
+                                                    padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                                                    child: Row(
+                                                      children: [
+                                                        Icon(
+                                                          Icons.link,
+                                                          size: 16,
+                                                          color: Colors.blue,
+                                                        ),
+                                                        const SizedBox(width: 8),
+                                                        Expanded(
+                                                          child: Text(
+                                                            section['items'][i],
+                                                            style: TextStyle(
+                                                              color: Colors.blue,
+                                                              fontSize: 16,
+                                                              decoration: TextDecoration.underline,
+                                                              decorationColor: Colors.blue,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                )
+                                              : Text(
+                                                  section['items'][i],
+                                                  style: TextStyle(
+                                                    color: Theme.of(context).textTheme.bodyMedium?.color,
+                                                    fontSize: 16,
+                                                  ),
+                                                ),
+                                        ),
+                                        // Silme butonu
+                                        IconButton(
+                                          icon: const Icon(Icons.clear, size: 20, color: Colors.red),
+                                          onPressed: () {
+                                            setState(() {
+                                              section['items'].removeAt(i);
+                                            });
+                                          },
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                }),
+                                const SizedBox(height: 16),
+                              ],
+                              // Tek TextField
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).scaffoldBackgroundColor,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: Theme.of(context).dividerColor.withOpacity(0.3),
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: TextField(
+                                        controller: sectionControllers[secIndex] ??= TextEditingController(),
+                                        decoration: InputDecoration(
+                                          hintText: section['type'] == 'yapilis' ? 'Adım ekle...' : 'Madde ekle...',
+                                          border: InputBorder.none,
+                                          contentPadding: const EdgeInsets.all(16),
+                                        ),
+                                        onSubmitted: (val) {
+                                          // Enter'a basınca malzeme ekle
+                                          if (val.trim().isNotEmpty) {
+                                            setState(() {
+                                              section['items'].add(val.trim());
+                                            });
+                                            // TextField'ı temizle
+                                            final controller = sectionControllers[secIndex];
+                                            if (controller != null) {
+                                              controller.clear();
+                                              // Focus'u koru
+                                              Future.delayed(const Duration(milliseconds: 50), () {
+                                                if (mounted) {
+                                                  // TextField'a tekrar focus ver
+                                                  FocusScope.of(context).requestFocus(
+                                                    FocusNode()..requestFocus()
+                                                  );
+                                                }
+                                              });
+                                            }
+                                          }
+                                        },
+                                      ),
+                                    ),
+                                    IconButton(
+                                      icon: Icon(
+                                        Icons.add_circle,
+                                        color: Theme.of(context).primaryColor,
+                                      ),
+                                      onPressed: () {
+                                        // + butonuna basarak malzeme ekle
+                                        final controller = sectionControllers[secIndex];
+                                        if (controller != null && controller.text.trim().isNotEmpty) {
+                                          setState(() {
+                                            section['items'].add(controller.text.trim());
+                                          });
+                                          // TextField'ı temizle
+                                          controller.clear();
+                                        }
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }),
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      height: 48,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Theme.of(context).primaryColor,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 2,
+                        ),
+                        onPressed: () async {
+                          // Tarif adı kontrolü
+                          if (tfTaridAdi.text.trim().isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Lütfen tarif adını giriniz!'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                            return;
+                          }
+                          
+                          // En az bir section olmalı
+                          if (sections.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Lütfen en az bir tarif bölümü ekleyiniz!'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                            return;
+                          }
+                          
+                          // En az bir madde olmalı
+                          bool hasItems = false;
+                          for (var section in sections) {
+                            if (section['items'].isNotEmpty) {
+                              hasItems = true;
+                              break;
+                            }
+                          }
+                          
+                          if (!hasItems) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Lütfen en az bir madde ekleyiniz!'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                            return;
+                          }
+                          
+                          // Sections verilerini tarif açıklamasına dönüştür
+                          String tarifAciklama = '';
+                          for (var section in sections) {
+                            tarifAciklama += '\n${section['title']}\n';
+                            if (section['type'] == 'yapilis') {
+                              for (int i = 0; i < section['items'].length; i++) {
+                                tarifAciklama += '${i + 1}. ${section['items'][i]}\n';
+                              }
+                            } else if (section['type'] == 'linkler') {
+                              for (String item in section['items']) {
+                                tarifAciklama += '🔗 $item\n';
+                              }
+                            } else {
+                              for (String item in section['items']) {
+                                tarifAciklama += '* $item\n';
+                              }
+                            }
+                          }
+                          
+                          // Görsel kaydetme özelliği geçici olarak devre dışı
+                          List<String> resimYollari = [];
+                          /* if (photos.isNotEmpty) {
+                            List<String> tempYollar = await Future.wait(
+                              photos.map((photo) async => await _copyImageToPermanentLocation(photo.path))
+                            );
+                            // Boş yolları filtrele
+                            resimYollari = tempYollar.where((yol) => yol.isNotEmpty).toList();
+                          }
+                          
+                          print('Kaydedilecek görsel sayısı: ${resimYollari.length}');
+                          print('Görsel yolları: $resimYollari'); */
+                          
+                          Navigator.pop(context, TarifData(
+                            tarif_id: widget.tarifData.tarif_id,
+                            tarif_adi: tfTaridAdi.text.trim(),
+                            tarif_aciklama: tarifAciklama.trim(),
+                            tarif_resimler: resimYollari,
+                            klasor_id: widget.tarifData.klasor_id,
+                          ));
+                        },
+                        child: const Text(
+                          "Kaydet",
+                          style: TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showSectionMenu() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Container(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.7,
+        ),
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Tarif Bölümü Seçin',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).textTheme.bodyLarge?.color,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Flexible(
+              child: ListView(
+                shrinkWrap: true,
+                children: _getAvailableSections().map((section) => ListTile(
+                  leading: Icon(
+                    _getSectionIcon(section['type']),
+                    color: Theme.of(context).primaryColor,
+                  ),
+                  title: Text(section['title']),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _addSection(section['type']);
+                  },
+                )).toList(),
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  List<Map<String, dynamic>> _getAvailableSections() {
+    List<Map<String, dynamic>> allSections = [
+      {'type': 'malzemeler', 'title': 'Malzemeler'},
+      {'type': 'harc', 'title': 'Harç'},
+      {'type': 'yapilis', 'title': 'Yapılışı'},
+      {'type': 'hamur', 'title': 'Hamuru'},
+      {'type': 'serbet', 'title': 'Şerbeti'},
+      {'type': 'linkler', 'title': 'Linkler'},
+    ];
+
+    // Mevcut section'ları filtrele
+    return allSections.where((section) {
+      return !sections.any((existingSection) => existingSection['type'] == section['type']);
+    }).toList();
+  }
+
+  void _addSection(String type) {
+    // Eğer bu türde section yoksa ekle
+    bool sectionExists = sections.any((section) => section['type'] == type);
+    if (!sectionExists) {
+      Map<String, dynamic> yeniSection = {
+        'title': _getSectionTitle(type),
+        'type': type,
+        'items': []
+      };
+      setState(() {
+        sections.add(yeniSection);
+      });
+    }
+  }
+
+  String _getSectionTitle(String type) {
+    switch (type) {
+      case 'malzemeler':
+        return 'Malzemeler';
+      case 'harc':
+        return 'Harç';
+      case 'yapilis':
+        return 'Yapılışı';
+      case 'hamur':
+        return 'Hamuru';
+      case 'serbet':
+        return 'Şerbeti';
+      case 'linkler':
+        return 'Linkler';
+      default:
+        return '';
+    }
+  }
+
+  IconData _getSectionIcon(String type) {
+    switch (type) {
+      case 'malzemeler':
+        return Icons.shopping_basket;
+      case 'harc':
+        return Icons.blender;
+      case 'yapilis':
+        return Icons.format_list_numbered;
+      case 'hamur':
+        return Icons.circle;
+      case 'serbet':
+        return Icons.water_drop;
+      case 'linkler':
+        return Icons.link;
+      default:
+        return Icons.category;
+    }
+  }
+
+  // Link mi kontrol eder
+  bool _isValidUrl(String text) {
+    // URL veya domain içeriyorsa link olarak kabul et
+    final urlPattern = RegExp(
+      r'^(https?:\/\/)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&\/=]*)$',
+      caseSensitive: false,
+    );
+    // Daha basit kontrol: nokta içeriyor ve boşluk yok
+    bool hasValidFormat = text.contains('.') && !text.contains(' ') && text.length > 3;
+    return urlPattern.hasMatch(text) || (hasValidFormat && (text.startsWith('http') || text.startsWith('www') || text.contains('.com') || text.contains('.net') || text.contains('.org') || text.contains('.tr')));
+  }
+
+  // Linki açar
+  Future<void> _launchUrl(String url) async {
+    try {
+      // Eğer URL http/https ile başlamıyorsa ekle
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        url = 'https://$url';
+      }
+
+      final Uri uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        // Eğer açılmazsa kullanıcıya bilgi ver
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Link açılamadı: $url'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Geçersiz link: $url'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+}
