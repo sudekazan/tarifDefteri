@@ -5,6 +5,11 @@
         android:label="tarif_defteri_yeni"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+
+        <!-- AdMob App ID (TEST) - Kendi uygulama ID'n ile değiştir -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-3940256099942544~3347511713" />
         
         <activity
             android:name=".MainActivity"

@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:showcaseview/showcaseview.dart';
 import 'package:tarif_defteri/sayfalar/klasor_ici.dart';
 import 'package:tarif_defteri/sayfalar/tarif_detay.dart';
@@ -22,6 +23,11 @@ class _KlasorlerState extends State<Klasorler> {
   List<KlasorData> filtrelenmisKlasorler = [];
   TextEditingController aramaController = TextEditingController();
 
+  BannerAd? _bannerAd;
+  bool _isBannerAdReady = false;
+
+  InterstitialAd? _interstitialAd;
+
   final GlobalKey _searchKey = GlobalKey();
   final GlobalKey _settingsKey = GlobalKey();
   final GlobalKey _fabKey = GlobalKey();
@@ -29,6 +35,8 @@ class _KlasorlerState extends State<Klasorler> {
   @override
   void initState() {
     super.initState();
+    _loadBannerAd();
+    _loadInterstitialAd();
     _temizleEskiKlasorler();
     _klasorleriYukle().then((_) {
       // Klasörler yüklendikten sonra filtreli listeyi de güncelle
@@ -51,6 +59,8 @@ class _KlasorlerState extends State<Klasorler> {
   @override
   void dispose() {
     aramaController.dispose(); // Controller'ı dispose etmeyi unutmayın
+    _bannerAd?.dispose();
+    _interstitialAd?.dispose();
     super.dispose();
   }
 
@@ -147,8 +157,62 @@ class _KlasorlerState extends State<Klasorler> {
     }
   }
 
+  void _loadBannerAd() {
+    _bannerAd = BannerAd(
+      adUnitId: Platform.isAndroid
+          ? 'ca-app-pub-3940256099942544/6300978111' // Android test banner ID
+          : 'ca-app-pub-3940256099942544/2934735716', // iOS test banner ID
+      size: AdSize.banner,
+      request: const AdRequest(),
+      listener: BannerAdListener(
+        onAdLoaded: (ad) {
+          setState(() {
+            _isBannerAdReady = true;
+          });
+        },
+        onAdFailedToLoad: (ad, error) {
+          _isBannerAdReady = false;
+          ad.dispose();
+        },
+      ),
+    )..load();
+  }
+
+  void _loadInterstitialAd() {
+    InterstitialAd.load(
+      adUnitId: Platform.isAndroid
+          ? 'ca-app-pub-2127302088980655/3542042807' // Android test interstitial ID
+          : 'ca-app-pub-2127302088980655/5976634451', // iOS test interstitial ID
+      request: const AdRequest(),
+      adLoadCallback: InterstitialAdLoadCallback(
+        onAdLoaded: (ad) {
+          _interstitialAd = ad;
+          _interstitialAd!.fullScreenContentCallback = FullScreenContentCallback(
+            onAdDismissedFullScreenContent: (ad) {
+              ad.dispose();
+              _interstitialAd = null;
+            },
+            onAdFailedToShowFullScreenContent: (ad, error) {
+              ad.dispose();
+              _interstitialAd = null;
+            },
+          );
+
+          if (mounted) {
+            _interstitialAd!.show();
+          }
+        },
+        onAdFailedToLoad: (error) {
+          _interstitialAd = null;
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     return Scaffold(
       appBar: AppBar(
         title: aramaYapiliyorMu
@@ -203,13 +267,60 @@ class _KlasorlerState extends State<Klasorler> {
       ),
       body: Container(
         color: Theme.of(context).scaffoldBackgroundColor, // Dinamik tema rengi
-        child: filtrelenmisKlasorler.isEmpty && !aramaYapiliyorMu
+        child: klasorListesi.isEmpty && !aramaYapiliyorMu
             ? Center(
-          child: Text(
-            "Henüz hiç klasör yok!",
-            style: TextStyle(fontSize: 18, color: Colors.grey[600]),
-          ),
-        )
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 32.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.menu_book_rounded,
+                      size: 80,
+                      color: isDark
+                          ? theme.colorScheme.onSurface.withOpacity(0.85)
+                          : theme.primaryColor,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      "Henüz klasör yok",
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                        color: Theme.of(context).textTheme.bodyLarge?.color,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      "Tariflerini düzenlemek için yeni bir klasör ekle.",
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.7),
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 24),
+                    ElevatedButton.icon(
+                      onPressed: _yeniKlasorEkle,
+                      icon: const Icon(Icons.add),
+                      label: const Text("Yeni klasör ekle"),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor:
+                            isDark ? theme.cardColor : theme.primaryColor,
+                        foregroundColor:
+                            isDark ? theme.primaryColor : theme.colorScheme.onPrimary,
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 2,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
             : (filtrelenmisKlasorler.isEmpty && aramaYapiliyorMu)
             ? Center(
           child: Text(
@@ -258,19 +369,33 @@ class _KlasorlerState extends State<Klasorler> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                color: klasor.klasor_id == -1 ? const Color(0xFFFFF3E0) : Theme.of(context).cardColor,
+                color: klasor.klasor_id == -1
+                    ? (isDark ? const Color(0xFF2A1B1B) : const Color(0xFFFFF3E0))
+                    : Theme.of(context).cardColor,
                 child: SizedBox(
                   height: 84,
                   child: Row(
                     children: [
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                        child: Icon(klasor.icon, color: klasor.klasor_id == -1 ? Colors.red : Theme.of(context).primaryColor, size: 36),
+                        child: Icon(
+                          klasor.icon,
+                          color: klasor.klasor_id == -1
+                              ? (isDark ? Colors.redAccent : Colors.red)
+                              : Theme.of(context).primaryColor,
+                          size: 36,
+                        ),
                       ),
                       Expanded(
                         child: Text(
                           klasor.klasor_adi,
-                          style: TextStyle(fontSize: 22, fontWeight: FontWeight.w500, color: klasor.klasor_id == -1 ? Colors.red : Theme.of(context).textTheme.bodyLarge?.color),
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w500,
+                            color: klasor.klasor_id == -1
+                                ? (isDark ? Colors.redAccent : Colors.red)
+                                : Theme.of(context).textTheme.bodyLarge?.color,
+                          ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -312,15 +437,26 @@ class _KlasorlerState extends State<Klasorler> {
           },
         ),
       ),
+      bottomNavigationBar: _isBannerAdReady
+          ? Container(
+              color: Theme.of(context).scaffoldBackgroundColor,
+              height: _bannerAd!.size.height.toDouble(),
+              child: Center(
+                child: AdWidget(ad: _bannerAd!),
+              ),
+            )
+          : null,
       floatingActionButton: Showcase(
         key: _fabKey,
         title: 'Yeni Klasör',
         description: 'Buradan yeni bir klasör oluşturabilirsiniz.',
-        child: FloatingActionButton(
-          onPressed: _yeniKlasorEkle,
-          backgroundColor: Theme.of(context).floatingActionButtonTheme.backgroundColor,
-          child: const Icon(Icons.add, color: Colors.black),
-        ),
+        child: klasorListesi.isEmpty && !aramaYapiliyorMu
+            ? const SizedBox.shrink()
+            : FloatingActionButton(
+                onPressed: _yeniKlasorEkle,
+                backgroundColor: Theme.of(context).floatingActionButtonTheme.backgroundColor,
+                child: const Icon(Icons.add, color: Colors.black),
+              ),
       ),
     );
   }

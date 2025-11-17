@@ -13,7 +13,7 @@
 }
 
 # Keep all classes in your package
--keep class com.yourpackagename.** { *; }
+-keep class com.sudekazan.** { *; }
 
 # Keep attributes
 -keepattributes Signature
