@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:tarif_defteri/tarifler_data/tarif_data.dart';
 import 'package:tarif_defteri/sayfalar/tarif_olusturma.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../widgets/banner_ad_widget.dart';
 
 class TarifDetay extends StatefulWidget {
   final TarifData tarif;
@@ -143,7 +145,7 @@ class _TarifDetayState extends State<TarifDetay> {
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Link açılamadı: $url'),
+            content: Text('${'link_cannot_open_prefix'.tr()}$url'),
             backgroundColor: Colors.red,
           ),
         );
@@ -151,7 +153,7 @@ class _TarifDetayState extends State<TarifDetay> {
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Geçersiz link: $url'),
+          content: Text('${'link_invalid_prefix'.tr()}$url'),
           backgroundColor: Colors.red,
         ),
       );
@@ -220,7 +222,7 @@ class _TarifDetayState extends State<TarifDetay> {
                     }
                     
                     shareText += '\n━━━━━━━━━━━━━━━━━━\n';
-                    shareText += '📱 Tarif Defterimden paylaşıldı';
+                    shareText += 'share_from_app'.tr();
                     
                     // iOS için butonun konumunu al
                     final box = context.findRenderObject() as RenderBox?;
@@ -235,14 +237,16 @@ class _TarifDetayState extends State<TarifDetay> {
                     if (mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('Paylaşım yapılamadı: $e'),
+                          content: Text(
+                            '${'share_error_with_message_prefix'.tr()}$e',
+                          ),
                           backgroundColor: Colors.red,
                         ),
                       );
                     }
                   }
                 },
-                tooltip: 'Paylaş',
+                tooltip: 'recipe_detail_share_tooltip'.tr(),
               );
             },
           ),
@@ -260,7 +264,7 @@ class _TarifDetayState extends State<TarifDetay> {
                 Navigator.pop(context, guncelTarif);
               }
             },
-            tooltip: 'Düzenle',
+            tooltip: 'recipe_detail_edit_tooltip'.tr(),
           ),
         ],
       ),
@@ -271,8 +275,8 @@ class _TarifDetayState extends State<TarifDetay> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Görsel gösterme özelliği geçici olarak devre dışı
-              /* if (widget.tarif.tarif_resimler.isNotEmpty)
+              // Görseller
+              if (widget.tarif.tarif_resimler.isNotEmpty)
                 Container(
                   height: 280,
                   margin: const EdgeInsets.only(bottom: 20),
@@ -297,34 +301,54 @@ class _TarifDetayState extends State<TarifDetay> {
                               children: [
                                 // Dosya varlığını kontrol et
                                 imageFile.existsSync()
-                                  ? Image.file(
-                                      imageFile,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (context, error, stackTrace) {
-                                        return Container(
-                                          color: Colors.grey[300],
-                                          child: Column(
-                                            mainAxisAlignment: MainAxisAlignment.center,
-                                            children: [
-                                              Icon(Icons.broken_image, size: 64, color: Colors.grey[600]),
-                                              const SizedBox(height: 8),
-                                              Text('Görsel yüklenemedi', style: TextStyle(color: Colors.grey[600])),
-                                            ],
-                                          ),
-                                        );
-                                      },
-                                    )
-                                  : Container(
-                                      color: Colors.grey[300],
-                                      child: Column(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        children: [
-                                          Icon(Icons.image_not_supported, size: 64, color: Colors.grey[600]),
-                                          const SizedBox(height: 8),
-                                          Text('Görsel bulunamadı', style: TextStyle(color: Colors.grey[600])),
-                                        ],
+                                    ? Image.file(
+                                        imageFile,
+                                        fit: BoxFit.cover,
+                                        errorBuilder:
+                                            (context, error, stackTrace) {
+                                          return Container(
+                                            color: Colors.grey[300],
+                                            child: Column(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
+                                              children: [
+                                                Icon(
+                                                  Icons.broken_image,
+                                                  size: 64,
+                                                  color: Colors.grey[600],
+                                                ),
+                                                const SizedBox(height: 8),
+                                                Text(
+                                                  'image_load_error'.tr(),
+                                                  style: TextStyle(
+                                                      color:
+                                                          Colors.grey[600]),
+                                                ),
+                                              ],
+                                            ),
+                                          );
+                                        },
+                                      )
+                                    : Container(
+                                        color: Colors.grey[300],
+                                        child: Column(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            Icon(
+                                              Icons.image_not_supported,
+                                              size: 64,
+                                              color: Colors.grey[600],
+                                            ),
+                                            const SizedBox(height: 8),
+                                            Text(
+                                              'image_not_found'.tr(),
+                                              style: TextStyle(
+                                                  color: Colors.grey[600]),
+                                            ),
+                                          ],
+                                        ),
                                       ),
-                                    ),
                                 // Görsel sayısını göster
                                 if (widget.tarif.tarif_resimler.length > 1)
                                   Positioned(
@@ -353,7 +377,7 @@ class _TarifDetayState extends State<TarifDetay> {
                       );
                     },
                   ),
-                ), */
+                ),
 
               // Tarif adı ve favori durumu
               Row(
@@ -534,7 +558,7 @@ class _TarifDetayState extends State<TarifDetay> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Tarif',
+                          'recipe_detail_description_title'.tr(),
                           style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
@@ -562,6 +586,7 @@ class _TarifDetayState extends State<TarifDetay> {
           ),
         ),
       ),
+      bottomNavigationBar: const BannerAdWidget(),
     );
   }
 }

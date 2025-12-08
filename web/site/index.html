@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <base href="$FLUTTER_BASE_HREF">
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="Lezzetli tariflerin adresi - Tarif Defteri uygulaması ile favori yemek tariflerinizi keşfedin ve paylaşın.">
+  <meta name="keywords" content="tarif, yemek, yemek tarifleri, pratik yemekler, lezzetli tarifler">
+  <meta name="author" content="Tarif Defteri">
+
+  <!-- iOS meta tags & icons -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="Tarif Defteri">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <link rel="stylesheet" href="styles.css">
+
+  <title>Tarif Defteri - Lezzetli Tariflerin Adresi</title>
+  <link rel="manifest" href="manifest.json">
+  <style id="splash-screen-style">
+    /* Hide splash screen styles */
+    #splash-screen-style { display: none; }
+  </style>
+  <script id="splash-screen-script">
+    function removeSplashFromWeb() {
+      document.getElementById("splash")?.remove();
+      document.getElementById("splash-branding")?.remove();
+      document.body.style.background = "transparent";
+    }
+  </script>
+  <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
+</head>
+<body>
+  <header class="header">
+    <nav class="navbar">
+      <div class="logo">
+        <div class="logo-icon">
+          <i class="fas fa-utensils"></i>
+        </div>
+        <span>Tarif Defteri</span>
+      </div>
+      <div class="nav-links">
+        <a href="#anasayfa">Ana Sayfa</a>
+        <a href="#tarifler">Tarifler</a>
+        <a href="#kategoriler">Kategoriler</a>
+        <a href="#hakkimizda">Hakkımızda</a>
+        <a href="#iletisim" class="btn">İletişim</a>
+      </div>
+      <div class="mobile-menu-btn">
+        <i class="fas fa-bars"></i>
+      </div>
+    </nav>
+
+    <div class="hero">
+      <div class="hero-content">
+        <h1>Lezzetli Tariflerin Adresi</h1>
+        <p>Binlerce pratik ve lezzetli tarif sizleri bekliyor. Hemen uygulamayı indir, yemek yapmanın keyfini çıkarın!</p>
+        <div class="hero-buttons">
+          <a href="https://play.google.com/store/apps/details?id=com.sudekazan.tarif_defteri_yeni&hl=tr&pli=1" target="_blank" class="btn btn-primary"><i class="fab fa-google-play"></i> Google Play'den İndir</a>
+          <a href="#" class="btn btn-secondary"><i class="fab fa-apple"></i> App Store'dan İndir</a>
+        </div>
+      </div>
+      <div class="hero-image">
+        <img src="images/logo.png" alt="Tarif Defteri Uygulaması" class="app-logo">
+      </div>
+    </div>
+  </header>
+
+  <section id="ozellikler" class="features">
+    <h2>Neden Tarif Defteri?</h2>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">
+          <i class="fas fa-utensils"></i>
+        </div>
+        <h3>Binlerce Tarif</h3>
+        <p>Farklı kategorilerde binlerce lezzetli tarif sizleri bekliyor.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">
+          <i class="fas fa-mobile-alt"></i>
+        </div>
+        <h3>Kolay Kullanım</h3>
+        <p>Kullanıcı dostu arayüzü ile istediğiniz tarifi kolayca bulun.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">
+          <i class="fas fa-heart"></i>
+        </div>
+        <h3>Favorileriniz</h3>
+        <p>Beğendiğiniz tarifleri kaydedin, istediğiniz zaman kolayca ulaşın.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="populer" class="popular-recipes">
+    <h2>Popüler Tarifler</h2>
+    <div class="recipes-grid">
+      <div class="recipe-card">
+        <div class="recipe-image" style="background-image: url('images/kıymalı_pide.jpeg');">
+          <span class="recipe-category">Ana Yemek</span>
+        </div>
+        <div class="recipe-content">
+          <h3>Kıymalı Pide</h3>
+          <div class="recipe-meta">
+            <span><i class="far fa-clock"></i> 45 dk</span>
+            <span><i class="fas fa-utensils"></i> 4 kişilik</span>
+          </div>
+        </div>
+      </div>
+      <div class="recipe-card">
+        <div class="recipe-image" style="background-image: url('images/künefe.jpeg');">
+          <span class="recipe-category">Tatlı</span>
+        </div>
+        <div class="recipe-content">
+          <h3>Künefe</h3>
+          <div class="recipe-meta">
+            <span><i class="far fa-clock"></i> 30 dk</span>
+            <span><i class="fas fa-utensils"></i> 6 kişilik</span>
+          </div>
+        </div>
+      </div>
+      <div class="recipe-card">
+        <div class="recipe-image" style="background-image: url('images/corba.jpeg');">
+          <span class="recipe-category">Çorba</span>
+        </div>
+        <div class="recipe-content">
+          <h3>Mercimek Çorbası</h3>
+          <div class="recipe-meta">
+            <span><i class="far fa-clock"></i> 25 dk</span>
+            <span><i class="fas fa-utensils"></i> 4 kişilik</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="text-center">
+      <a href="#tum-tarifler" class="btn">Tüm Tarifleri Gör</a>
+    </div>
+  </section>
+
+  <section class="download-app">
+    <div class="download-content">
+      <h2>Tarif Defteri'ni Hemen İndirin!</h2>
+      <p>Binlerce lezzetli tarif cebinizde! Hemen indirin, yemek yapmanın keyfini çıkarın.</p>
+      <div class="download-buttons">
+        <a href="#" class="btn btn-lg btn-primary">
+          <i class="fab fa-google-play"></i> Google Play'den İndir
+        </a>
+        <a href="#" class="btn btn-lg btn-secondary">
+          <i class="fab fa-apple"></i> App Store'dan İndir
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="footer-content">
+      <div class="footer-section">
+        <h3>Tarif Defteri</h3>
+        <p>Lezzetli tariflerin adresi. Binlerce pratik ve lezzetli tarif sizleri bekliyor.</p>
+        <div class="social-links">
+          <a href="#"><i class="fab fa-facebook"></i></a>
+          <a href="#"><i class="fab fa-instagram"></i></a>
+          <a href="#"><i class="fab fa-youtube"></i></a>
+          <a href="#"><i class="fab fa-pinterest"></i></a>
+        </div>
+      </div>
+      <div class="footer-section">
+        <h3>Hızlı Linkler</h3>
+        <ul>
+          <li><a href="#anasayfa">Ana Sayfa</a></li>
+          <li><a href="#tarifler">Tarifler</a></li>
+          <li><a href="#kategoriler">Kategoriler</a></li>
+          <li><a href="#hakkimizda">Hakkımızda</a></li>
+          <li><a href="#iletisim">İletişim</a></li>
+        </ul>
+      </div>
+      <div class="footer-section">
+        <h3>İletişim</h3>
+        <p><i class="fas fa-envelope"></i> info@tarifdefteri.com</p>
+        <p><i class="fas fa-phone"></i> +90 555 123 45 67</p>
+        <p><i class="fas fa-map-marker-alt"></i> İstanbul, Türkiye</p>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>&copy; 2025 Tarif Defteri. Tüm hakları saklıdır.</p>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+      <source srcset="splash/img/light-1x.png 1x, splash/img/light-2x.png 2x, splash/img/light-3x.png 3x, splash/img/light-4x.png 4x" media="(prefers-color-scheme: light)">
+      <source srcset="splash/img/dark-1x.png 1x, splash/img/dark-2x.png 2x, splash/img/dark-3x.png 3x, splash/img/dark-4x.png 4x" media="(prefers-color-scheme: dark)">
+      <img class="center" aria-hidden="true" src="splash/img/light-1x.png" alt="">
+  </picture>
+  <script src="flutter_bootstrap.js" async=""></script>
+
+
+</body></html>

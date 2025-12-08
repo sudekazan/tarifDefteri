@@ -1,15 +1,17 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.sudekazan.tarif_defteri_yeni">
     
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="com.google.android.gms.permission.AD_ID"/>
+    
     <application
-        android:label="tarif_defteri_yeni"
+        android:label="Tarif Defteri"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
-
-        <!-- AdMob App ID (TEST) - Kendi uygulama ID'n ile değiştir -->
+        
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-3940256099942544~3347511713" />
+            android:value="ca-app-pub-2127302088980655~2401734412" />
         
         <activity
             android:name=".MainActivity"
@@ -20,26 +22,27 @@
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
             android:hardwareAccelerated="true"
             android:windowSoftInputMode="adjustResize">
-
+            
             <meta-data
-              android:name="io.flutter.embedding.android.NormalTheme"
-              android:resource="@style/NormalTheme"/>
-
+                android:name="io.flutter.embedding.android.NormalTheme"
+                android:resource="@style/NormalTheme"/>
+            
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
-
+        
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
     </application>
-
+    
     <queries>
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
         </intent>
     </queries>
+    
 </manifest>

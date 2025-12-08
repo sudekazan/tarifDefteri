@@ -1,0 +1,119 @@
+═══════════════════════════════════════════════════════════════
+📱 TARİF DEFTERİ - SÜRÜM 1.0.6 SÜRÜM NOTLARI
+═══════════════════════════════════════════════════════════════
+Yayın Tarihi: 19 Kasım 2024
+Versiyon Kodu: 12
+
+🎯 YENİ ÖZELLİKLER
+
+🔐 Kullanıcı Hesap Yönetimi
+  ✅ Hesap silme özelliği eklendi
+  ✅ Kullanıcılar hesaplarını ve tüm verilerini kalıcı olarak silebilir
+  ✅ Google Play Console uyumlu hesap silme politikası
+  ✅ Detaylı onay sistemi ve uyarılar
+
+🎨 Dinamik Tema Sistemi
+  ✅ Tüm sayfalarda tema rengine uyumlu gradient arka planlar
+  ✅ Tema değiştiğinde arka plan renkleri otomatik güncelleniyor
+  ✅ Daha modern ve görsel açıdan tutarlı arayüz
+  ✅ Sol üst açık, sağ alt koyu renk geçişleri
+
+🔄 Firebase Entegrasyonu İyileştirmeleri
+  ✅ Gerçek zamanlı kullanıcı oturum takibi
+  ✅ Otomatik auth state güncellemeleri
+  ✅ İyileştirilmiş hata yönetimi
+  ✅ Başarı/hata bildirimleri
+
+💬 Gelişmiş Bildirim Sistemi
+  ✅ Giriş başarılı: "Giriş başarılı! Hoş geldiniz 🎉"
+  ✅ Kayıt başarılı: "Hesap oluşturuldu! Hoş geldiniz 🎉"
+  ✅ Çıkış başarılı: "Başarıyla çıkış yapıldı"
+  ✅ Renkli ve ikonlu bildirimler
+
+💳 Reklam Yönetimi
+  ✅ Tüm sayfalarda banner reklamlar
+  ✅ Ortak banner widget ile kolay yönetim
+  ✅ Gerçek AdMob ID'leri entegre edildi
+  ✅ 6 sayfada banner: Ana sayfa, Klasör içi, Tarif detay, 
+     Tarif oluşturma, Klasör kayıt, Ayarlar
+
+🔒 Güvenlik İyileştirmeleri
+  ✅ Çıkış yapma onay dialogu
+  ✅ Hesap silme çift onay sistemi
+  ✅ Firebase Authentication güvenlik katmanları
+  ✅ Mounted kontrolleri ile UI güvenliği
+
+🎨 Görsel İyileştirmeler
+  ✅ Ayarlar sayfası yenilendi
+  ✅ Giriş yapan kullanıcı için yeşil ikon
+  ✅ Çıkış butonu kırmızı renkte
+  ✅ İkon ve renk tutarlılığı
+
+📝 Daha İyi Hata Mesajları
+  ✅ "Bu e-posta kayıtlı değil. Lütfen önce kayıt olun."
+  ✅ "E-posta veya şifre hatalı"
+  ✅ "Şifre çok zayıf. En az 6 karakter kullanın."
+  ✅ "Çok fazla deneme yaptınız"
+
+🐛 HATA DÜZELTMELERİ
+
+  ✅ Tarif oluşturma sayfası bottomNavigationBar hatası düzeltildi
+  ✅ Firebase giriş sonrası UI güncelleme sorunu çözüldü
+  ✅ Tema değişikliklerinde arka plan renk uyumsuzluğu giderildi
+  ✅ Scaffold background color artık nötr beyaz/gri
+  ✅ Mounted kontrolleri ile widget lifecycle hataları önlendi
+
+📊 TEKNİK DETAYLAR
+
+  • Versiyon: 1.0.6
+  • Versiyon Kodu: 12
+  • Min SDK: 21 (Android 5.0)
+  • Target SDK: 34 (Android 14)
+  • Firebase Auth: ✅
+  • Firebase Firestore: ✅
+  • Google Mobile Ads: ✅
+
+🔧 GELİŞTİRİCİ DEĞİŞİKLİKLERİ
+
+  • BannerAdWidget ortak widget oluşturuldu
+  • FirebaseService'e deleteUserAccount() eklendi
+  • Settings sayfasına auth state listener eklendi
+  • Tüm sayfalara tema-uyumlu gradient eklendi
+  • account_deletion_policy.html oluşturuldu
+
+═══════════════════════════════════════════════════════════════
+📱 RECIPE BOOK - VERSION 1.0.6 RELEASE NOTES (English)
+═══════════════════════════════════════════════════════════════
+
+🎯 NEW FEATURES
+
+🔐 Account Management
+  ✅ Account deletion feature added
+  ✅ Users can permanently delete accounts and all data
+  ✅ Google Play Console compliant deletion policy
+  ✅ Double confirmation system with warnings
+
+🎨 Dynamic Theme System
+  ✅ Theme-adaptive gradient backgrounds on all pages
+  ✅ Automatic background color updates on theme change
+  ✅ More modern and visually consistent UI
+  ✅ Light top-left to dark bottom-right gradients
+
+🔄 Firebase Integration Improvements
+  ✅ Real-time user session tracking
+  ✅ Automatic auth state updates
+  ✅ Enhanced error handling
+  ✅ Success/error notifications
+
+💳 Ad Management
+  ✅ Banner ads on all pages
+  ✅ Shared banner widget for easy management
+  ✅ Real AdMob IDs integrated
+  ✅ 6 pages with banners
+
+🐛 BUG FIXES
+  ✅ Recipe creation page bottomNavigationBar error fixed
+  ✅ Firebase login UI update issue resolved
+  ✅ Theme change background color mismatch fixed
+
+═══════════════════════════════════════════════════════════════

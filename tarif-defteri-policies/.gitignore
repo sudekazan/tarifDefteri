@@ -1,0 +1,6 @@
+# Netlify
+.netlify/
+windsurf_deployment.yaml
+
+# OS
+.DS_Store

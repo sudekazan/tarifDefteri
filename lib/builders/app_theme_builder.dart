@@ -1,17 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_theme.dart';
 
 class AppThemeBuilder {
   static ThemeData buildLightTheme(AppTheme currentTheme) {
+    final swatch = appThemeColors[currentTheme]!;
     return ThemeData(
-      primarySwatch: appThemeColors[currentTheme]!,
-      scaffoldBackgroundColor: const Color(0xFFF5F6FA),
+      primarySwatch: swatch,
+      primaryColor: swatch, // ElevatedButton gibi bileşenler için
+      scaffoldBackgroundColor: Colors.grey[50], // Beyaza yakın, gradient için nötr
       floatingActionButtonTheme: FloatingActionButtonThemeData(
-        backgroundColor: appThemeColors[currentTheme],
+        backgroundColor: swatch,
       ),
       appBarTheme: AppBarTheme(
-        backgroundColor: appThemeColors[currentTheme],
+        backgroundColor: swatch,
+        titleTextStyle: GoogleFonts.poppins(
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
+          color: Colors.white,
+        ),
       ),
+      textTheme: GoogleFonts.poppinsTextTheme(ThemeData.light().textTheme),
     );
   }
 
@@ -29,8 +38,13 @@ class AppThemeBuilder {
       appBarTheme: AppBarTheme(
         backgroundColor: darkPrimary,
         foregroundColor: Colors.white,
+        titleTextStyle: GoogleFonts.poppins(
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
+          color: Colors.white,
+        ),
       ),
-      textTheme: ThemeData.dark().textTheme.apply(
+      textTheme: GoogleFonts.poppinsTextTheme(ThemeData.dark().textTheme).apply(
         bodyColor: Colors.white,
         displayColor: Colors.white,
       ),

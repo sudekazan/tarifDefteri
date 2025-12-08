@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hesap Silme Politikası - Tarif Defteri</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 40px auto;
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 2em;
+        }
+        
+        .app-name {
+            color: #999;
+            font-size: 1.1em;
+            margin-bottom: 30px;
+        }
+        
+        h2 {
+            color: #764ba2;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+        
+        p {
+            margin-bottom: 15px;
+            text-align: justify;
+        }
+        
+        .warning-box {
+            background: #fff3cd;
+            border-left: 4px solid #ff6b6b;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        
+        .warning-box strong {
+            color: #ff6b6b;
+        }
+        
+        .steps {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        
+        .step {
+            margin: 15px 0;
+            padding-left: 30px;
+            position: relative;
+        }
+        
+        .step::before {
+            content: attr(data-step);
+            position: absolute;
+            left: 0;
+            top: 0;
+            background: #667eea;
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        
+        .info-list {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .info-list li {
+            padding: 10px 0;
+            padding-left: 25px;
+            position: relative;
+        }
+        
+        .info-list li::before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #28a745;
+            font-weight: bold;
+            font-size: 18px;
+        }
+        
+        .contact-box {
+            background: #e7f3ff;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin: 30px 0;
+            border-radius: 8px;
+        }
+        
+        .contact-box a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 2px solid #eee;
+            color: #999;
+        }
+        
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 1.5em;
+            }
+            
+            h2 {
+                font-size: 1.2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📝 Hesap Silme Politikası</h1>
+        <p class="app-name">Tarif Defteri Uygulaması</p>
+        
+        <p>
+            Tarif Defteri uygulamasında kullanıcılarımızın verilerinin güvenliği ve gizliliği bizim için önceliklidir. 
+            Hesabınızı ve verilerinizi istediğiniz zaman tamamen silme hakkına sahipsiniz.
+        </p>
+        
+        <div class="warning-box">
+            <strong>⚠️ ÖNEMLİ UYARI:</strong> Hesap silme işlemi kalıcıdır ve geri alınamaz. 
+            Bu işlemi gerçekleştirdikten sonra verilerinizi geri getirme imkanı yoktur.
+        </div>
+        
+        <h2>🗑️ Nasıl Hesap Silebilirim?</h2>
+        
+        <div class="steps">
+            <div class="step" data-step="1">
+                <strong>Uygulamayı Açın</strong><br>
+                Tarif Defteri uygulamasını açın ve hesabınıza giriş yapın.
+            </div>
+            
+            <div class="step" data-step="2">
+                <strong>Ayarlar Sayfasına Gidin</strong><br>
+                Ana sayfadan sağ üstteki ayarlar (⚙️) simgesine tıklayın.
+            </div>
+            
+            <div class="step" data-step="3">
+                <strong>"Hesap Yönetimi" Bölümünü Bulun</strong><br>
+                Ayarlar sayfasında "Hesap Yönetimi" başlığı altında "Hesabımı Sil" seçeneğini bulun.
+            </div>
+            
+            <div class="step" data-step="4">
+                <strong>"Hesabımı Sil" Butonuna Tıklayın</strong><br>
+                Kırmızı renkli "Hesabımı Sil" butonuna tıklayın.
+            </div>
+            
+            <div class="step" data-step="5">
+                <strong>Onaylayın</strong><br>
+                Açılan uyarı penceresinde işlemi onaylayın. Hesabınız ve tüm verileriniz kalıcı olarak silinecektir.
+            </div>
+        </div>
+        
+        <h2>🔒 Hangi Veriler Silinecek?</h2>
+        
+        <p>Hesabınızı sildiğinizde aşağıdaki veriler kalıcı olarak silinir:</p>
+        
+        <ul class="info-list">
+            <li><strong>Kullanıcı Hesabı:</strong> E-posta adresi ve kimlik doğrulama bilgileriniz</li>
+            <li><strong>Tarifler:</strong> Oluşturduğunuz tüm tarifler ve tarif açıklamaları</li>
+            <li><strong>Klasörler:</strong> Oluşturduğunuz tüm klasörler ve düzenlemeler</li>
+            <li><strong>Fotoğraflar:</strong> Tariflere eklediğiniz tüm görseller</li>
+            <li><strong>Favoriler:</strong> Favori olarak işaretlediğiniz tarifler</li>
+            <li><strong>Bulut Yedekleri:</strong> Buluta yüklediğiniz tüm veriler</li>
+        </ul>
+        
+        <h2>⏱️ Silme İşlemi Ne Kadar Sürer?</h2>
+        
+        <p>
+            Hesap silme işlemi hemen gerçekleşir. İşlem tamamlandığında:
+        </p>
+        
+        <ul class="info-list">
+            <li>Hesabınız anında devre dışı bırakılır</li>
+            <li>Tüm verileriniz kalıcı olarak silinir</li>
+            <li>Aynı e-posta adresiyle yeni hesap oluşturabilirsiniz</li>
+        </ul>
+        
+        <h2>🔄 Verilerimi Geri Alabilir Miyim?</h2>
+        
+        <p>
+            <strong>Hayır.</strong> Hesap silme işlemi kalıcıdır ve geri alınamaz. 
+            Verilerinizi geri getirme imkanı yoktur. Bu nedenle hesabınızı silmeden önce 
+            önemli tariflerinizi yedekladığınızdan emin olun.
+        </p>
+        
+        <div class="warning-box">
+            <strong>💡 İPUCU:</strong> Hesabınızı silmeden önce önemli tariflerinizi 
+            dışa aktarabilir veya ekran görüntüsü alabilirsiniz.
+        </div>
+        
+        <h2>📞 Destek ve İletişim</h2>
+        
+        <div class="contact-box">
+            <p>
+                Hesap silme işlemiyle ilgili sorularınız veya sorunlarınız için bizimle iletişime geçebilirsiniz:
+            </p>
+            <p>
+                <strong>E-posta:</strong> <a href="mailto:sudekazan1907@gmail.com">sudekazan1907@gmail.com</a>
+            </p>
+            <p>
+                <strong>Uygulama İçi Destek:</strong> Ayarlar > İletişim
+            </p>
+        </div>
+        
+        <h2>📋 Gizlilik Politikası</h2>
+        
+        <p>
+            Verilerinizin nasıl toplandığı, kullanıldığı ve korunduğu hakkında daha fazla bilgi için 
+            <a href="#">Gizlilik Politikamızı</a> inceleyebilirsiniz.
+        </p>
+        
+        <div class="footer">
+            <p>Son Güncelleme: 19 Kasım 2024</p>
+            <p>© 2024 Tarif Defteri - Sude Kazan</p>
+            <p>Tüm hakları saklıdır.</p>
+        </div>
+    </div>
+</body>
+</html>

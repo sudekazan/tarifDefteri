@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:showcaseview/showcaseview.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../sayfalar/klasorler.dart';
 import '../screens/theme_settings_page.dart';
 import '../theme/app_theme.dart';
@@ -20,37 +20,35 @@ class KlasorlerWithTheme extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ShowCaseWidget(
-      builder: (context) => Scaffold(
-        drawer: Drawer(
-          child: ListView(
-            children: [
-              const DrawerHeader(child: Text('Ayarlar')), 
-              ListTile(
-                title: const Text('Tema Seç'),
-                onTap: () {
-                  Navigator.push(
-                    context, 
-                    MaterialPageRoute(
-                      builder: (context) => ThemeSettingsPage(
-                        onThemeChanged: onThemeChanged, 
-                        currentTheme: currentTheme
-                      )
+    return Scaffold(
+      drawer: Drawer(
+        child: ListView(
+          children: [
+            DrawerHeader(child: Text('settings_title'.tr())), 
+            ListTile(
+              title: Text('settings_theme_title'.tr()),
+              onTap: () {
+                Navigator.push(
+                  context, 
+                  MaterialPageRoute(
+                    builder: (context) => ThemeSettingsPage(
+                      onThemeChanged: onThemeChanged, 
+                      currentTheme: currentTheme
                     )
-                  );
-                },
-              ),
-              const Divider(),
-              SwitchListTile(
-                title: const Text('Koyu Mod'),
-                value: isDarkMode,
-                onChanged: onDarkModeChanged,
-              ),
-            ],
-          ),
+                  )
+                );
+              },
+            ),
+            const Divider(),
+            SwitchListTile(
+              title: Text('settings_dark_mode'.tr()),
+              value: isDarkMode,
+              onChanged: onDarkModeChanged,
+            ),
+          ],
         ),
-        body: Klasorler(),
       ),
+      body: Klasorler(),
     );
   }
 }

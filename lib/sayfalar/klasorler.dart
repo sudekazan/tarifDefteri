@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
-import 'package:showcaseview/showcaseview.dart';
 import 'package:tarif_defteri/sayfalar/klasor_ici.dart';
 import 'package:tarif_defteri/sayfalar/tarif_detay.dart';
 import 'package:tarif_defteri/tarifler_data/klasor_data.dart';
@@ -11,6 +11,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'klasor_kayit.dart';
+import '../services/firebase_service.dart';
 
 class Klasorler extends StatefulWidget {
   @override
@@ -27,10 +28,8 @@ class _KlasorlerState extends State<Klasorler> {
   bool _isBannerAdReady = false;
 
   InterstitialAd? _interstitialAd;
-
-  final GlobalKey _searchKey = GlobalKey();
-  final GlobalKey _settingsKey = GlobalKey();
-  final GlobalKey _fabKey = GlobalKey();
+  
+  final FirebaseService _firebaseService = FirebaseService();
 
   @override
   void initState() {
@@ -41,18 +40,6 @@ class _KlasorlerState extends State<Klasorler> {
     _klasorleriYukle().then((_) {
       // Klasörler yüklendikten sonra filtreli listeyi de güncelle
       _filtreleKlasorler('');
-    });
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final prefs = await SharedPreferences.getInstance();
-      final shown = prefs.getBool('onboarding_shown_main') ?? false;
-      if (!shown && mounted) {
-        ShowCaseWidget.of(context).startShowCase([
-          _searchKey,
-          _settingsKey,
-          _fabKey,
-        ]);
-        await prefs.setBool('onboarding_shown_main', true);
-      }
     });
   }
 
@@ -84,8 +71,9 @@ class _KlasorlerState extends State<Klasorler> {
     setState(() {
       klasorListesi = klasorJsonList.asMap().entries.map((e) {
         final map = json.decode(e.value);
+        final int klasorId = map['klasor_id'] ?? e.key + 1;
         return KlasorData.fromMap({
-          'klasor_id': e.key + 1,
+          'klasor_id': klasorId,
           'klasor_adi': map['klasor_adi'],
           'iconCode': map['iconCode'] ?? 0xe2c7,
         });
@@ -121,11 +109,23 @@ class _KlasorlerState extends State<Klasorler> {
   Future<void> _klasorEkle(String klasorAdi, int iconCode) async {
     SharedPreferences prefs = await SharedPreferences.getInstance(); // prefs'i burada tanımla
     List<String> klasorJsonList = prefs.getStringList('klasorler') ?? []; // klasorJsonList'i burada tanımla
+    int yeniKlasorId = klasorJsonList.length + 1;
+    
     klasorJsonList.add(json.encode({
+      'klasor_id': yeniKlasorId,
       'klasor_adi': klasorAdi,
       'iconCode': iconCode,
     }));
     await prefs.setStringList('klasorler', klasorJsonList);
+    
+    // Firebase'e de kaydet
+    KlasorData yeniKlasor = KlasorData(
+      klasor_id: yeniKlasorId,
+      klasor_adi: klasorAdi,
+      iconCode: iconCode,
+    );
+    await _firebaseService.saveKlasorToFirebase(yeniKlasor);
+    
     _klasorleriYukle().then((_) {
       _filtreleKlasorler(aramaController.text); // Yeni klasör eklendiğinde filtreyi güncelle
     });
@@ -135,12 +135,25 @@ class _KlasorlerState extends State<Klasorler> {
   Future<void> sil(int klasor_id) async {
     SharedPreferences prefs = await SharedPreferences.getInstance(); // prefs'i burada tanımla
     List<String> klasorJsonList = prefs.getStringList('klasorler') ?? []; // klasorJsonList'i burada tanımla
-    if (klasor_id > 0 && klasor_id <= klasorJsonList.length) {
+    int indexToRemove = -1;
+    for (int i = 0; i < klasorJsonList.length; i++) {
+      final map = json.decode(klasorJsonList[i]);
+      final int storedId = map['klasor_id'] ?? (i + 1);
+      if (storedId == klasor_id) {
+        indexToRemove = i;
+        break;
+      }
+    }
+    if (indexToRemove != -1) {
       // Klasörün içindeki tarifleri de sil
       String tarifKey = 'tarifler_$klasor_id';
       await prefs.remove(tarifKey);
-      klasorJsonList.removeAt(klasor_id - 1);
+      klasorJsonList.removeAt(indexToRemove);
       await prefs.setStringList('klasorler', klasorJsonList);
+      
+      // Firebase'den de sil
+      await _firebaseService.deleteKlasorFromFirebase(klasor_id);
+      
       _klasorleriYukle().then((_) {
         _filtreleKlasorler(aramaController.text); // Silme işleminden sonra filtreyi güncelle
       });
@@ -160,8 +173,8 @@ class _KlasorlerState extends State<Klasorler> {
   void _loadBannerAd() {
     _bannerAd = BannerAd(
       adUnitId: Platform.isAndroid
-          ? 'ca-app-pub-3940256099942544/6300978111' // Android test banner ID
-          : 'ca-app-pub-3940256099942544/2934735716', // iOS test banner ID
+          ? 'ca-app-pub-2127302088980655/7429316929' // Android banner ID
+          : 'ca-app-pub-2127302088980655/9262656239', // iOS banner ID
       size: AdSize.banner,
       request: const AdRequest(),
       listener: BannerAdListener(
@@ -175,7 +188,8 @@ class _KlasorlerState extends State<Klasorler> {
           ad.dispose();
         },
       ),
-    )..load();
+    );
+    _bannerAd?.load();
   }
 
   void _loadInterstitialAd() {
@@ -217,33 +231,34 @@ class _KlasorlerState extends State<Klasorler> {
       appBar: AppBar(
         title: aramaYapiliyorMu
             ? TextField(
-          controller: aramaController, // Arama kontrolcüsünü ata
-          autofocus: true,
-          decoration: const InputDecoration(hintText: "Klasör ara..."), // Hint metnini değiştir
-          onChanged: (arama) {
-            _filtreleKlasorler(arama); // Arama yapıldığında filtreleme metodunu çağır
-          },
-        )
-            : const Text("Tarif Defteri",
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24)),
+                controller: aramaController, // Arama kontrolcüsünü ata
+                autofocus: true,
+                decoration: InputDecoration(
+                  hintText: 'folders_search_hint'.tr(),
+                ),
+                onChanged: (arama) {
+                  _filtreleKlasorler(arama); // Arama yapıldığında filtreleme metodunu çağır
+                },
+              )
+            : Text(
+                'app_title'.tr(),
+                style:
+                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
+              ),
         backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
         actions: [
           aramaYapiliyorMu
               ? IconButton(
             icon: const Icon(Icons.clear),
-            onPressed: () {
-              setState(() {
-                aramaYapiliyorMu = false;
-                aramaController.clear(); // Arama metnini temizle
-                _filtreleKlasorler(''); // Filtreyi sıfırla (tüm klasörleri göster)
-              });
-            },
-          )
-              : Showcase(
-                key: _searchKey,
-                title: 'Arama',
-                description: 'Klasörler içinde hızlıca arama yapabilirsiniz.',
-                child: IconButton(
+                onPressed: () {
+                  setState(() {
+                    aramaYapiliyorMu = false;
+                    aramaController.clear(); // Arama metnini temizle
+                    _filtreleKlasorler(''); // Filtreyi sıfırla (tüm klasörleri göster)
+                  });
+                },
+              )
+              : IconButton(
                   icon: const Icon(Icons.search,color: Colors.black,),
                   onPressed: () {
                     setState(() {
@@ -251,83 +266,83 @@ class _KlasorlerState extends State<Klasorler> {
                     });
                   },
                 ),
-              ),
-          Showcase(
-            key: _settingsKey,
-            title: 'Ayarlar',
-            description: 'Tema ve koyu mod gibi uygulama ayarlarını buradan yapın.',
-            child: IconButton(
-              icon: const Icon(Icons.settings,color: Colors.black,),
-              onPressed: () {
-                Navigator.pushNamed(context, '/settings');
-              },
-            ),
+          IconButton(
+            icon: const Icon(Icons.settings,color: Colors.black,),
+            onPressed: () async {
+              await Navigator.pushNamed(context, '/settings');
+              _klasorleriYukle().then((_) {
+                _filtreleKlasorler(aramaController.text);
+              });
+            },
           ),
         ],
       ),
       body: Container(
-        color: Theme.of(context).scaffoldBackgroundColor, // Dinamik tema rengi
+        color: Theme.of(context).scaffoldBackgroundColor,
         child: klasorListesi.isEmpty && !aramaYapiliyorMu
             ? Center(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 32.0),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.menu_book_rounded,
-                      size: 80,
-                      color: isDark
-                          ? theme.colorScheme.onSurface.withOpacity(0.85)
-                          : theme.primaryColor,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      "Henüz klasör yok",
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w600,
-                        color: Theme.of(context).textTheme.bodyLarge?.color,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 32.0),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.menu_book_rounded,
+                        size: 80,
+                        color: theme.primaryColor,
                       ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      "Tariflerini düzenlemek için yeni bir klasör ekle.",
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.7),
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 24),
-                    ElevatedButton.icon(
-                      onPressed: _yeniKlasorEkle,
-                      icon: const Icon(Icons.add),
-                      label: const Text("Yeni klasör ekle"),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor:
-                            isDark ? theme.cardColor : theme.primaryColor,
-                        foregroundColor:
-                            isDark ? theme.primaryColor : theme.colorScheme.onPrimary,
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                      const SizedBox(height: 16),
+                      Text(
+                        'folders_empty_title'.tr(),
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w600,
+                          color:
+                              Theme.of(context).textTheme.bodyLarge?.color,
                         ),
-                        elevation: 2,
+                        textAlign: TextAlign.center,
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 8),
+                      Text(
+                        'folders_empty_subtitle'.tr(),
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Theme.of(context)
+                              .textTheme
+                              .bodyMedium
+                              ?.color
+                              ?.withOpacity(0.7),
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 24),
+                      ElevatedButton.icon(
+                        onPressed: _yeniKlasorEkle,
+                        icon: const Icon(Icons.add),
+                        label: Text('folders_empty_add_button'.tr()),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: theme.primaryColor,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 24, vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 2,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            )
+              )
             : (filtrelenmisKlasorler.isEmpty && aramaYapiliyorMu)
-            ? Center(
-          child: Text(
-            "Aradığınız kritere uygun klasör bulunamadı.",
-            style: TextStyle(fontSize: 18, color: Colors.grey[600]),
-          ),
-        )
+                ? Center(
+                    child: Text(
+                      'folders_search_no_results'.tr(),
+                      style:
+                          TextStyle(fontSize: 18, color: Colors.grey[600]),
+                    ),
+                  )
             : ListView.separated(
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
           itemCount: filtrelenmisKlasorler.length, // filtrelenmisKlasorler'i kullan
@@ -343,7 +358,8 @@ class _KlasorlerState extends State<Klasorler> {
                   List<TarifData> favoriTarifler = [];
                   List<String> klasorJsonList = prefs.getStringList('klasorler') ?? [];
                   for (int i = 0; i < klasorJsonList.length; i++) {
-                    int kid = i + 1;
+                    final map = json.decode(klasorJsonList[i]);
+                    int kid = map['klasor_id'] ?? (i + 1);
                     String key = 'tarifler_$kid';
                     List<String> tariflerJson = prefs.getStringList(key) ?? [];
                     for (var e in tariflerJson) {
@@ -388,7 +404,9 @@ class _KlasorlerState extends State<Klasorler> {
                       ),
                       Expanded(
                         child: Text(
-                          klasor.klasor_adi,
+                          klasor.klasor_id == -1
+                              ? 'folders_favorites'.tr()
+                              : klasor.klasor_adi,
                           style: TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.w500,
@@ -402,16 +420,18 @@ class _KlasorlerState extends State<Klasorler> {
                       ),
                       if (klasor.klasor_id != -1)
                         IconButton(
-                          onPressed: (){
+                          onPressed: () {
                             showDialog(
                               context: context,
                               builder: (context) => AlertDialog(
-                                title: const Text('Klasör Sil'),
-                                content: Text("${klasor.klasor_adi} silinsin mi?"),
+                                title: Text('folders_delete_title'.tr()),
+                                content: Text(
+                                  '${klasor.klasor_adi}${'folders_delete_confirm_suffix'.tr()}',
+                                ),
                                 actions: [
                                   TextButton(
                                     onPressed: () => Navigator.pop(context),
-                                    child: const Text('Hayır'),
+                                    child: Text('common_no'.tr()),
                                   ),
                                   ElevatedButton(
                                     onPressed: () {
@@ -419,15 +439,23 @@ class _KlasorlerState extends State<Klasorler> {
                                       sil(klasor.klasor_id);
                                     },
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.red,
+                                      backgroundColor:
+                                          Theme.of(context).primaryColor,
                                     ),
-                                    child: const Text('Evet', style: TextStyle(color: Colors.white)),
+                                    child: Text(
+                                      'common_yes'.tr(),
+                                      style:
+                                          const TextStyle(color: Colors.white),
+                                    ),
                                   ),
                                 ],
                               ),
                             );
                           },
-                          icon: const Icon(Icons.clear, color: Color(0xFFA5D6A7)),
+                          icon: Icon(
+                            Icons.clear,
+                            color: Theme.of(context).primaryColor,
+                          ),
                         ),
                     ],
                   ),
@@ -446,18 +474,13 @@ class _KlasorlerState extends State<Klasorler> {
               ),
             )
           : null,
-      floatingActionButton: Showcase(
-        key: _fabKey,
-        title: 'Yeni Klasör',
-        description: 'Buradan yeni bir klasör oluşturabilirsiniz.',
-        child: klasorListesi.isEmpty && !aramaYapiliyorMu
-            ? const SizedBox.shrink()
-            : FloatingActionButton(
-                onPressed: _yeniKlasorEkle,
-                backgroundColor: Theme.of(context).floatingActionButtonTheme.backgroundColor,
-                child: const Icon(Icons.add, color: Colors.black),
-              ),
-      ),
+      floatingActionButton: klasorListesi.isEmpty && !aramaYapiliyorMu
+          ? const SizedBox.shrink()
+          : FloatingActionButton(
+              onPressed: _yeniKlasorEkle,
+              backgroundColor: Theme.of(context).floatingActionButtonTheme.backgroundColor,
+              child: const Icon(Icons.add, color: Colors.black),
+            ),
     );
   }
 }
@@ -514,15 +537,15 @@ class _FavoriTariflerSayfasiState extends State<FavoriTariflerSayfasi> {
             ? TextField(
                 controller: aramaController,
                 autofocus: true,
-                decoration: const InputDecoration(
-                  hintText: 'Favori tarif ara...',
+                decoration: InputDecoration(
+                  hintText: 'favorites_search_hint'.tr(),
                   border: InputBorder.none,
-                  hintStyle: TextStyle(color: Colors.white70),
+                  hintStyle: const TextStyle(color: Colors.white70),
                 ),
                 style: const TextStyle(color: Colors.white, fontSize: 18),
                 onChanged: _filtreleTarifler,
               )
-            : const Text('Favori Tarifler'),
+            : Text('favorites_title'.tr()),
         actions: [
           IconButton(
             icon: Icon(aramaYapiliyorMu ? Icons.close : Icons.search),
@@ -541,7 +564,7 @@ class _FavoriTariflerSayfasiState extends State<FavoriTariflerSayfasi> {
         ],
       ),
       body: filtreliTarifler.isEmpty
-          ? const Center(child: Text('Hiç favori tarif yok!'))
+          ? Center(child: Text('favorites_empty_text'.tr()))
           : ListView.separated(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
         itemCount: filtreliTarifler.length,

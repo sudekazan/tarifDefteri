@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "919442709959",
+    "project_id": "tarifdefteriuygulamasi",
+    "storage_bucket": "tarifdefteriuygulamasi.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:919442709959:android:5ae4405f5a5d9459d80de2",
+        "android_client_info": {
+          "package_name": "com.example.tarif_defteri"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCAqKvoMx6gWbSFHdDG-zYgguTDjtAWWnk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:919442709959:android:c7285f09cca745d5d80de2",
+        "android_client_info": {
+          "package_name": "com.sudekazan.tarif_defteri_yeni"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCAqKvoMx6gWbSFHdDG-zYgguTDjtAWWnk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

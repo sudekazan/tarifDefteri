@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:tarif_defteri/sayfalar/tarif_olusturma.dart';
 import 'package:tarif_defteri/sayfalar/tarif_detay.dart';
 import 'package:tarif_defteri/tarifler_data/klasor_data.dart';
@@ -7,6 +8,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:share_plus/share_plus.dart';
 import 'dart:io';
+import '../services/firebase_service.dart';
+import '../widgets/banner_ad_widget.dart';
 
 class KlasorIci extends StatefulWidget {
   final KlasorData klasorData;
@@ -21,6 +24,7 @@ class _KlasorIciState extends State<KlasorIci> {
   List<TarifData> filtreliTarifler = [];
   bool aramaYapiliyorMu = false;
   TextEditingController aramaController = TextEditingController();
+  final FirebaseService _firebaseService = FirebaseService();
 
   @override
   void initState() {
@@ -79,6 +83,10 @@ class _KlasorIciState extends State<KlasorIci> {
       'isFavorite': yeniTarif.isFavorite,
     }));
     await prefs.setStringList(key, tariflerJson);
+    
+    // Firebase'e de kaydet
+    await _firebaseService.saveTarifToFirebase(yeniTarif);
+    
     _tarifleriYukle();
   }
 
@@ -97,6 +105,10 @@ class _KlasorIciState extends State<KlasorIci> {
         'isFavorite': guncelTarif.isFavorite,
       });
       await prefs.setStringList(key, tariflerJson);
+      
+      // Firebase'de de güncelle
+      await _firebaseService.updateTarifInFirebase(guncelTarif);
+      
       _tarifleriYukle();
     }
   }
@@ -117,6 +129,10 @@ class _KlasorIciState extends State<KlasorIci> {
     List<String> tariflerJson = prefs.getStringList(key) ?? [];
     tariflerJson.removeWhere((e) => json.decode(e)['tarif_id'] == tarif_id);
     await prefs.setStringList(key, tariflerJson);
+    
+    // Firebase'den de sil
+    await _firebaseService.deleteTarifFromFirebase(widget.klasorData.klasor_id, tarif_id);
+    
     _tarifleriYukle();
   }
 
@@ -151,7 +167,9 @@ class _KlasorIciState extends State<KlasorIci> {
               ? TextField(
                   controller: aramaController,
                   autofocus: true,
-                  decoration: const InputDecoration(hintText: "Tarif ara..."),
+                  decoration: InputDecoration(
+                    hintText: 'recipes_search_hint'.tr(),
+                  ),
                   onChanged: (arama) {
                     if (mounted) {
                       _filtreleTarifler(arama);
@@ -193,8 +211,9 @@ class _KlasorIciState extends State<KlasorIci> {
           child: filtreliTarifler.isEmpty
               ? Center(
                   child: Text(
-                    "Henüz hiç tarif yok!",
-                    style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+                    'recipes_empty_title'.tr(),
+                    style:
+                        TextStyle(fontSize: 18, color: Colors.grey[600]),
                   ),
                 )
               : ListView.separated(
@@ -227,8 +246,8 @@ class _KlasorIciState extends State<KlasorIci> {
                             padding: const EdgeInsets.all(12.0),
                             child: Row(
                               children: [
-                                // Görsel önizleme geçici olarak devre dışı
-                                /* if (tarif.tarif_resimler.isNotEmpty)
+                                // Görsel önizleme
+                                if (tarif.tarif_resimler.isNotEmpty)
                                   Container(
                                     width: 60,
                                     height: 60,
@@ -253,7 +272,7 @@ class _KlasorIciState extends State<KlasorIci> {
                                             child: Icon(Icons.image_not_supported, color: Colors.grey[600], size: 24),
                                           ),
                                     ),
-                                  ), */
+                                  ),
                                 
                                 Expanded(
                                   child: Column(
@@ -272,10 +291,14 @@ class _KlasorIciState extends State<KlasorIci> {
                                       ),
                                       const SizedBox(height: 4),
                                       Text(
-                                        'Detayları görmek için tıklayın',
+                                        'recipes_tap_for_details'.tr(),
                                         style: TextStyle(
                                           fontSize: 12,
-                                          color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.7),
+                                          color: Theme.of(context)
+                                              .textTheme
+                                              .bodyMedium
+                                              ?.color
+                                              ?.withOpacity(0.7),
                                         ),
                                       ),
                                     ],
@@ -309,6 +332,7 @@ class _KlasorIciState extends State<KlasorIci> {
                                           tariflerJson[idx] = json.encode(map);
                                           await prefs.setStringList(key, tariflerJson);
                                         }
+                                        await _firebaseService.updateTarifInFirebase(tarif);
                                       },
                                     ),
                                     
@@ -328,7 +352,7 @@ class _KlasorIciState extends State<KlasorIci> {
                                               String shareText = '📖 ${tarif.tarif_adi}\n\n';
                                               shareText += tarif.tarif_aciklama;
                                               shareText += '\n\n━━━━━━━━━━━━━━━━━━\n';
-                                              shareText += '📱 Tarif Defterimden paylaşıldı';
+                                              shareText += 'share_from_app'.tr();
                                               
                                               // iOS için butonun konumunu al
                                               final box = btnContext.findRenderObject() as RenderBox?;
@@ -343,11 +367,16 @@ class _KlasorIciState extends State<KlasorIci> {
                                               );
                                             } catch (e) {
                                               if (mounted) {
-                                                ScaffoldMessenger.of(context).showSnackBar(
+                                                ScaffoldMessenger.of(context)
+                                                    .showSnackBar(
                                                   SnackBar(
-                                                    content: Text('Paylaşım yapılamadı'),
+                                                    content: Text(
+                                                      'share_error_generic'
+                                                          .tr(),
+                                                    ),
                                                     backgroundColor: Colors.red,
-                                                    duration: const Duration(seconds: 2),
+                                                    duration: const Duration(
+                                                        seconds: 2),
                                                   ),
                                                 );
                                               }
@@ -370,12 +399,17 @@ class _KlasorIciState extends State<KlasorIci> {
                                         showDialog(
                                           context: context,
                                           builder: (context) => AlertDialog(
-                                            title: const Text('Tarif Sil'),
-                                            content: Text("${tarif.tarif_adi} silinsin mi?"),
+                                            title: Text(
+                                              'recipes_delete_title'.tr(),
+                                            ),
+                                            content: Text(
+                                              '${tarif.tarif_adi}${'recipes_delete_confirm_suffix'.tr()}',
+                                            ),
                                             actions: [
                                               TextButton(
-                                                onPressed: () => Navigator.pop(context),
-                                                child: const Text('Hayır'),
+                                                onPressed: () =>
+                                                    Navigator.pop(context),
+                                                child: Text('common_no'.tr()),
                                               ),
                                               ElevatedButton(
                                                 onPressed: () {
@@ -385,7 +419,11 @@ class _KlasorIciState extends State<KlasorIci> {
                                                 style: ElevatedButton.styleFrom(
                                                   backgroundColor: Colors.red,
                                                 ),
-                                                child: const Text('Evet', style: TextStyle(color: Colors.white)),
+                                                child: Text(
+                                                  'common_yes'.tr(),
+                                                  style: const TextStyle(
+                                                      color: Colors.white),
+                                                ),
                                               ),
                                             ],
                                           ),
@@ -408,6 +446,7 @@ class _KlasorIciState extends State<KlasorIci> {
           backgroundColor: Theme.of(context).floatingActionButtonTheme.backgroundColor,
           child: const Icon(Icons.add, color: Colors.white),
         ),
+        bottomNavigationBar: const BannerAdWidget(),
     );
   }
 }

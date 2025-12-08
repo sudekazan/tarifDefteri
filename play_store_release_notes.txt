@@ -1,0 +1,20 @@
+🎉 Yeni Özellikler:
+
+🔐 Hesap silme özelliği eklendi - Artık hesabınızı ve tüm verilerinizi kalıcı olarak silebilirsiniz
+
+🎨 Dinamik tema arka planları - Seçtiğiniz temaya uygun renkli gradient arka planlar
+
+💬 İyileştirilmiş bildirimler - Daha açıklayıcı başarı ve hata mesajları
+
+💳 Gelişmiş reklam yönetimi - Tüm sayfalarda optimize edilmiş banner reklamlar
+
+🔄 Firebase entegrasyonu iyileştirmeleri - Gerçek zamanlı oturum takibi ve otomatik güncellemeler
+
+🔒 Güvenlik iyileştirmeleri - Çıkış ve hesap silme onay dialogları
+
+🐛 Hata Düzeltmeleri:
+• Tarif oluşturma sayfası hataları giderildi
+• Tema değişiklik sorunları çözüldü
+• UI güncelleme sorunları düzeltildi
+
+Keyifli kullanımlar! 🎊

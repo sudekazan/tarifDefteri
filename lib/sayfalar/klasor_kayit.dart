@@ -1,6 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:tarif_defteri/tarifler_data/klasor_data.dart';
+import '../widgets/banner_ad_widget.dart';
 
 class KlasorKayit extends StatefulWidget {
   const KlasorKayit({super.key});
@@ -24,6 +26,12 @@ class _KlasorKayitState extends State<KlasorKayit> {
     Icons.lunch_dining, // Yemek tabağı
     Icons.bakery_dining, // Fırın/tatlı
     Icons.emoji_food_beverage, // Çay/kahve
+    Icons.set_meal,
+    Icons.dinner_dining,
+    Icons.brunch_dining,
+    Icons.local_pizza,
+    Icons.ramen_dining,
+    Icons.rice_bowl,
   ];
 
   Future<void> klasorKaydet(String klasor_adi) async {
@@ -35,15 +43,17 @@ class _KlasorKayitState extends State<KlasorKayit> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Klasör Kayıt"),
+        title: Text('folder_add_title'.tr()),
         backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
       ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Column( mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Text("Klasör İkonu Seç", style: TextStyle(fontWeight: FontWeight.bold)),
+      body: Container(
+        color: Theme.of(context).scaffoldBackgroundColor,
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Column( mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+              Text('folder_icon_select'.tr(), style: const TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               SizedBox(
                 height: 48,
@@ -80,7 +90,12 @@ class _KlasorKayitState extends State<KlasorKayit> {
               const SizedBox(height: 16),
               Padding(
                 padding: const EdgeInsets.all(8.0),
-                child: TextField(controller: tfklasorAdi,decoration: const InputDecoration(hintText: "Klasör Adı Giriniz"),),
+                child: TextField(
+                  controller: tfklasorAdi,
+                  decoration: InputDecoration(
+                    hintText: 'folder_name_hint'.tr(),
+                  ),
+                ),
               ),
               Padding(
                 padding: const EdgeInsets.all(8.0),
@@ -91,12 +106,14 @@ class _KlasorKayitState extends State<KlasorKayit> {
                       'iconCode': selectedIconCode,
                     });
                   }
-                }, child:const  Text("Kaydet")),
+                }, child: Text('common_save'.tr())),
               )
             ],
           ),
         ),
-      )
+        ),
+      ),
+      bottomNavigationBar: const BannerAdWidget(),
     );
   }
 }

@@ -6,7 +6,9 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
+import '../widgets/banner_ad_widget.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 class TarifOlusturma extends StatefulWidget {
   @override
@@ -90,6 +92,19 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
     _parseExistingTarif(tarifData.tarif_aciklama);
     // Mevcut görselleri yükle
     _loadExistingImages(tarifData.tarif_resimler);
+    
+    // Yeni tarif ise (düzenleme değilse) otomatik olarak "Malzemeler" bölümünü ekle
+    if (tarifData.tarif_adi.isEmpty && sections.isEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        setState(() {
+          sections.add({
+            'title': 'recipe_section_ingredients'.tr(),
+            'type': 'malzemeler',
+            'items': []
+          });
+        });
+      });
+    }
   }
 
   // Mevcut görselleri yükle
@@ -232,19 +247,19 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
                     width: 60,
                     height: 60,
                     decoration: BoxDecoration(
-                      color: Colors.orange.withOpacity(0.1),
+                      color: Colors.amber.withOpacity(0.15),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
                       Icons.warning_amber_rounded,
-                      color: Colors.orange,
+                      color: Colors.amber.shade700,
                       size: 32,
                     ),
                   ),
                   const SizedBox(height: 20),
                   // Başlık
                   Text(
-                    'Değişiklikler kaybolacak!',
+                    'recipe_edit_discard_title'.tr(),
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -255,7 +270,7 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
                   const SizedBox(height: 12),
                   // Açıklama
                   Text(
-                    'Geri dönmek istediğinize emin misiniz?',
+                    'recipe_edit_discard_message'.tr(),
                     style: TextStyle(
                       fontSize: 15,
                       color: Theme.of(context).textTheme.bodyMedium?.color,
@@ -275,16 +290,16 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
                               borderRadius: BorderRadius.circular(12),
                             ),
                             side: BorderSide(
-                              color: Theme.of(context).primaryColor,
+                              color: Colors.grey.shade400,
                               width: 1.5,
                             ),
                           ),
                           child: Text(
-                            'Devam Et',
+                            'recipe_edit_discard_keep'.tr(),
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
-                              color: Theme.of(context).primaryColor,
+                              color: Colors.grey.shade700,
                             ),
                           ),
                         ),
@@ -301,8 +316,8 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
                             ),
                             elevation: 0,
                           ),
-                          child: const Text(
-                            'Geri Dön',
+                          child: Text(
+                            'recipe_edit_discard_exit'.tr(),
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: 16,
@@ -323,10 +338,9 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
       },
       child: Scaffold(
         appBar: AppBar(
-          title: Text(widget.tarifData.tarif_id > 0 ? "Tarif Düzenleme" : "Tarif Ekleme"),
+          title: Text(widget.tarifData.tarif_id > 0 ? 'recipe_edit_appbar_edit'.tr() : 'recipe_edit_appbar_add'.tr()),
           actions: [
-            // Görsel ekleme özelliği geçici olarak devre dışı
-            /* IconButton(
+            IconButton(
               icon: Icon(Icons.photo_camera, color: Theme.of(context).iconTheme.color),
               onPressed: () async {
                 final picked = await _picker.pickMultiImage();
@@ -336,8 +350,8 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
                   });
                 }
               },
-              tooltip: 'Fotoğraf Ekle',
-            ), */
+              tooltip: 'recipe_edit_add_photo_tooltip'.tr(),
+            ),
           ],
           backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
         ),
@@ -351,8 +365,8 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Görsel önizleme kartı - geçici olarak devre dışı
-                    /* if (photos.isNotEmpty)
+                    // Görsel önizleme kartı
+                    if (photos.isNotEmpty)
                       Card(
                         margin: const EdgeInsets.only(bottom: 16),
                         color: Theme.of(context).cardColor,
@@ -363,7 +377,7 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
                             children: [
                               Row(
                                 children: [
-                                  Text('Fotoğraflar', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Theme.of(context).textTheme.bodyLarge?.color)),
+                                  Text('recipe_edit_photos_title'.tr(), style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Theme.of(context).textTheme.bodyLarge?.color)),
                                   const Spacer(),
                                   IconButton(
                                     icon: const Icon(Icons.delete, color: Colors.red),
@@ -415,7 +429,7 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
                                         });
                                       },
                                       child: Container(
-                                        color: Colors.black,
+                                        color: Theme.of(context).primaryColor,
                                         child: const Icon(Icons.close, color: Colors.white, size: 18),
                                       ),
                                     ),
@@ -425,7 +439,7 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
                             ],
                           ),
                         ),
-                      ), */
+                      ),
                     Container(
                       decoration: BoxDecoration(
                         color: Theme.of(context).cardColor,
@@ -443,14 +457,14 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            "Tarif Adı",
+                            'recipe_edit_name_label'.tr(),
                             style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16, color: Theme.of(context).textTheme.bodyLarge?.color),
                           ),
                           const SizedBox(height: 8),
                           TextField(
                             controller: tfTaridAdi,
                             decoration: InputDecoration(
-                              hintText: "Tarif Adı Giriniz",
+                              hintText: 'recipe_edit_name_hint'.tr(),
                               filled: true,
                               fillColor: Theme.of(context).cardColor,
                               border: OutlineInputBorder(
@@ -467,7 +481,7 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      "Tarif Bölümleri",
+                                      'recipe_edit_sections_label'.tr(),
                                       style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16, color: Theme.of(context).textTheme.bodyLarge?.color),
                                     ),
                                     const SizedBox(height: 8),
@@ -482,7 +496,7 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
                                   _showSectionMenu();
                                 },
                                 icon: const Icon(Icons.add, size: 20),
-                                label: const Text('Bölüm Ekle'),
+                                label: Text('recipe_edit_add_section_button'.tr()),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Theme.of(context).primaryColor,
                                   foregroundColor: Colors.white,
@@ -569,10 +583,10 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
                                                       fontSize: 14,
                                                     ),
                                                   )
-                                                : const Icon(
+                                                : Icon(
                                                     Icons.circle,
                                                     size: 10,
-                                                    color: Colors.grey,
+                                                    color: Theme.of(context).primaryColor.withOpacity(0.6),
                                                   ),
                                           ),
                                         ),
@@ -590,17 +604,17 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
                                                         Icon(
                                                           Icons.link,
                                                           size: 16,
-                                                          color: Colors.blue,
+                                                          color: Theme.of(context).primaryColor,
                                                         ),
                                                         const SizedBox(width: 8),
                                                         Expanded(
                                                           child: Text(
                                                             section['items'][i],
                                                             style: TextStyle(
-                                                              color: Colors.blue,
+                                                              color: Theme.of(context).primaryColor,
                                                               fontSize: 16,
                                                               decoration: TextDecoration.underline,
-                                                              decorationColor: Colors.blue,
+                                                              decorationColor: Theme.of(context).primaryColor,
                                                             ),
                                                           ),
                                                         ),
@@ -618,7 +632,7 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
                                         ),
                                         // Silme butonu
                                         IconButton(
-                                          icon: const Icon(Icons.clear, size: 20, color: Colors.red),
+                                          icon: Icon(Icons.clear, size: 20, color: Theme.of(context).primaryColor),
                                           onPressed: () {
                                             setState(() {
                                               section['items'].removeAt(i);
@@ -646,7 +660,7 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
                                       child: TextField(
                                         controller: sectionControllers[secIndex] ??= TextEditingController(),
                                         decoration: InputDecoration(
-                                          hintText: section['type'] == 'yapilis' ? 'Adım ekle...' : 'Madde ekle...',
+                                          hintText: section['type'] == 'yapilis' ? 'recipe_edit_step_placeholder'.tr() : 'recipe_edit_item_placeholder'.tr(),
                                           border: InputBorder.none,
                                           contentPadding: const EdgeInsets.all(16),
                                         ),
@@ -674,22 +688,28 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
                                         },
                                       ),
                                     ),
-                                    IconButton(
-                                      icon: Icon(
-                                        Icons.add_circle,
-                                        color: Theme.of(context).primaryColor,
+                                    Container(
+                                      decoration: BoxDecoration(
+                                        color: Theme.of(context).primaryColor.withOpacity(0.1),
+                                        shape: BoxShape.circle,
                                       ),
-                                      onPressed: () {
-                                        // + butonuna basarak malzeme ekle
-                                        final controller = sectionControllers[secIndex];
-                                        if (controller != null && controller.text.trim().isNotEmpty) {
-                                          setState(() {
-                                            section['items'].add(controller.text.trim());
-                                          });
-                                          // TextField'ı temizle
-                                          controller.clear();
-                                        }
-                                      },
+                                      child: IconButton(
+                                        icon: Icon(
+                                          Icons.add_circle,
+                                          color: Theme.of(context).primaryColor,
+                                        ),
+                                        onPressed: () {
+                                          // + butonuna basarak malzeme ekle
+                                          final controller = sectionControllers[secIndex];
+                                          if (controller != null && controller.text.trim().isNotEmpty) {
+                                            setState(() {
+                                              section['items'].add(controller.text.trim());
+                                            });
+                                            // TextField'ı temizle
+                                            controller.clear();
+                                          }
+                                        },
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -705,6 +725,7 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Theme.of(context).primaryColor,
+                          foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -714,8 +735,8 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
                           // Tarif adı kontrolü
                           if (tfTaridAdi.text.trim().isEmpty) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Lütfen tarif adını giriniz!'),
+                              SnackBar(
+                                content: Text('recipe_edit_error_no_name'.tr()),
                                 backgroundColor: Colors.red,
                               ),
                             );
@@ -725,8 +746,8 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
                           // En az bir section olmalı
                           if (sections.isEmpty) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Lütfen en az bir tarif bölümü ekleyiniz!'),
+                              SnackBar(
+                                content: Text('recipe_edit_error_no_section'.tr()),
                                 backgroundColor: Colors.red,
                               ),
                             );
@@ -744,8 +765,8 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
                           
                           if (!hasItems) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Lütfen en az bir madde ekleyiniz!'),
+                              SnackBar(
+                                content: Text('recipe_edit_error_no_item'.tr()),
                                 backgroundColor: Colors.red,
                               ),
                             );
@@ -771,9 +792,9 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
                             }
                           }
                           
-                          // Görsel kaydetme özelliği geçici olarak devre dışı
+                          // Görselleri kalıcı konuma kopyala ve kaydet
                           List<String> resimYollari = [];
-                          /* if (photos.isNotEmpty) {
+                          if (photos.isNotEmpty) {
                             List<String> tempYollar = await Future.wait(
                               photos.map((photo) async => await _copyImageToPermanentLocation(photo.path))
                             );
@@ -782,7 +803,7 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
                           }
                           
                           print('Kaydedilecek görsel sayısı: ${resimYollari.length}');
-                          print('Görsel yolları: $resimYollari'); */
+                          print('Görsel yolları: $resimYollari');
                           
                           Navigator.pop(context, TarifData(
                             tarif_id: widget.tarifData.tarif_id,
@@ -792,8 +813,8 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
                             klasor_id: widget.tarifData.klasor_id,
                           ));
                         },
-                        child: const Text(
-                          "Kaydet",
+                        child: Text(
+                          'recipe_edit_save_button'.tr(),
                           style: TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold),
                         ),
                       ),
@@ -804,6 +825,7 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
             ),
           ),
         ),
+        bottomNavigationBar: const BannerAdWidget(),
       ),
     );
   }
@@ -825,7 +847,7 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Tarif Bölümü Seçin',
+              'recipe_edit_select_section_title'.tr(),
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -858,12 +880,12 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
 
   List<Map<String, dynamic>> _getAvailableSections() {
     List<Map<String, dynamic>> allSections = [
-      {'type': 'malzemeler', 'title': 'Malzemeler'},
-      {'type': 'harc', 'title': 'Harç'},
-      {'type': 'yapilis', 'title': 'Yapılışı'},
-      {'type': 'hamur', 'title': 'Hamuru'},
-      {'type': 'serbet', 'title': 'Şerbeti'},
-      {'type': 'linkler', 'title': 'Linkler'},
+      {'type': 'malzemeler', 'title': 'recipe_section_ingredients'.tr()},
+      {'type': 'harc', 'title': 'recipe_section_filling'.tr()},
+      {'type': 'yapilis', 'title': 'recipe_section_instructions'.tr()},
+      {'type': 'hamur', 'title': 'recipe_section_dough'.tr()},
+      {'type': 'serbet', 'title': 'recipe_section_syrup'.tr()},
+      {'type': 'linkler', 'title': 'recipe_section_links'.tr()},
     ];
 
     // Mevcut section'ları filtrele
@@ -890,17 +912,17 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
   String _getSectionTitle(String type) {
     switch (type) {
       case 'malzemeler':
-        return 'Malzemeler';
+        return 'recipe_section_ingredients'.tr();
       case 'harc':
-        return 'Harç';
+        return 'recipe_section_filling'.tr();
       case 'yapilis':
-        return 'Yapılışı';
+        return 'recipe_section_instructions'.tr();
       case 'hamur':
-        return 'Hamuru';
+        return 'recipe_section_dough'.tr();
       case 'serbet':
-        return 'Şerbeti';
+        return 'recipe_section_syrup'.tr();
       case 'linkler':
-        return 'Linkler';
+        return 'recipe_section_links'.tr();
       default:
         return '';
     }
@@ -952,7 +974,7 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
         // Eğer açılmazsa kullanıcıya bilgi ver
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Link açılamadı: $url'),
+            content: Text('${'link_cannot_open_prefix'.tr()}$url'),
             backgroundColor: Colors.red,
           ),
         );
@@ -960,7 +982,7 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Geçersiz link: $url'),
+          content: Text('${'link_invalid_prefix'.tr()}$url'),
           backgroundColor: Colors.red,
         ),
       );
