@@ -132,39 +132,49 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
     String currentType = '';
     List<String> currentItems = [];
     
+    // Tüm dillerde bölüm başlıklarını tanımla
+    final ingredientTitles = ['malzemeler', 'ingredients', 'zutaten', 'ingredientes', 'ingrédients'];
+    final fillingTitles = ['harç', 'filling', 'füllung', 'relleno', 'garniture', 'recheio'];
+    final doughTitles = ['hamuru', 'dough', 'teig', 'masa', 'pâte'];
+    final syrupTitles = ['şerbeti', 'syrup', 'sirup', 'almíbar', 'sirop', 'calda'];
+    final instructionTitles = ['yapılışı', 'instructions', 'anleitung', 'instrucciones'];
+    final linkTitles = ['linkler', 'links', 'enlaces', 'liens'];
+    
     for (String line in lines) {
       final trimmed = line.trim();
       if (trimmed.isEmpty) continue;
       
-      // Başlık kontrolü
-      if (trimmed.toLowerCase() == 'malzemeler') {
+      final lowerTrimmed = trimmed.toLowerCase();
+      
+      // Başlık kontrolü - tüm diller
+      if (ingredientTitles.contains(lowerTrimmed)) {
         _addSectionIfNotEmpty(currentSection, currentType, currentItems);
-        currentSection = 'Malzemeler';
+        currentSection = trimmed;
         currentType = 'malzemeler';
         currentItems = [];
-      } else if (trimmed.toLowerCase() == 'harç') {
+      } else if (fillingTitles.contains(lowerTrimmed)) {
         _addSectionIfNotEmpty(currentSection, currentType, currentItems);
-        currentSection = 'Harç';
+        currentSection = trimmed;
         currentType = 'harc';
         currentItems = [];
-      } else if (trimmed.toLowerCase() == 'hamuru') {
+      } else if (doughTitles.contains(lowerTrimmed)) {
         _addSectionIfNotEmpty(currentSection, currentType, currentItems);
-        currentSection = 'Hamuru';
+        currentSection = trimmed;
         currentType = 'hamur';
         currentItems = [];
-      } else if (trimmed.toLowerCase() == 'şerbeti') {
+      } else if (syrupTitles.contains(lowerTrimmed)) {
         _addSectionIfNotEmpty(currentSection, currentType, currentItems);
-        currentSection = 'Şerbeti';
+        currentSection = trimmed;
         currentType = 'serbet';
         currentItems = [];
-      } else if (trimmed.toLowerCase() == 'yapılışı') {
+      } else if (instructionTitles.contains(lowerTrimmed)) {
         _addSectionIfNotEmpty(currentSection, currentType, currentItems);
-        currentSection = 'Yapılışı';
+        currentSection = trimmed;
         currentType = 'yapilis';
         currentItems = [];
-      } else if (trimmed.toLowerCase() == 'linkler') {
+      } else if (linkTitles.contains(lowerTrimmed)) {
         _addSectionIfNotEmpty(currentSection, currentType, currentItems);
-        currentSection = 'Linkler';
+        currentSection = trimmed;
         currentType = 'linkler';
         currentItems = [];
       } else if (trimmed.startsWith('*') || trimmed.startsWith('•') || trimmed.startsWith('🔗') || RegExp(r'^\d+\.').hasMatch(trimmed)) {

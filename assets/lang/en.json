@@ -1,5 +1,9 @@
 {
   "app_title": "Recipe Notebook",
+  "default_folder_desserts": "Desserts",
+  "default_folder_soups": "Soups",
+  "default_folder_main_dishes": "Main Dishes",
+  "default_folder_breakfast": "Breakfast",
   "home_title": "The address of delicious recipes",
   "home_subtitle": "Thousands of practical and tasty recipes are waiting for you.",
   "btn_get_started": "Get Started",
@@ -10,7 +14,6 @@
   "recipes_title": "Recipes",
   "no_recipes": "No recipes added yet.",
   "add_recipe": "Add recipe",
-
   "settings_title": "Settings",
   "settings_theme_title": "Theme",
   "settings_dark_mode": "Dark Mode",
@@ -26,14 +29,16 @@
   "settings_language_title": "Language",
   "settings_language_turkish": "Turkish",
   "settings_language_english": "English",
-
+  "settings_language_german": "German",
+  "settings_language_spanish": "Spanish",
+  "settings_language_french": "French",
+  "settings_language_portuguese": "Portuguese",
   "settings_user_fallback": "User",
   "settings_logout": "Logout",
   "settings_logout_confirm_title": "Logout",
   "settings_logout_confirm_content": "Are you sure you want to log out?",
   "settings_logout_cancel": "Cancel",
   "settings_logout_success": "Logged out successfully",
-
   "settings_delete_account": "Delete My Account",
   "settings_delete_account_subtitle": "Permanently delete your account and all data",
   "settings_delete_account_dialog_title": "Delete account?",
@@ -47,15 +52,12 @@
   "settings_delete_account_button": "Delete my account",
   "settings_delete_account_success": "Your account has been deleted successfully",
   "settings_delete_account_error_prefix": "Error: ",
-
   "settings_login_subtitle": "Store your data in the cloud",
   "settings_backup_success": "Data has been backed up to the cloud",
   "settings_backup_error": "An error occurred during backup",
-
   "settings_footer_app_name": "Recipe Notebook",
   "settings_footer_version_prefix": "Version",
   "settings_footer_copyright": " 2024 Sude Kazan",
-
   "auth_login_success": "Login successful! Your recipes have been merged ",
   "auth_register_success": "Account created! Your data has been backed up ",
   "auth_error_generic": "An error occurred.",
@@ -70,7 +72,6 @@
   "auth_error_too_many_requests": "Too many attempts. Please try again later.",
   "auth_error_code_prefix": "Error: ",
   "auth_error_unexpected_prefix": "An unexpected error occurred: ",
-
   "auth_title_login": "Welcome!",
   "auth_title_register": "Create an account",
   "auth_subtitle_login": "Log in to access recipes",
@@ -87,11 +88,9 @@
   "auth_toggle_question_register": "Already have an account?",
   "auth_toggle_button_login": "Sign Up",
   "auth_toggle_button_register": "Log In",
-
   "common_yes": "Yes",
   "common_no": "No",
   "common_save": "Save",
-
   "folders_search_hint": "Search folder...",
   "folders_empty_title": "No folders yet",
   "folders_empty_subtitle": "Add a new folder to organize your recipes.",
@@ -100,36 +99,28 @@
   "folders_delete_title": "Delete Folder",
   "folders_delete_confirm_suffix": " will be deleted. Continue?",
   "folders_favorites": "Favorites",
-
   "folder_add_title": "Add Folder",
   "folder_icon_select": "Select Folder Icon",
   "folder_name_hint": "Enter folder name",
-
   "favorites_title": "Favorite Recipes",
   "favorites_search_hint": "Search favorite recipes...",
   "favorites_empty_text": "No favorite recipes yet!",
-
   "recipes_search_hint": "Search recipe...",
   "recipes_empty_title": "There are no recipes yet!",
   "recipes_tap_for_details": "Tap to see details",
   "recipes_delete_title": "Delete Recipe",
   "recipes_delete_confirm_suffix": " will be deleted. Continue?",
-
   "share_from_app": " Shared from my Recipe Notebook app",
   "share_error_generic": "Sharing failed",
   "share_error_with_message_prefix": "Sharing failed: ",
-
   "image_load_error": "Image could not be loaded",
   "image_not_found": "Image not found",
-
   "link_cannot_open_prefix": "Could not open link: ",
   "link_invalid_prefix": "Invalid link: ",
-
   "recipe_edit_discard_title": "Changes will be lost!",
   "recipe_edit_discard_message": "Are you sure you want to go back?",
   "recipe_edit_discard_keep": "Continue Editing",
   "recipe_edit_discard_exit": "Go Back",
-
   "recipe_edit_appbar_edit": "Edit Recipe",
   "recipe_edit_appbar_add": "Add Recipe",
   "recipe_edit_add_photo_tooltip": "Add Photo",
@@ -144,14 +135,12 @@
   "recipe_edit_error_no_section": "Please add at least one recipe section!",
   "recipe_edit_error_no_item": "Please add at least one item!",
   "recipe_edit_save_button": "Save",
-
   "recipe_section_ingredients": "Ingredients",
   "recipe_section_filling": "Filling",
   "recipe_section_dough": "Dough",
   "recipe_section_syrup": "Syrup",
   "recipe_section_instructions": "Instructions",
   "recipe_section_links": "Links",
-
   "recipe_detail_description_title": "Recipe",
   "recipe_detail_share_tooltip": "Share",
   "recipe_detail_edit_tooltip": "Edit",

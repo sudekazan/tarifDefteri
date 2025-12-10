@@ -1,5 +1,9 @@
 {
   "app_title": "Tarif Defteri",
+  "default_folder_desserts": "Tatlılar",
+  "default_folder_soups": "Çorbalar",
+  "default_folder_main_dishes": "Ana Yemekler",
+  "default_folder_breakfast": "Kahvaltılıklar",
   "home_title": "Lezzetli tariflerin adresi",
   "home_subtitle": "Binlerce pratik ve lezzetli tarif sizleri bekliyor.",
   "btn_get_started": "Başla",
@@ -10,7 +14,6 @@
   "recipes_title": "Tarifler",
   "no_recipes": "Henüz tarif eklenmedi.",
   "add_recipe": "Tarif ekle",
-
   "settings_title": "Ayarlar",
   "settings_theme_title": "Tema Seçimi",
   "settings_dark_mode": "Koyu Mod",
@@ -26,14 +29,16 @@
   "settings_language_title": "Dil",
   "settings_language_turkish": "Türkçe",
   "settings_language_english": "İngilizce",
-
+  "settings_language_german": "Almanca",
+  "settings_language_spanish": "İspanyolca",
+  "settings_language_french": "Fransızca",
+  "settings_language_portuguese": "Portekizce",
   "settings_user_fallback": "Kullanıcı",
   "settings_logout": "Çıkış Yap",
   "settings_logout_confirm_title": "Çıkış Yap",
   "settings_logout_confirm_content": "Çıkış yapmak istediğinizden emin misiniz?",
   "settings_logout_cancel": "İptal",
   "settings_logout_success": "Başarıyla çıkış yapıldı",
-
   "settings_delete_account": "Hesabımı Sil",
   "settings_delete_account_subtitle": "Hesabınızı ve tüm verilerinizi kalıcı olarak silin",
   "settings_delete_account_dialog_title": "Hesabı Sil?",
@@ -47,15 +52,12 @@
   "settings_delete_account_button": "Hesabımı Sil",
   "settings_delete_account_success": "Hesabınız başarıyla silindi",
   "settings_delete_account_error_prefix": "Hata: ",
-
   "settings_login_subtitle": "Verilerinizi bulutta saklayın",
   "settings_backup_success": "Veriler buluta yedeklendi",
   "settings_backup_error": "Yedekleme sırasında bir hata oluştu",
-
   "settings_footer_app_name": "Tarif Defteri",
   "settings_footer_version_prefix": "Versiyon",
   "settings_footer_copyright": " 2024 Sude Kazan",
-
   "auth_login_success": "Giriş başarılı! Tarifleriniz birleştirildi ",
   "auth_register_success": "Hesap oluşturuldu! Verileriniz yedeklendi ",
   "auth_error_generic": "Bir hata oluştu.",
@@ -70,7 +72,6 @@
   "auth_error_too_many_requests": "Çok fazla deneme yaptınız. Lütfen daha sonra tekrar deneyin.",
   "auth_error_code_prefix": "Hata: ",
   "auth_error_unexpected_prefix": "Beklenmeyen bir hata oluştu: ",
-
   "auth_title_login": "Hoş Geldiniz!",
   "auth_title_register": "Hesap Oluşturun",
   "auth_subtitle_login": "Tariflere erişmek için giriş yapın",
@@ -87,11 +88,9 @@
   "auth_toggle_question_register": "Zaten hesabınız var mı?",
   "auth_toggle_button_login": "Kayıt Ol",
   "auth_toggle_button_register": "Giriş Yap",
-
   "common_yes": "Evet",
   "common_no": "Hayır",
   "common_save": "Kaydet",
-
   "folders_search_hint": "Klasör ara...",
   "folders_empty_title": "Henüz klasör yok",
   "folders_empty_subtitle": "Tariflerini düzenlemek için yeni bir klasör ekle.",
@@ -100,36 +99,28 @@
   "folders_delete_title": "Klasör Sil",
   "folders_delete_confirm_suffix": " silinsin mi?",
   "folders_favorites": "Favoriler",
-
   "folder_add_title": "Klasör Kayıt",
   "folder_icon_select": "Klasör İkonu Seç",
   "folder_name_hint": "Klasör Adı Giriniz",
-
   "favorites_title": "Favori Tarifler",
   "favorites_search_hint": "Favori tarif ara...",
   "favorites_empty_text": "Hiç favori tarif yok!",
-
   "recipes_search_hint": "Tarif ara...",
   "recipes_empty_title": "Henüz hiç tarif yok!",
   "recipes_tap_for_details": "Detayları görmek için tıklayın",
   "recipes_delete_title": "Tarif Sil",
   "recipes_delete_confirm_suffix": " silinsin mi?",
-
   "share_from_app": " Tarif Defterimden paylaşıldı",
   "share_error_generic": "Paylaşım yapılamadı",
   "share_error_with_message_prefix": "Paylaşım yapılamadı: ",
-
   "image_load_error": "Görsel yüklenemedi",
   "image_not_found": "Görsel bulunamadı",
-
   "link_cannot_open_prefix": "Link açılamadı: ",
   "link_invalid_prefix": "Geçersiz link: ",
-
   "recipe_edit_discard_title": "Değişiklikler kaybolacak!",
   "recipe_edit_discard_message": "Geri dönmek istediğinize emin misiniz?",
   "recipe_edit_discard_keep": "Devam Et",
   "recipe_edit_discard_exit": "Geri Dön",
-
   "recipe_edit_appbar_edit": "Tarif Düzenleme",
   "recipe_edit_appbar_add": "Tarif Ekleme",
   "recipe_edit_add_photo_tooltip": "Fotoğraf Ekle",
@@ -144,17 +135,14 @@
   "recipe_edit_error_no_section": "Lütfen en az bir tarif bölümü ekleyiniz!",
   "recipe_edit_error_no_item": "Lütfen en az bir madde ekleyiniz!",
   "recipe_edit_save_button": "Kaydet",
-
   "recipe_section_ingredients": "Malzemeler",
   "recipe_section_filling": "Harç",
   "recipe_section_dough": "Hamuru",
   "recipe_section_syrup": "Şerbeti",
   "recipe_section_instructions": "Yapılışı",
   "recipe_section_links": "Linkler",
-
   "recipe_detail_description_title": "Tarif",
   "recipe_detail_share_tooltip": "Paylaş",
   "recipe_detail_edit_tooltip": "Düzenle",
-
   "recipe_edit_select_section_title": "Tarif Bölümü Seçin"
 }

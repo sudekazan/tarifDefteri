@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart'; // kDebugMode için
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
@@ -67,9 +68,26 @@ class _KlasorlerState extends State<Klasorler> {
 
   Future<void> _klasorleriYukle() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    List<String> klasorJsonList = prefs.getStringList('klasorler') ?? [];
+    
+    // Mevcut klasörleri kontrol et
+    List<String> mevcutKlasorler = prefs.getStringList('klasorler') ?? [];
+    
+    // SADECE klasör listesi boşsa VE daha önce varsayılanlar eklenmemişse ekle
+    // Bu sayede güncelleme yapan kullanıcıların mevcut klasörleri korunur
+    bool defaultsAdded = prefs.getBool('defaultFoldersAdded') ?? false;
+    
+    if (mevcutKlasorler.isEmpty && !defaultsAdded) {
+      // Yeni kullanıcı - hiç klasörü yok
+      await _varsayilanKlasorleriEkle(prefs);
+      await prefs.setBool('defaultFoldersAdded', true);
+      mevcutKlasorler = prefs.getStringList('klasorler') ?? [];
+    } else if (!defaultsAdded) {
+      // Mevcut kullanıcı - klasörleri var, sadece flag'i ayarla
+      await prefs.setBool('defaultFoldersAdded', true);
+    }
+    
     setState(() {
-      klasorListesi = klasorJsonList.asMap().entries.map((e) {
+      klasorListesi = mevcutKlasorler.asMap().entries.map((e) {
         final map = json.decode(e.value);
         final int klasorId = map['klasor_id'] ?? e.key + 1;
         return KlasorData.fromMap({
@@ -79,6 +97,29 @@ class _KlasorlerState extends State<Klasorler> {
         });
       }).toList();
     });
+  }
+  
+  Future<void> _varsayilanKlasorleriEkle(SharedPreferences prefs) async {
+    // 4 varsayılan klasör tanımla - kullanıcının diline göre isimlendir
+    final defaultKlasorler = [
+      KlasorData(klasor_id: 1, klasor_adi: 'default_folder_desserts'.tr(), iconCode: Icons.cake.codePoint),
+      KlasorData(klasor_id: 2, klasor_adi: 'default_folder_soups'.tr(), iconCode: Icons.soup_kitchen.codePoint),
+      KlasorData(klasor_id: 3, klasor_adi: 'default_folder_main_dishes'.tr(), iconCode: Icons.restaurant.codePoint),
+      KlasorData(klasor_id: 4, klasor_adi: 'default_folder_breakfast'.tr(), iconCode: Icons.egg_alt.codePoint),
+    ];
+    
+    // SharedPreferences'a kaydet
+    List<String> klasorJsonList = defaultKlasorler.map((k) => json.encode({
+      'klasor_id': k.klasor_id,
+      'klasor_adi': k.klasor_adi,
+      'iconCode': k.iconCode,
+    })).toList();
+    await prefs.setStringList('klasorler', klasorJsonList);
+    
+    // Firebase'e kaydet (giriş yapılmışsa)
+    for (var klasor in defaultKlasorler) {
+      await _firebaseService.saveKlasorToFirebase(klasor);
+    }
   }
 
   // Klasörleri filtreleme metodu
@@ -170,11 +211,36 @@ class _KlasorlerState extends State<Klasorler> {
     }
   }
 
+  // Test ve gerçek reklam ID'leri
+  String get _bannerAdUnitId {
+    if (kDebugMode) {
+      // Debug modunda Google test ID'leri
+      return Platform.isAndroid
+          ? 'ca-app-pub-3940256099942544/6300978111'
+          : 'ca-app-pub-3940256099942544/2934735716';
+    } else {
+      // Release modunda gerçek ID'ler
+      return Platform.isAndroid
+          ? 'ca-app-pub-2127302088980655/7429316929'
+          : 'ca-app-pub-2127302088980655/9262656239';
+    }
+  }
+
+  String get _interstitialAdUnitId {
+    if (kDebugMode) {
+      return Platform.isAndroid
+          ? 'ca-app-pub-3940256099942544/1033173712'
+          : 'ca-app-pub-3940256099942544/4411468910';
+    } else {
+      return Platform.isAndroid
+          ? 'ca-app-pub-2127302088980655/3542042807'
+          : 'ca-app-pub-2127302088980655/5976634451';
+    }
+  }
+
   void _loadBannerAd() {
     _bannerAd = BannerAd(
-      adUnitId: Platform.isAndroid
-          ? 'ca-app-pub-2127302088980655/7429316929' // Android banner ID
-          : 'ca-app-pub-2127302088980655/9262656239', // iOS banner ID
+      adUnitId: _bannerAdUnitId,
       size: AdSize.banner,
       request: const AdRequest(),
       listener: BannerAdListener(
@@ -194,9 +260,7 @@ class _KlasorlerState extends State<Klasorler> {
 
   void _loadInterstitialAd() {
     InterstitialAd.load(
-      adUnitId: Platform.isAndroid
-          ? 'ca-app-pub-2127302088980655/3542042807' // Android test interstitial ID
-          : 'ca-app-pub-2127302088980655/5976634451', // iOS test interstitial ID
+      adUnitId: _interstitialAdUnitId,
       request: const AdRequest(),
       adLoadCallback: InterstitialAdLoadCallback(
         onAdLoaded: (ad) {

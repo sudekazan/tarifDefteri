@@ -64,6 +64,104 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
+  // Dil bayrakları ve isimleri
+  final Map<String, String> _languageFlags = {
+    'tr': '🇹🇷',
+    'en': '🇬🇧',
+    'de': '🇩🇪',
+    'es': '🇪🇸',
+    'fr': '🇫🇷',
+    'pt': '🇧🇷',
+  };
+
+  String _getCurrentLanguageName(BuildContext context) {
+    final langCode = context.locale.languageCode;
+    final names = {
+      'tr': 'settings_language_turkish'.tr(),
+      'en': 'settings_language_english'.tr(),
+      'de': 'settings_language_german'.tr(),
+      'es': 'settings_language_spanish'.tr(),
+      'fr': 'settings_language_french'.tr(),
+      'pt': 'settings_language_portuguese'.tr(),
+    };
+    return '${_languageFlags[langCode] ?? ''} ${names[langCode] ?? langCode}';
+  }
+
+  void _showLanguageBottomSheet(BuildContext context) {
+    final languages = [
+      {'code': 'tr', 'key': 'settings_language_turkish'},
+      {'code': 'en', 'key': 'settings_language_english'},
+      {'code': 'de', 'key': 'settings_language_german'},
+      {'code': 'es', 'key': 'settings_language_spanish'},
+      {'code': 'fr', 'key': 'settings_language_french'},
+      {'code': 'pt', 'key': 'settings_language_portuguese'},
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(context).viewInsets.bottom,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 8),
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'settings_language_title'.tr(),
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                ...languages.map((lang) {
+                  final code = lang['code']!;
+                  final isSelected = context.locale.languageCode == code;
+                  return ListTile(
+                    leading: Text(
+                      _languageFlags[code] ?? '',
+                      style: const TextStyle(fontSize: 24),
+                    ),
+                    title: Text(
+                      lang['key']!.tr(),
+                      style: TextStyle(
+                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      ),
+                    ),
+                    trailing: isSelected
+                        ? Icon(Icons.check_circle, color: Theme.of(context).colorScheme.primary)
+                        : null,
+                    onTap: () {
+                      context.setLocale(Locale(code));
+                      Navigator.pop(context);
+                    },
+                  );
+                }),
+                const SizedBox(height: 16),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -117,30 +215,11 @@ class _SettingsPageState extends State<SettingsPage> {
           const Divider(),
           // Dil Seçimi
           ListTile(
-            title: Text(
-              'settings_language_title'.tr(),
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => context.setLocale(const Locale('tr')),
-                    child: Text('settings_language_turkish'.tr()),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => context.setLocale(const Locale('en')),
-                    child: Text('settings_language_english'.tr()),
-                  ),
-                ),
-              ],
-            ),
+            leading: const Icon(Icons.language),
+            title: Text('settings_language_title'.tr()),
+            subtitle: Text(_getCurrentLanguageName(context)),
+            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+            onTap: () => _showLanguageBottomSheet(context),
           ),
           const Divider(),
           // Firebase / Hesap Yönetimi
@@ -402,7 +481,7 @@ class _SettingsPageState extends State<SettingsPage> {
           ListTile(
             leading: const Icon(Icons.info_outline),
             title: Text('settings_version'.tr()),
-            subtitle: Text('$appVersion ($buildNumber)'),
+            subtitle: Text(appVersion),
           ),
           ListTile(
             leading: const Icon(Icons.person),
