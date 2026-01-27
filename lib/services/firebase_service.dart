@@ -1,13 +1,16 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import 'dart:io';
 import '../tarifler_data/tarif_data.dart';
 import '../tarifler_data/klasor_data.dart';
 
 class FirebaseService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseStorage _storage = FirebaseStorage.instance;
 
   // Kullanıcı ID'sini al
   String? get userId => _auth.currentUser?.uid;
@@ -45,7 +48,6 @@ class FirebaseService {
           .collection('users')
           .doc(userId)
           .collection('klasorler')
-          .orderBy('createdAt')
           .get();
 
       return snapshot.docs.map((doc) {
@@ -126,19 +128,10 @@ class FirebaseService {
           .doc(userId)
           .collection('tarifler')
           .where('klasor_id', isEqualTo: klasorId)
-          .orderBy('createdAt')
           .get();
 
       return snapshot.docs.map((doc) {
-        final data = doc.data();
-        return TarifData(
-          tarif_id: data['tarif_id'],
-          tarif_adi: data['tarif_adi'],
-          tarif_aciklama: data['tarif_aciklama'],
-          tarif_resimler: List<String>.from(data['tarif_resimler'] ?? []),
-          klasor_id: data['klasor_id'],
-          isFavorite: data['isFavorite'] ?? false,
-        );
+        return TarifData.fromMap(doc.data());
       }).toList();
     } catch (e) {
       print('Tarif yükleme hatası: $e');
@@ -445,6 +438,106 @@ class FirebaseService {
     } catch (e) {
       print('Hesap silme hatası: $e');
       rethrow; // Hatayı yukarı fırlat ki UI'da gösterebillelim
+    }
+  }
+
+  // ADIM 4: AI Tarafından Üretilen Tarifi Veritabanına Kaydetme
+  Future<void> saveGeneratedRecipeToFirestore(Map<String, dynamic> recipeData, int klasorId) async {
+    if (!isUserLoggedIn) throw Exception('Kullanıcı giriş yapmamış');
+
+    try {
+      final int newTarifId = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+
+      // Malzemeleri alt başlıklarıyla beraber düzenli bir metne çevir
+      StringBuffer malzemelerText = StringBuffer();
+      if (recipeData['icindekiler'] != null) {
+        for (var bolum in recipeData['icindekiler']) {
+          String bolumAdi = bolum['bolum_adi'] ?? '';
+          // Eğer bölüm adı "Genel" değilse ve boş değilse başlık olarak ekle
+          if (bolumAdi.isNotEmpty && bolumAdi != 'Genel') {
+            malzemelerText.writeln('\n--- $bolumAdi ---');
+          }
+          
+          if (bolum['malzemeler'] != null) {
+            for (var malzeme in bolum['malzemeler']) {
+              malzemelerText.writeln('• $malzeme');
+            }
+          }
+        }
+      }
+
+      // Adımları numaralı liste yap
+      StringBuffer adimlarText = StringBuffer(); 
+      if (recipeData['adimlar'] != null) {
+        int stepNum = 1;
+        for (var adim in recipeData['adimlar']) {
+          adimlarText.writeln('$stepNum. $adim');
+          stepNum++;
+        }
+      }
+
+      // Püf noktası varsa ekle
+      String pufNoktasi = recipeData['puf_noktasi'] != null 
+          ? "\n\n💡 Püf Noktası:\n${recipeData['puf_noktasi']}" 
+          : "";
+
+      String fullDescription = 
+          "📝 MALZEMELER:${malzemelerText.toString()}"
+          "\n\n👩‍🍳 YAPILIŞI:\n${adimlarText.toString()}"
+          "$pufNoktasi"
+          "\n\n🔥 Kalori: ${recipeData['kalori'] ?? 'Belirtilmedi'}"
+          "\n⏱️ Süre: ${recipeData['tahmini_sure'] ?? 'Belirtilmedi'}";
+      
+      final tarifMap = {
+        'tarif_id': newTarifId,
+        'tarif_adi': recipeData['baslik'],
+        'tarif_aciklama': fullDescription,
+        'tarif_resimler': [],
+        'klasor_id': klasorId,
+        'isFavorite': false,
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+        'source': 'AI',
+      };
+
+      await _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('tarifler')
+          .doc('${klasorId}_${newTarifId}')
+          .set(tarifMap);
+          
+      print('AI tarifi başarıyla kaydedildi.');
+    } catch (e) {
+      print('AI tarifi kaydetme hatası: $e');
+      throw e;
+    }
+  }
+
+  // Görseli Firebase Storage'a yükle
+  Future<String?> uploadImage(File file) async {
+    if (!isUserLoggedIn) return null;
+
+    try {
+      final String fileName = '${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final Reference ref = _storage
+          .ref()
+          .child('users')
+          .child(userId!)
+          .child('recipes')
+          .child(fileName);
+
+      final UploadTask uploadTask = ref.putFile(file);
+      final TaskSnapshot snapshot = await uploadTask;
+      
+      if (snapshot.state == TaskState.success) {
+        final String downloadUrl = await snapshot.ref.getDownloadURL();
+        return downloadUrl;
+      }
+      return null;
+    } catch (e) {
+      print('Görsel yükleme hatası: $e');
+      return null;
     }
   }
 }

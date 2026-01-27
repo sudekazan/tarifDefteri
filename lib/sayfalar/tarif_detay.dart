@@ -34,54 +34,102 @@ class _TarifDetayState extends State<TarifDetay> {
     String currentType = '';
     List<String> currentItems = [];
     
+    // Helper to check headers (Improved)
+    bool isHeader(String line, List<String> keywords) {
+      String lower = line.replaceAll(':', '').trim().toLowerCase();
+      
+      // Ignore numbered items or bullets (prevent false positives like "2. İç malzemelerini karıştırın")
+      if (RegExp(r'^\d+').hasMatch(lower)) return false;
+      if (lower.startsWith('*') || lower.startsWith('-') || lower.startsWith('•')) return false;
+
+      // Çok uzun satırları başlık olarak kabul etme (Yanlış pozitifleri önle)
+      if (lower.length > 40) return false; 
+      
+      for (var k in keywords) {
+         if (lower.contains(k.toLowerCase())) return true;
+      }
+      return false;
+    }
+    
     for (String line in lines) {
       final trimmed = line.trim();
       if (trimmed.isEmpty) continue;
       
-      // Başlık kontrolü
-      if (trimmed.toLowerCase() == 'malzemeler') {
+      // Başlık kontrolü (Çok dilli ve esnek)
+      if (isHeader(trimmed, ['malzemeler', 'ingredients', 'içindekiler'])) {
         _addSectionIfNotEmpty(currentSection, currentType, currentItems);
-        currentSection = 'Malzemeler';
+        currentSection = trimmed.replaceAll(':', '');
         currentType = 'malzemeler';
         currentItems = [];
-      } else if (trimmed.toLowerCase() == 'harç') {
+      } else if (isHeader(trimmed, ['harç', 'filling', 'iç harcı'])) {
         _addSectionIfNotEmpty(currentSection, currentType, currentItems);
-        currentSection = 'Harç';
+        currentSection = trimmed.replaceAll(':', '');
         currentType = 'harc';
         currentItems = [];
-      } else if (trimmed.toLowerCase() == 'hamuru') {
+      } else if (isHeader(trimmed, ['hamuru', 'dough', 'hamur'])) {
         _addSectionIfNotEmpty(currentSection, currentType, currentItems);
-        currentSection = 'Hamuru';
+        currentSection = trimmed.replaceAll(':', '');
         currentType = 'hamur';
         currentItems = [];
-      } else if (trimmed.toLowerCase() == 'şerbeti') {
+      } else if (isHeader(trimmed, ['şerbeti', 'syrup', 'şerbet', 'serbet'])) {
         _addSectionIfNotEmpty(currentSection, currentType, currentItems);
-        currentSection = 'Şerbeti';
+        currentSection = trimmed.replaceAll(':', '');
         currentType = 'serbet';
         currentItems = [];
-      } else if (trimmed.toLowerCase() == 'yapılışı') {
+      } else if (isHeader(trimmed, ['sosu', 'sauce', 'sos'])) {
         _addSectionIfNotEmpty(currentSection, currentType, currentItems);
-        currentSection = 'Yapılışı';
+        currentSection = trimmed.replaceAll(':', '');
+        currentType = 'sos';
+        currentItems = [];
+      } else if (isHeader(trimmed, ['püf noktası', 'tips', 'puf noktasi', 'chef notes'])) {
+        _addSectionIfNotEmpty(currentSection, currentType, currentItems);
+        currentSection = trimmed.replaceAll(':', '');
+        currentType = 'puf_noktasi';
+        currentItems = [];
+      } else if (isHeader(trimmed, ['yapılışı', 'instructions', 'steps', 'hazırlanışı', 'tarif', 'yapilis'])) {
+        _addSectionIfNotEmpty(currentSection, currentType, currentItems);
+        currentSection = trimmed.replaceAll(':', '');
         currentType = 'yapilis';
         currentItems = [];
-      } else if (trimmed.toLowerCase() == 'linkler') {
+      } else if (isHeader(trimmed, ['linkler', 'links'])) {
         _addSectionIfNotEmpty(currentSection, currentType, currentItems);
-        currentSection = 'Linkler';
+        currentSection = trimmed.replaceAll(':', '');
         currentType = 'linkler';
         currentItems = [];
-      } else if (trimmed.startsWith('*') || trimmed.startsWith('•') || RegExp(r'^\d+\.').hasMatch(trimmed) || trimmed.startsWith('🔗')) {
+      } else if (trimmed.startsWith('*') || trimmed.startsWith('•') || trimmed.startsWith('-') || RegExp(r'^\d+\.').hasMatch(trimmed) || trimmed.startsWith('🔗')) {
         // Madde ekle
         String item = trimmed;
-        if (trimmed.startsWith('*') || trimmed.startsWith('•')) {
+        if (trimmed.startsWith('*') || trimmed.startsWith('•') || trimmed.startsWith('-')) {
           item = trimmed.substring(1).trim();
         } else if (trimmed.startsWith('🔗')) {
-          // Emoji'yi güvenli şekilde kaldır
           item = trimmed.replaceFirst('🔗', '').trim();
         } else {
           item = trimmed.replaceFirst(RegExp(r'^\d+\.\s*'), '').trim();
         }
+        
         if (item.isNotEmpty) {
-          currentItems.add(item);
+           // Eğer madde geldi ama henüz bir başlık yoksa, varsayılan olarak 'Malzemeler' başlat
+           if (currentSection.isEmpty) {
+             currentSection = 'recipe_section_ingredients'.tr();
+             currentType = 'malzemeler';
+           }
+           currentItems.add(item);
+        }
+      } else {
+        // Başlık değil, madde işareti yok. Düz metin.
+        // Eğer kısa ve kalınsa başlık olabilir ama yukarıdaki kelimelere uymamış
+        // Veya bir önceki maddenin devamı.
+        
+        if (currentSection.isEmpty && currentItems.isEmpty) {
+           // Belki de "Genel" bir başlık? Veya AI sadece "Malzemeler İçin:" dedi ama split yüzünden ayrı kaldı?
+           // Şimdilik görmezden gel veya Description'a ekle.
+           // Ancak üstteki 'isHeader' zaten çoğu şeyi yakalar.
+        } else if (currentItems.isNotEmpty) {
+           // Bir önceki maddeye ekle (multiline support)
+           currentItems[currentItems.length - 1] += ' $trimmed';
+        } else {
+            // Section var ama madde yok. Description gibi ekle.
+            currentItems.add(trimmed);
         }
       }
     }
@@ -91,6 +139,8 @@ class _TarifDetayState extends State<TarifDetay> {
   }
   
   void _addSectionIfNotEmpty(String title, String type, List<String> items) {
+    // items boş olsa bile eğer title varsa ekle (nadiren başlık olup içerik olmayabilir ama başlık kaybolmasın)
+    // Ancak usually title ve items lazım. Fakat veri kaybını önlemek için title varsa ekleyelim.
     if (title.isNotEmpty && items.isNotEmpty) {
       sections.add({
         'title': title,
@@ -112,6 +162,10 @@ class _TarifDetayState extends State<TarifDetay> {
         return Icons.circle;
       case 'serbet':
         return Icons.water_drop;
+      case 'sos':
+        return Icons.soup_kitchen;
+      case 'puf_noktasi':
+        return Icons.lightbulb;
       case 'linkler':
         return Icons.link;
       default:
@@ -175,11 +229,24 @@ class _TarifDetayState extends State<TarifDetay> {
             padding: const EdgeInsets.all(8),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(12),
-              child: Image.file(File(imagePath), fit: BoxFit.contain),
+              child: imagePath.startsWith('http')
+                  ? Image.network(imagePath, fit: BoxFit.contain)
+                  : Image.file(File(imagePath), fit: BoxFit.contain),
             ),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildErrorWidget(IconData icon, String message) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(icon, size: 64, color: Colors.grey[600]),
+        const SizedBox(height: 8),
+        Text(message, style: TextStyle(color: Colors.grey[600])),
+      ],
     );
   }
 
@@ -284,14 +351,8 @@ class _TarifDetayState extends State<TarifDetay> {
                     itemCount: widget.tarif.tarif_resimler.length,
                     itemBuilder: (context, index) {
                       final imagePath = widget.tarif.tarif_resimler[index];
-                      final imageFile = File(imagePath);
-                      
                       return GestureDetector(
-                        onTap: () {
-                          if (imageFile.existsSync()) {
-                            _showBigPhoto(imagePath);
-                          }
-                        },
+                        onTap: () => _showBigPhoto(imagePath),
                         child: Container(
                           margin: const EdgeInsets.symmetric(horizontal: 4),
                           child: ClipRRect(
@@ -299,56 +360,43 @@ class _TarifDetayState extends State<TarifDetay> {
                             child: Stack(
                               fit: StackFit.expand,
                               children: [
-                                // Dosya varlığını kontrol et
-                                imageFile.existsSync()
-                                    ? Image.file(
-                                        imageFile,
+                                // Görseli göster
+                                imagePath.startsWith('http')
+                                    ? Image.network(
+                                        imagePath,
                                         fit: BoxFit.cover,
-                                        errorBuilder:
-                                            (context, error, stackTrace) {
-                                          return Container(
-                                            color: Colors.grey[300],
-                                            child: Column(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.center,
-                                              children: [
-                                                Icon(
-                                                  Icons.broken_image,
-                                                  size: 64,
-                                                  color: Colors.grey[600],
-                                                ),
-                                                const SizedBox(height: 8),
-                                                Text(
-                                                  'image_load_error'.tr(),
-                                                  style: TextStyle(
-                                                      color:
-                                                          Colors.grey[600]),
-                                                ),
-                                              ],
+                                        loadingBuilder: (context, child, loadingProgress) {
+                                          if (loadingProgress == null) return child;
+                                          return Center(
+                                            child: CircularProgressIndicator(
+                                              value: loadingProgress.expectedTotalBytes != null
+                                                  ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                                                  : null,
                                             ),
                                           );
                                         },
+                                        errorBuilder: (context, error, stackTrace) {
+                                          return Container(
+                                            color: Colors.grey[300],
+                                            child: _buildErrorWidget(Icons.broken_image, 'image_load_error'.tr()),
+                                          );
+                                        },
                                       )
-                                    : Container(
-                                        color: Colors.grey[300],
-                                        child: Column(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          children: [
-                                            Icon(
-                                              Icons.image_not_supported,
-                                              size: 64,
-                                              color: Colors.grey[600],
-                                            ),
-                                            const SizedBox(height: 8),
-                                            Text(
-                                              'image_not_found'.tr(),
-                                              style: TextStyle(
-                                                  color: Colors.grey[600]),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
+                                    : File(imagePath).existsSync()
+                                        ? Image.file(
+                                            File(imagePath),
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (context, error, stackTrace) {
+                                              return Container(
+                                                color: Colors.grey[300],
+                                                child: _buildErrorWidget(Icons.broken_image, 'image_load_error'.tr()),
+                                              );
+                                            },
+                                          )
+                                        : Container(
+                                            color: Colors.grey[300],
+                                            child: _buildErrorWidget(Icons.image_not_supported, 'image_not_found'.tr()),
+                                          ),
                                 // Görsel sayısını göster
                                 if (widget.tarif.tarif_resimler.length > 1)
                                   Positioned(

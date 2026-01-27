@@ -9,13 +9,17 @@ import 'package:path/path.dart' as path;
 import '../widgets/banner_ad_widget.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:easy_localization/easy_localization.dart';
+import '../services/ai_recipe_service.dart';
+import '../services/firebase_service.dart';
 
 class TarifOlusturma extends StatefulWidget {
   @override
   State<TarifOlusturma> createState() => _TarifOlusturmaState();
   TarifData tarifData;
+  final Map<String, dynamic>? aiResultMap;
+  final bool isManual;
 
-  TarifOlusturma({required this.tarifData});
+  TarifOlusturma({required this.tarifData, this.aiResultMap, this.isManual = false});
 }
 
 class _TarifOlusturmaState extends State<TarifOlusturma> {
@@ -27,6 +31,10 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
   
   // Her section için TextField controller'ı
   Map<int, TextEditingController> sectionControllers = {};
+  
+  bool isAiGenerated = false;
+  final FirebaseService _firebaseService = FirebaseService();
+  bool _isUploading = false;
 
   // Görseli kalıcı klasöre kopyala
   Future<String> _copyImageToPermanentLocation(String sourcePath) async {
@@ -43,28 +51,17 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
         }
         // Dosya yoksa devam et (tekrar kopyalamaya çalış)
       }
-      
-      // Images klasörünü oluştur
-      final Directory imagesDirectory = Directory(imagesDir);
-      if (!await imagesDirectory.exists()) {
-        await imagesDirectory.create(recursive: true);
+
+      // Klasör yoksa oluştur
+      if (!await Directory(imagesDir).exists()) {
+        await Directory(imagesDir).create(recursive: true);
       }
-      
-      // Kaynak dosyanın var olduğunu kontrol et
-      final File sourceFile = File(sourcePath);
-      if (!await sourceFile.exists()) {
-        print('HATA: Kaynak dosya bulunamadı: $sourcePath');
-        throw Exception('Kaynak dosya bulunamadı');
-      }
-      
-      // Benzersiz dosya adı oluştur
+
       final String fileName = '${DateTime.now().millisecondsSinceEpoch}_${path.basename(sourcePath)}';
       final String destinationPath = path.join(imagesDir, fileName);
-      
-      // Dosyayı kopyala
-      print('Görsel kopyalanıyor: $sourcePath -> $destinationPath');
-      final File destinationFile = await sourceFile.copy(destinationPath);
-      
+      final File destinationFile = File(destinationPath);
+
+      await File(sourcePath).copy(destinationPath);
       // Kopyalanan dosyanın var olduğunu doğrula
       if (await destinationFile.exists()) {
         print('Görsel başarıyla kopyalandı: $destinationPath');
@@ -88,13 +85,18 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
     super.initState();
     var tarifData = widget.tarifData;
     tfTaridAdi.text = tarifData.tarif_adi;
-    // Mevcut tarif açıklamasını sections'a dönüştür
-    _parseExistingTarif(tarifData.tarif_aciklama);
-    // Mevcut görselleri yükle
-    _loadExistingImages(tarifData.tarif_resimler);
     
-    // Yeni tarif ise (düzenleme değilse) otomatik olarak "Malzemeler" bölümünü ekle
-    if (tarifData.tarif_adi.isEmpty && sections.isEmpty) {
+    // Check if we have AI result data
+    if (widget.aiResultMap != null) {
+      isAiGenerated = true;
+      _parseAiResult(widget.aiResultMap!);
+    } 
+    // Otherwise check for existing string description
+    else if (tarifData.tarif_aciklama.isNotEmpty) {
+      _parseExistingTarif(tarifData.tarif_aciklama);
+    }
+    // New recipe, add default empty ingredient section
+    else if (sections.isEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         setState(() {
           sections.add({
@@ -105,6 +107,70 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
         });
       });
     }
+
+    // Mevcut görselleri yükle
+    _loadExistingImages(tarifData.tarif_resimler);
+  }
+
+  void _parseAiResult(Map<String, dynamic> aiData) {
+    if (aiData.containsKey('icindekiler')) {
+      var icindekiler = aiData['icindekiler'];
+      if (icindekiler is List) {
+        for (var grup in icindekiler) {
+          if (grup is Map) {
+            String? bolumAdi = grup['bolum_adi'];
+            List<dynamic>? malzemeler = grup['malzemeler'];
+            
+            String sectionType = 'malzemeler';
+            // Auto-detect type from AI title
+            if (bolumAdi != null) {
+                String lower = bolumAdi.toLowerCase();
+                if (lower.contains('sos')) sectionType = 'sos';
+                else if (lower.contains('hamur')) sectionType = 'hamur';
+                else if (lower.contains('iç') || lower.contains('harç')) sectionType = 'harc';
+                else if (lower.contains('şerbet') || lower.contains('serbet')) sectionType = 'serbet';
+                else if (lower.contains('püf') || lower.contains('ipucu')) sectionType = 'puf_noktasi';
+            }
+
+            if (malzemeler != null) {
+               sections.add({
+                 'title': bolumAdi ?? 'recipe_section_ingredients'.tr(),
+                 'type': sectionType,
+                 'items': List<String>.from(malzemeler.map((e) => e.toString())),
+                 'isExpanded': true,
+               });
+            }
+          }
+        }
+      }
+    }
+
+    if (aiData.containsKey('adimlar')) {
+      var adimlar = aiData['adimlar'];
+      if (adimlar is List) {
+        sections.add({
+          'title': 'recipe_section_instructions'.tr(),
+          'type': 'yapilis',
+          'items': List<String>.from(adimlar.map((e) => e.toString())),
+          'isExpanded': true,
+        });
+      }
+    }
+
+    if (aiData.containsKey('puf_noktasi')) {
+      var puf = aiData['puf_noktasi'];
+      if (puf != null && puf.toString().isNotEmpty) {
+         sections.add({
+           'title': 'Püf Noktası',
+           'type': 'puf_noktasi',
+           'items': [puf.toString()],
+           'isExpanded': true,
+         });
+      }
+    }
+    
+    // Refresh UI
+    if (mounted) setState(() {});
   }
 
   // Mevcut görselleri yükle
@@ -114,6 +180,10 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
         photos = existingImagePaths.map((path) => XFile(path)).toList();
       });
     }
+  }
+
+  bool _isNetworkUrl(String path) {
+    return path.startsWith('http://') || path.startsWith('https://');
   }
   @override
   void dispose() {
@@ -139,6 +209,8 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
     final syrupTitles = ['şerbeti', 'syrup', 'sirup', 'almíbar', 'sirop', 'calda'];
     final instructionTitles = ['yapılışı', 'instructions', 'anleitung', 'instrucciones'];
     final linkTitles = ['linkler', 'links', 'enlaces', 'liens'];
+    final sauceTitles = ['sosu', 'sos', 'sauce', 'soße', 'salsa', 'molho'];
+    final tipTitles = ['püf noktası', 'püf noktalari', 'püf noktaları', 'tips', 'tipps', 'consejos', 'astuces', 'dicas'];
     
     for (String line in lines) {
       final trimmed = line.trim();
@@ -177,6 +249,16 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
         currentSection = trimmed;
         currentType = 'linkler';
         currentItems = [];
+      } else if (sauceTitles.contains(lowerTrimmed)) {
+        _addSectionIfNotEmpty(currentSection, currentType, currentItems);
+        currentSection = trimmed;
+        currentType = 'sos';
+        currentItems = [];
+      } else if (tipTitles.contains(lowerTrimmed)) {
+        _addSectionIfNotEmpty(currentSection, currentType, currentItems);
+        currentSection = trimmed;
+        currentType = 'puf_noktasi';
+        currentItems = [];
       } else if (trimmed.startsWith('*') || trimmed.startsWith('•') || trimmed.startsWith('🔗') || RegExp(r'^\d+\.').hasMatch(trimmed)) {
         // Madde ekle
         String item = trimmed;
@@ -205,6 +287,190 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
         'type': type,
         'items': List.from(items),
       });
+    }
+  }
+
+  // Yapay Zeka ile Tarif Oluştur
+  Future<void> _generateRecipeWithAI() async {
+    // Yemek adı boşsa uyarı ver
+    if (tfTaridAdi.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('ai_name_warning'.tr()),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    // Yükleniyor dialogu göster - İyileştirilmiş UI
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        child: Container(
+          padding: EdgeInsets.all(24),
+          decoration: BoxDecoration(
+             color: Theme.of(context).cardColor,
+             borderRadius: BorderRadius.circular(24),
+             boxShadow: [
+               BoxShadow(
+                 color: Colors.black26,
+                 blurRadius: 16,
+                 offset: Offset(0, 4),
+               )
+             ]
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Özel bir animasyonlu ikon yerine şimdilik renkli progress indicator
+              SizedBox(
+                height: 60,
+                width: 60,
+                child: CircularProgressIndicator(
+                  strokeWidth: 4,
+                  valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).primaryColor),
+                  backgroundColor: Theme.of(context).primaryColor.withOpacity(0.2),
+                ),
+              ),
+              SizedBox(height: 24),
+              Text(
+                'ai_generating_title'.tr(),
+                style: TextStyle(
+                  fontSize: 18, 
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).textTheme.bodyLarge?.color
+                ),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: 12),
+              Text(
+                'ai_generating_message'.tr(),
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.8),
+                  height: 1.4,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    try {
+      final aiService = AiRecipeService();
+      final recipeData = await aiService.generateRecipe(tfTaridAdi.text.trim());
+      
+      // Dialogu kapat
+      Navigator.pop(context);
+
+      // Gelen veriyi form alanlarına doldur
+      setState(() {
+        // Mevcut bölümleri temizle
+        sections.clear();
+        
+        // --- MALZEMELER PARSING ---
+        var icindekilerData = recipeData['icindekiler'] ?? recipeData['ingredients'];
+        
+        // 1. Durum: icindekiler bir liste (Beklenen format)
+        if (icindekilerData != null && icindekilerData is List) {
+          for (var bolum in icindekilerData) {
+             if (bolum is! Map) continue; // Hatalı format koruması
+
+             String bolumAdi = bolum['bolum_adi'] ?? bolum['section_name'] ?? bolum['title'] ?? 'Genel';
+             var mData = bolum['malzemeler'] ?? bolum['ingredients'] ?? [];
+             List<String> malzemeler = [];
+             
+             if (mData is List) {
+               malzemeler = List<String>.from(mData.map((e) => e.toString()));
+             } else if (mData is String) {
+               malzemeler = mData.split('\n').where((e) => e.trim().isNotEmpty).toList();
+             }
+             
+             String title = bolumAdi == 'Genel' ? 'recipe_section_ingredients'.tr() : bolumAdi;
+             
+             // Tip belirle
+             String type = 'malzemeler';
+             String lowerTitle = title.toLowerCase();
+             
+             if (lowerTitle.contains('sos') || lowerTitle.contains('sauce')) type = 'sos'; 
+             else if (lowerTitle.contains('hamur') || lowerTitle.contains('dough')) type = 'hamur';
+             else if (lowerTitle.contains('şerbet') || lowerTitle.contains('serbet') || lowerTitle.contains('syrup')) type = 'serbet';
+             else if (lowerTitle.contains('harç') || lowerTitle.contains('harc') || lowerTitle.contains('filling')) type = 'harc';
+             
+             _addSectionIfNotEmpty(title, type, malzemeler);
+          }
+        } 
+        // 2. Durum: icindekiler yerine direkt üst seviyede malzemeler var (Tekdüze format)
+        else {
+           var flatMalzemeler = recipeData['malzemeler'] ?? recipeData['ingredients'];
+           if (flatMalzemeler != null) {
+              List<String> list = [];
+              if (flatMalzemeler is List) {
+                list = List<String>.from(flatMalzemeler.map((e) => e.toString()));
+              } else if (flatMalzemeler is String) {
+                list = flatMalzemeler.split('\n').where((e) => e.trim().isNotEmpty).toList();
+              }
+              _addSectionIfNotEmpty('recipe_section_ingredients'.tr(), 'malzemeler', list);
+           }
+        }
+
+        // --- ADIMLAR PARSING ---
+        var adimlarData = recipeData['adimlar'] ?? recipeData['steps'] ?? recipeData['instructions'];
+        if (adimlarData != null) {
+          List<String> adimlar = [];
+          if (adimlarData is List) {
+             adimlar = List<String>.from(adimlarData.map((e) => e.toString()));
+          } else if (adimlarData is String) {
+             adimlar = adimlarData.split('\n').where((e) => e.trim().isNotEmpty).toList();
+          }
+          
+          _addSectionIfNotEmpty(
+            'recipe_section_instructions'.tr(), 
+            'yapilis', 
+            adimlar
+          );
+        }
+
+        // --- PÜF NOKTASI PARSING ---
+        var pufData = recipeData['puf_noktasi'] ?? recipeData['tips'] ?? recipeData['tip'] ?? recipeData['chef_notes'];
+        if (pufData != null && pufData.toString().isNotEmpty) {
+           _addSectionIfNotEmpty(
+            'Püf Noktası', 
+            'puf_noktasi', 
+            [pufData.toString()]
+          );
+        }
+      });
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('ai_success_message'.tr()), 
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      
+      setState(() {
+        isAiGenerated = true;
+      });
+
+
+    } catch (e) {
+      // Dialogu kapat
+      Navigator.pop(context);
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${'ai_error_title'.tr()}: ${e.toString().replaceAll("Exception:", "")}'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     }
   }
   
@@ -375,81 +641,151 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Görsel önizleme kartı
-                    if (photos.isNotEmpty)
-                      Card(
-                        margin: const EdgeInsets.only(bottom: 16),
-                        color: Theme.of(context).cardColor,
-                        child: Padding(
-                          padding: const EdgeInsets.all(12.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
+                    // Görsel Önizleme Carousel (Yatay Liste)
+                    Container(
+                      height: 140,
+                      margin: const EdgeInsets.only(bottom: 20),
+                      child: ListView(
+                        scrollDirection: Axis.horizontal,
+                        children: [
+                          // Fotoğraf Ekle Butonu (Kart şeklinde)
+                          GestureDetector(
+                            onTap: () async {
+                              final picked = await _picker.pickMultiImage();
+                              if (picked != null && picked.isNotEmpty) {
+                                setState(() {
+                                  photos.addAll(picked);
+                                });
+                              }
+                            },
+                            child: Container(
+                              width: 120,
+                              margin: const EdgeInsets.only(right: 12),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).primaryColor.withOpacity(0.05),
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: Theme.of(context).primaryColor.withOpacity(0.2),
+                                  width: 2,
+                                  style: BorderStyle.solid,
+                                ),
+                              ),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Text('recipe_edit_photos_title'.tr(), style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Theme.of(context).textTheme.bodyLarge?.color)),
-                                  const Spacer(),
-                                  IconButton(
-                                    icon: const Icon(Icons.delete, color: Colors.red),
-                                    onPressed: () {
-                                      setState(() {
-                                        photos.clear();
-                                      });
-                                    },
+                                  Icon(Icons.add_a_photo_rounded, 
+                                    size: 32, 
+                                    color: Theme.of(context).primaryColor
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'recipe_edit_add_photo_tooltip'.tr(),
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: Theme.of(context).primaryColor,
+                                    ),
+                                    textAlign: TextAlign.center,
                                   ),
                                 ],
                               ),
-                              Wrap(
-                                spacing: 8,
-                                children: photos.map((photo) => Stack(
-                                  alignment: Alignment.topRight,
-                                  children: [
-                                    GestureDetector(
+                            ),
+                          ),
+                          
+                          // Eklenen Fotoğraflar
+                          ...photos.map((photo) => Container(
+                            width: 120,
+                            margin: const EdgeInsets.only(right: 12),
+                            child: Stack(
+                              children: [
+                                // Fotoğraf Kartı
+                                Card(
+                                  elevation: 4,
+                                  margin: EdgeInsets.zero,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(16),
+                                    child: GestureDetector(
                                       onTap: () {
                                         if (File(photo.path).existsSync()) {
                                           _showBigPhoto(File(photo.path));
                                         }
                                       },
-                                      child: File(photo.path).existsSync()
-                                        ? Image.file(
-                                            File(photo.path),
-                                            width: 80,
-                                            height: 80,
+                                      child: _isNetworkUrl(photo.path)
+                                        ? Image.network(
+                                            photo.path,
+                                            width: 120,
+                                            height: 140,
                                             fit: BoxFit.cover,
+                                            loadingBuilder: (context, child, loadingProgress) {
+                                              if (loadingProgress == null) return child;
+                                              return Center(
+                                                child: CircularProgressIndicator(
+                                                  value: loadingProgress.expectedTotalBytes != null
+                                                      ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                                                      : null,
+                                                ),
+                                              );
+                                            },
                                             errorBuilder: (context, error, stackTrace) {
                                               return Container(
-                                                width: 80,
-                                                height: 80,
-                                                color: Colors.grey[300],
-                                                child: Icon(Icons.broken_image, color: Colors.grey[600]),
+                                                color: Colors.grey[200],
+                                                child: Icon(Icons.broken_image, color: Colors.grey[400]),
                                               );
                                             },
                                           )
-                                        : Container(
-                                            width: 80,
-                                            height: 80,
-                                            color: Colors.grey[300],
-                                            child: Icon(Icons.image_not_supported, color: Colors.grey[600]),
-                                          ),
+                                        : File(photo.path).existsSync()
+                                          ? Image.file(
+                                              File(photo.path),
+                                              width: 120,
+                                              height: 140,
+                                              fit: BoxFit.cover,
+                                              errorBuilder: (context, error, stackTrace) {
+                                                return Container(
+                                                  color: Colors.grey[200],
+                                                  child: Icon(Icons.broken_image, color: Colors.grey[400]),
+                                                );
+                                              },
+                                            )
+                                          : Container(
+                                              color: Colors.grey[200],
+                                              child: Icon(Icons.image_not_supported, color: Colors.grey[400]),
+                                            ),
                                     ),
-                                    GestureDetector(
-                                      onTap: () {
-                                        setState(() {
-                                          photos.remove(photo);
-                                        });
-                                      },
-                                      child: Container(
-                                        color: Theme.of(context).primaryColor,
-                                        child: const Icon(Icons.close, color: Colors.white, size: 18),
+                                  ),
+                                ),
+                                // Silme Butonu (Sağ Üst)
+                                Positioned(
+                                  top: 4,
+                                  right: 4,
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      setState(() {
+                                        photos.remove(photo);
+                                      });
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.all(4),
+                                      decoration: BoxDecoration(
+                                        color: Colors.black45,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(
+                                        Icons.close,
+                                        color: Colors.white,
+                                        size: 16,
                                       ),
                                     ),
-                                  ],
-                                )).toList(),
-                              ),
-                            ],
-                          ),
-                        ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )).toList(),
+                        ],
                       ),
+                    ),
                     Container(
                       decoration: BoxDecoration(
                         color: Theme.of(context).cardColor,
@@ -483,7 +819,8 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
                               ),
                             ),
                           ),
-                          const SizedBox(height: 20),
+                          const SizedBox(height: 12),
+
                           Row(
                             children: [
                               Expanded(
@@ -802,26 +1139,61 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
                             }
                           }
                           
-                          // Görselleri kalıcı konuma kopyala ve kaydet
+                          // Görselleri işle ve kaydet
                           List<String> resimYollari = [];
+                          
                           if (photos.isNotEmpty) {
-                            List<String> tempYollar = await Future.wait(
-                              photos.map((photo) async => await _copyImageToPermanentLocation(photo.path))
+                            // Loading göster
+                            showDialog(
+                              context: context,
+                              barrierDismissible: false,
+                              builder: (context) => const Center(
+                                child: CircularProgressIndicator(),
+                              ),
                             );
-                            // Boş yolları filtrele
-                            resimYollari = tempYollar.where((yol) => yol.isNotEmpty).toList();
+
+                            try {
+                              for (var photo in photos) {
+                                if (_isNetworkUrl(photo.path)) {
+                                  // Zaten bulutta olan görsel
+                                  resimYollari.add(photo.path);
+                                } else {
+                                  // Yeni yerel görsel - önce yerel hafızaya kopyala
+                                  String localPath = await _copyImageToPermanentLocation(photo.path);
+                                  
+                                  // Eğer kullanıcı giriş yapmışsa buluta yükle
+                                  if (_firebaseService.isUserLoggedIn && localPath.isNotEmpty) {
+                                    String? cloudUrl = await _firebaseService.uploadImage(File(localPath));
+                                    if (cloudUrl != null) {
+                                      resimYollari.add(cloudUrl);
+                                    } else {
+                                      resimYollari.add(localPath); // Yükleme başarısızsa yerel yolu tut
+                                    }
+                                  } else {
+                                    resimYollari.add(localPath);
+                                  }
+                                }
+                              }
+                            } catch (e) {
+                              print('Görsel işleme hatası: $e');
+                            } finally {
+                              // Loading kapat
+                              if (mounted) Navigator.pop(context);
+                            }
                           }
                           
                           print('Kaydedilecek görsel sayısı: ${resimYollari.length}');
                           print('Görsel yolları: $resimYollari');
                           
-                          Navigator.pop(context, TarifData(
-                            tarif_id: widget.tarifData.tarif_id,
-                            tarif_adi: tfTaridAdi.text.trim(),
-                            tarif_aciklama: tarifAciklama.trim(),
-                            tarif_resimler: resimYollari,
-                            klasor_id: widget.tarifData.klasor_id,
-                          ));
+                          if (mounted) {
+                            Navigator.pop(context, TarifData(
+                              tarif_id: widget.tarifData.tarif_id,
+                              tarif_adi: tfTaridAdi.text.trim(),
+                              tarif_aciklama: tarifAciklama.trim(),
+                              tarif_resimler: resimYollari,
+                              klasor_id: widget.tarifData.klasor_id,
+                            ));
+                          }
                         },
                         child: Text(
                           'recipe_edit_save_button'.tr(),
@@ -895,6 +1267,8 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
       {'type': 'yapilis', 'title': 'recipe_section_instructions'.tr()},
       {'type': 'hamur', 'title': 'recipe_section_dough'.tr()},
       {'type': 'serbet', 'title': 'recipe_section_syrup'.tr()},
+      {'type': 'sos', 'title': 'Sosu'},
+      {'type': 'puf_noktasi', 'title': 'Püf Noktası'},
       {'type': 'linkler', 'title': 'recipe_section_links'.tr()},
     ];
 
@@ -933,6 +1307,10 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
         return 'recipe_section_syrup'.tr();
       case 'linkler':
         return 'recipe_section_links'.tr();
+      case 'sos':
+        return 'Sosu';
+      case 'puf_noktasi':
+        return 'Püf Noktası';
       default:
         return '';
     }
@@ -952,6 +1330,10 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
         return Icons.water_drop;
       case 'linkler':
         return Icons.link;
+      case 'sos':
+        return Icons.soup_kitchen;
+      case 'puf_noktasi':
+        return Icons.lightbulb;
       default:
         return Icons.category;
     }

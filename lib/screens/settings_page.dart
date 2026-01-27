@@ -1,7 +1,9 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../theme/app_theme.dart';
 import '../auth_screen.dart';
 import '../services/firebase_service.dart';
@@ -160,6 +162,35 @@ class _SettingsPageState extends State<SettingsPage> {
         );
       },
     );
+  }
+
+  Future<void> _rateApp() async {
+    final String packageName = "com.sudekazan.tarif_defteri_yeni";
+    final Uri url = Uri.parse(
+      Platform.isAndroid
+          ? "market://details?id=$packageName"
+          : "https://apps.apple.com/app/idYOUR_APP_ID", // TODO: iOS App ID ekleyin
+    );
+    
+    try {
+      if (await canLaunchUrl(url)) {
+        await launchUrl(url, mode: LaunchMode.externalApplication);
+      } else {
+        // Market linki çalışmazsa (emülatör vb.) web linkini dene
+        final Uri webUrl = Uri.parse(
+          Platform.isAndroid
+              ? "https://play.google.com/store/apps/details?id=$packageName"
+              : "https://apps.apple.com/app/idYOUR_APP_ID",
+        );
+        await launchUrl(webUrl, mode: LaunchMode.externalApplication);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Hata: $e')),
+        );
+      }
+    }
   }
 
   @override
@@ -492,6 +523,13 @@ class _SettingsPageState extends State<SettingsPage> {
             leading: const Icon(Icons.email),
             title: Text('settings_contact'.tr()),
             subtitle: const Text('sudekazan1907@gmail.com'),
+          ),
+          ListTile(
+            leading: const Icon(Icons.star_outline, color: Colors.amber),
+            title: Text('settings_rate_app'.tr()),
+            subtitle: Text('settings_rate_app_subtitle'.tr()),
+            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+            onTap: _rateApp,
           ),
           const SizedBox(height: 20),
           // Alt kısımda uygulama adı ve versiyon

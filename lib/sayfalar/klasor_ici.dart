@@ -9,6 +9,8 @@ import 'dart:convert';
 import 'package:share_plus/share_plus.dart';
 import 'dart:io';
 import '../services/firebase_service.dart';
+import '../services/ai_recipe_service.dart';
+import '../services/ad_service.dart';
 import '../widgets/banner_ad_widget.dart';
 
 class KlasorIci extends StatefulWidget {
@@ -30,6 +32,7 @@ class _KlasorIciState extends State<KlasorIci> {
   void initState() {
     super.initState();
     _tarifleriYukle();
+    AdService.loadInterstitialAd();
   }
 
   Future<void> _tarifleriYukle() async {
@@ -116,7 +119,10 @@ class _KlasorIciState extends State<KlasorIci> {
   void _tarifDuzenle(TarifData tarif) async {
     final guncelTarif = await Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => TarifOlusturma(tarifData: tarif)),
+      MaterialPageRoute(builder: (context) => TarifOlusturma(
+        tarifData: tarif,
+        isManual: true,
+      )),
     );
     if (guncelTarif != null && guncelTarif is TarifData && guncelTarif.tarif_adi.isNotEmpty) {
       _tarifGuncelle(guncelTarif);
@@ -136,11 +142,297 @@ class _KlasorIciState extends State<KlasorIci> {
     _tarifleriYukle();
   }
 
+  // AI Service
+  final AiRecipeService _aiRecipeService = AiRecipeService();
+
+  void _showAddOptions() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'add_option_title'.tr(),
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).textTheme.bodyLarge?.color,
+              ),
+            ),
+            const SizedBox(height: 24),
+            _buildOptionTile(
+              icon: Icons.edit_note,
+              color: Colors.orange,
+              title: 'add_option_manual'.tr(),
+              onTap: () {
+                Navigator.pop(context); // Close sheet
+                _yeniTarifEkle(); // Old flow
+              },
+            ),
+            const SizedBox(height: 16),
+            _buildOptionTile(
+              icon: Icons.psychology, 
+              color: Colors.purple,
+              title: 'add_option_ai'.tr(),
+              isLocked: !_firebaseService.isUserLoggedIn,
+              onTap: () {
+                Navigator.pop(context); // Close sheet
+                if (_firebaseService.isUserLoggedIn) {
+                  _showAiDialog(); // New AI flow
+                } else {
+                  // İsteğe bağlı: Giriş sayfasına yönlendir veya mesaj göster
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('ai_login_required'.tr())),
+                  );
+                }
+              },
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOptionTile({
+    required IconData icon,
+    required Color color,
+    required String title,
+    required VoidCallback onTap,
+    bool isLocked = false,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isLocked ? Colors.grey.withOpacity(0.1) : color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: isLocked ? Colors.grey.withOpacity(0.3) : color.withOpacity(0.3)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: isLocked ? Colors.grey.withOpacity(0.2) : color.withOpacity(0.2),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(isLocked ? Icons.lock : icon, color: isLocked ? Colors.grey : color, size: 28),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: isLocked ? Colors.grey : Theme.of(context).textTheme.bodyLarge?.color,
+                    ),
+                  ),
+                  if (isLocked)
+                    Text(
+                      'ai_login_required'.tr(),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.redAccent,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey[400]),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showAiDialog() {
+    final TextEditingController _promptController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('add_option_ai'.tr()),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('ai_input_hint'.tr()),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _promptController,
+              autofocus: true,
+              decoration: InputDecoration(
+                hintText: 'Mantı, Karnıyarık...',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('ai_dialog_cancel'.tr(), style: const TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final text = _promptController.text.trim();
+              if (text.isEmpty) {
+                 ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('ai_name_warning'.tr()), backgroundColor: Colors.red),
+                 );
+                 return;
+              }
+              
+              // Saçma sapan yazı kontrolü (Örn: "asdfasdf" veya çok kısa)
+              if (text.length < 2 || !RegExp(r'[a-zA-ZçğıöşüÇĞİÖŞÜ]').hasMatch(text)) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('ai_error_not_food'.tr()), backgroundColor: Colors.red),
+                );
+                return;
+              }
+
+              Navigator.pop(context); // Close dialog
+              _generateAndNavigate(text); // Start magic
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).primaryColor),
+            child: Text('ai_dialog_create'.tr(), style: const TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _generateAndNavigate(String dishName) async {
+    // Show Loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+             color: Theme.of(context).cardColor,
+             borderRadius: BorderRadius.circular(24),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(color: Theme.of(context).primaryColor),
+              const SizedBox(height: 24),
+              Text(
+                'ai_generating_title'.tr(),
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              const SizedBox(height: 8),
+              Text('ai_generating_message'.tr(), textAlign: TextAlign.center),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    try {
+      // AdMob: Geçiş reklamını göster, kapandıktan sonra AI işlemini başlat
+      AdService.showInterstitialAd(onAdClosed: () async {
+        try {
+          // Reklam kapandıktan sonra AI servisini çağır
+          final recipeData = await _aiRecipeService.generateRecipe(dishName);
+          
+          if (!mounted) return;
+          Navigator.pop(context); // Close Loading
+
+          // Create TarifData from JSON
+          final yeniTarif = TarifData(
+            tarif_id: 0,
+            tarif_adi: recipeData['baslik'] ?? dishName,
+            tarif_aciklama: '',
+            tarif_resimler: [],
+            klasor_id: widget.klasorData.klasor_id,
+            isFavorite: false,
+          );
+
+          // Navigate to Edit Page with Pre-filled Data
+          final result = await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => TarifOlusturma(
+                 tarifData: yeniTarif, 
+                 aiResultMap: recipeData 
+              ),
+            ),
+          );
+
+          if (result != null && result is TarifData) {
+            _tarifEkle(result);
+          }
+        } catch (e) {
+          _handleAiError(e);
+        }
+      });
+
+    } catch (e) {
+      _handleAiError(e);
+    }
+  }
+
+  void _handleAiError(dynamic e) {
+    print('Handling AI Error in UI: $e');
+    if (!mounted) return;
+    
+    // Eğer yükleniyor dialogu hala açıksa kapat (üst üste binmemesi için try-catch içinde güvenli pop)
+    try {
+      if (Navigator.canPop(context)) {
+        Navigator.pop(context); 
+      }
+    } catch (_) {}
+    
+    // Show Error (Validation or Server Error)
+    String message = e.toString();
+    if (message.contains("Exception:")) message = message.replaceAll("Exception:", "").trim();
+    if (message.contains("TimeoutException")) message = "Sunucu yanıt vermedi, lütfen tekrar deneyin.";
+    
+    // Translate specific validation error if strictly matching key, else show raw
+    if (message.contains("yemek tarifi değil") || message.contains("yemek ismi değil")) {
+      message = 'ai_error_not_food'.tr();
+    }
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('ai_error_title'.tr()),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Tamam'),
+          )
+        ],
+      ),
+    );
+  }
+
   void _yeniTarifEkle() async {
     final yeniTarif = await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => TarifOlusturma(
+          isManual: true,
           tarifData: TarifData(
             tarif_id: 0,
             tarif_adi: '',
@@ -254,12 +546,23 @@ class _KlasorIciState extends State<KlasorIci> {
                                     margin: const EdgeInsets.only(right: 12),
                                     child: ClipRRect(
                                       borderRadius: BorderRadius.circular(8),
-                                      child: File(tarif.tarif_resimler.first).existsSync()
-                                        ? Image.file(
-                                            File(tarif.tarif_resimler.first),
+                                      child: tarif.tarif_resimler.first.startsWith('http')
+                                        ? Image.network(
+                                            tarif.tarif_resimler.first,
                                             width: 60,
                                             height: 60,
                                             fit: BoxFit.cover,
+                                            loadingBuilder: (context, child, loadingProgress) {
+                                              if (loadingProgress == null) return child;
+                                              return Center(
+                                                child: CircularProgressIndicator(
+                                                  strokeWidth: 2,
+                                                  value: loadingProgress.expectedTotalBytes != null
+                                                      ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                                                      : null,
+                                                ),
+                                              );
+                                            },
                                             errorBuilder: (context, error, stackTrace) {
                                               return Container(
                                                 color: Colors.grey[300],
@@ -267,10 +570,23 @@ class _KlasorIciState extends State<KlasorIci> {
                                               );
                                             },
                                           )
-                                        : Container(
-                                            color: Colors.grey[300],
-                                            child: Icon(Icons.image_not_supported, color: Colors.grey[600], size: 24),
-                                          ),
+                                        : File(tarif.tarif_resimler.first).existsSync()
+                                          ? Image.file(
+                                              File(tarif.tarif_resimler.first),
+                                              width: 60,
+                                              height: 60,
+                                              fit: BoxFit.cover,
+                                              errorBuilder: (context, error, stackTrace) {
+                                                return Container(
+                                                  color: Colors.grey[300],
+                                                  child: Icon(Icons.broken_image, color: Colors.grey[600], size: 24),
+                                                );
+                                              },
+                                            )
+                                          : Container(
+                                              color: Colors.grey[300],
+                                              child: Icon(Icons.image_not_supported, color: Colors.grey[600], size: 24),
+                                            ),
                                     ),
                                   ),
                                 
@@ -442,7 +758,7 @@ class _KlasorIciState extends State<KlasorIci> {
                 ),
         ),
         floatingActionButton: FloatingActionButton(
-          onPressed: _yeniTarifEkle,
+          onPressed: _showAddOptions,
           backgroundColor: Theme.of(context).floatingActionButtonTheme.backgroundColor,
           child: const Icon(Icons.add, color: Colors.white),
         ),

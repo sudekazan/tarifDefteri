@@ -9,6 +9,7 @@ import 'builders/app_theme_builder.dart';
 import 'widgets/klasorler_with_theme.dart';
 import 'screens/settings_page.dart';
 
+import 'services/ad_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -16,7 +17,12 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  MobileAds.instance.initialize();
+  await MobileAds.instance.initialize();
+  
+  // Reklamları yükle
+  AdService.loadAppOpenAd();
+  AdService.loadInterstitialAd();
+  
   runApp(
     EasyLocalization(
       supportedLocales: const [
@@ -33,6 +39,7 @@ void main() async {
     ),
   );
 }
+
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});

@@ -144,5 +144,21 @@
   "recipe_detail_description_title": "Tarif",
   "recipe_detail_share_tooltip": "Paylaş",
   "recipe_detail_edit_tooltip": "Düzenle",
-  "recipe_edit_select_section_title": "Tarif Bölümü Seçin"
+  "recipe_edit_select_section_title": "Tarif Bölümü Seçin",
+  "ai_create_button": "Yapay Zeka ile Oluştur",
+  "ai_generating_title": "Şef Tarifini Hazırlıyor...",
+  "ai_generating_message": "Lezzetli detaylar bir araya getiriliyor, lütfen bekleyin...\n(Bu işlem 10-15 saniye sürebilir)",
+  "ai_success_message": "Tarif başarıyla oluşturuldu!",
+  "ai_error_title": "Bir Sorun Oluştu",
+  "ai_name_warning": "Lütfen bir yemek adı girin.",
+  "add_option_title": "Tarif Ekleme Yöntemi",
+  "add_option_manual": "Kendim Yazacağım",
+  "add_option_ai": "Şefe Sor (Yapay Zeka)",
+  "ai_input_hint": "Hangi yemeğin tarifini istiyorsun?",
+  "ai_dialog_create": "Oluştur",
+  "ai_dialog_cancel": "Vazgeç",
+  "ai_error_not_food": "Girdiğiniz ifade bir yemek ismi gibi görünmüyor. Lütfen geçerli bir yemek adı girin.",
+  "ai_login_required": "Giriş Gerekli",
+  "settings_rate_app": "Uygulamayı Değerlendir",
+  "settings_rate_app_subtitle": "Bize destek olmak için yorum yapın"
 }

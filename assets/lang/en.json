@@ -144,5 +144,21 @@
   "recipe_detail_description_title": "Recipe",
   "recipe_detail_share_tooltip": "Share",
   "recipe_detail_edit_tooltip": "Edit",
-  "recipe_edit_select_section_title": "Select Recipe Section"
+  "recipe_edit_select_section_title": "Select Recipe Section",
+  "ai_create_button": "Create with AI",
+  "ai_generating_title": "Chef is preparing the recipe...",
+  "ai_generating_message": "Gathering delicious details, please wait...\n(This usually takes 10-15 seconds)",
+  "ai_success_message": "Recipe created successfully!",
+  "ai_error_title": "Something went wrong",
+  "ai_name_warning": "Please enter a dish name.",
+  "add_option_title": "Add Recipe Method",
+  "add_option_manual": "Write Manually",
+  "add_option_ai": "Ask the Chef (AI)",
+  "ai_input_hint": "What recipe do you want?",
+  "ai_dialog_create": "Create",
+  "ai_dialog_cancel": "Cancel",
+  "ai_error_not_food": "The input does not look like a food name. Please enter a valid dish name.",
+  "ai_login_required": "Login Required",
+  "settings_rate_app": "Rate the App",
+  "settings_rate_app_subtitle": "Write a review to support us"
 }

@@ -13,6 +13,7 @@ import 'dart:io';
 
 import 'klasor_kayit.dart';
 import '../services/firebase_service.dart';
+import '../services/ad_service.dart';
 
 class Klasorler extends StatefulWidget {
   @override
@@ -28,7 +29,7 @@ class _KlasorlerState extends State<Klasorler> {
   BannerAd? _bannerAd;
   bool _isBannerAdReady = false;
 
-  InterstitialAd? _interstitialAd;
+  // Interstitial ad kaldırıldı, yerine App Open Ad kullanılacak.
   
   final FirebaseService _firebaseService = FirebaseService();
 
@@ -36,7 +37,8 @@ class _KlasorlerState extends State<Klasorler> {
   void initState() {
     super.initState();
     _loadBannerAd();
-    _loadInterstitialAd();
+    // App Open Ad gösterilmeye çalışılır
+    AdService.showAdIfAvailable();
     _temizleEskiKlasorler();
     _klasorleriYukle().then((_) {
       // Klasörler yüklendikten sonra filtreli listeyi de güncelle
@@ -48,7 +50,6 @@ class _KlasorlerState extends State<Klasorler> {
   void dispose() {
     aramaController.dispose(); // Controller'ı dispose etmeyi unutmayın
     _bannerAd?.dispose();
-    _interstitialAd?.dispose();
     super.dispose();
   }
 
@@ -97,6 +98,19 @@ class _KlasorlerState extends State<Klasorler> {
         });
       }).toList();
     });
+
+    // Eğer kullanıcı giriş yapmışsa, yerel verileri bulutla otomatik olarak senkronize et
+    if (_firebaseService.isUserLoggedIn) {
+      // Bu işlem asenkron olarak arka planda çalışır
+      _firebaseService.mergeLocalAndCloudData().then((_) {
+        // Veriler birleştirildikten sonra listeyi tekrar yükle (eğer widget hala aktifse)
+        if (mounted) {
+          _klasorleriYukle();
+        }
+      }).catchError((e) {
+        print("Otomatik senkronizasyon hatası: $e");
+      });
+    }
   }
   
   Future<void> _varsayilanKlasorleriEkle(SharedPreferences prefs) async {
@@ -226,17 +240,7 @@ class _KlasorlerState extends State<Klasorler> {
     }
   }
 
-  String get _interstitialAdUnitId {
-    if (kDebugMode) {
-      return Platform.isAndroid
-          ? 'ca-app-pub-3940256099942544/1033173712'
-          : 'ca-app-pub-3940256099942544/4411468910';
-    } else {
-      return Platform.isAndroid
-          ? 'ca-app-pub-2127302088980655/3542042807'
-          : 'ca-app-pub-2127302088980655/5976634451';
-    }
-  }
+  // _interstitialAdUnitId kaldırıldı.
 
   void _loadBannerAd() {
     _bannerAd = BannerAd(
@@ -258,34 +262,7 @@ class _KlasorlerState extends State<Klasorler> {
     _bannerAd?.load();
   }
 
-  void _loadInterstitialAd() {
-    InterstitialAd.load(
-      adUnitId: _interstitialAdUnitId,
-      request: const AdRequest(),
-      adLoadCallback: InterstitialAdLoadCallback(
-        onAdLoaded: (ad) {
-          _interstitialAd = ad;
-          _interstitialAd!.fullScreenContentCallback = FullScreenContentCallback(
-            onAdDismissedFullScreenContent: (ad) {
-              ad.dispose();
-              _interstitialAd = null;
-            },
-            onAdFailedToShowFullScreenContent: (ad, error) {
-              ad.dispose();
-              _interstitialAd = null;
-            },
-          );
-
-          if (mounted) {
-            _interstitialAd!.show();
-          }
-        },
-        onAdFailedToLoad: (error) {
-          _interstitialAd = null;
-        },
-      ),
-    );
-  }
+  // _loadInterstitialAd kaldırıldı.
 
   @override
   Widget build(BuildContext context) {
@@ -470,7 +447,11 @@ class _KlasorlerState extends State<Klasorler> {
                         child: Text(
                           klasor.klasor_id == -1
                               ? 'folders_favorites'.tr()
-                              : klasor.klasor_adi,
+                              : (klasor.klasor_id == 1 ? 'default_folder_desserts'.tr() :
+                                 klasor.klasor_id == 2 ? 'default_folder_soups'.tr() :
+                                 klasor.klasor_id == 3 ? 'default_folder_main_dishes'.tr() :
+                                 klasor.klasor_id == 4 ? 'default_folder_breakfast'.tr() :
+                                 klasor.klasor_adi),
                           style: TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.w500,
@@ -482,6 +463,7 @@ class _KlasorlerState extends State<Klasorler> {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
+
                       if (klasor.klasor_id != -1)
                         IconButton(
                           onPressed: () {
@@ -666,12 +648,42 @@ class _FavoriTariflerSayfasiState extends State<FavoriTariflerSayfasi> {
                           margin: const EdgeInsets.only(right: 12),
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(8),
-                            child: Image.file(
-                              File(tarif.tarif_resimler.first),
-                              width: 60,
-                              height: 60,
-                              fit: BoxFit.cover,
-                            ),
+                            child: tarif.tarif_resimler.first.startsWith('http')
+                                ? Image.network(
+                                    tarif.tarif_resimler.first,
+                                    width: 60,
+                                    height: 60,
+                                    fit: BoxFit.cover,
+                                    loadingBuilder: (context, child, loadingProgress) {
+                                      if (loadingProgress == null) return child;
+                                      return Center(
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          value: loadingProgress.expectedTotalBytes != null
+                                              ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                                              : null,
+                                        ),
+                                      );
+                                    },
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Container(
+                                        color: Colors.grey[300],
+                                        child: Icon(Icons.broken_image, color: Colors.grey[600], size: 24),
+                                      );
+                                    },
+                                  )
+                                : Image.file(
+                                    File(tarif.tarif_resimler.first),
+                                    width: 60,
+                                    height: 60,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Container(
+                                        color: Colors.grey[300],
+                                        child: Icon(Icons.broken_image, color: Colors.grey[600], size: 24),
+                                      );
+                                    },
+                                  ),
                           ),
                         ),
                       
