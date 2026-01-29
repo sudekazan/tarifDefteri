@@ -98,6 +98,9 @@ class FirebaseService {
     if (!isUserLoggedIn) return;
 
     try {
+      // Yerel fotağrafları buluta yükle ve yolları güncelle
+      List<String> guncelResimler = await _checkAndUploadLocalImages(tarif.tarif_resimler);
+
       await _firestore
           .collection('users')
           .doc(userId)
@@ -107,7 +110,7 @@ class FirebaseService {
         'tarif_id': tarif.tarif_id,
         'tarif_adi': tarif.tarif_adi,
         'tarif_aciklama': tarif.tarif_aciklama,
-        'tarif_resimler': tarif.tarif_resimler,
+        'tarif_resimler': guncelResimler,
         'klasor_id': tarif.klasor_id,
         'isFavorite': tarif.isFavorite,
         'createdAt': FieldValue.serverTimestamp(),
@@ -160,6 +163,9 @@ class FirebaseService {
     if (!isUserLoggedIn) return;
 
     try {
+      // Yerel fotağrafları buluta yükle ve yolları güncelle
+      List<String> guncelResimler = await _checkAndUploadLocalImages(tarif.tarif_resimler);
+
       await _firestore
           .collection('users')
           .doc(userId)
@@ -168,7 +174,7 @@ class FirebaseService {
           .update({
         'tarif_adi': tarif.tarif_adi,
         'tarif_aciklama': tarif.tarif_aciklama,
-        'tarif_resimler': tarif.tarif_resimler,
+        'tarif_resimler': guncelResimler,
         'isFavorite': tarif.isFavorite,
         'updatedAt': FieldValue.serverTimestamp(),
       });
@@ -302,23 +308,39 @@ class FirebaseService {
         // Tarifleri birleştir (tarif_id'ye göre deduplicate et)
         final Map<int, TarifData> tarifMap = {};
         
-        // Önce cloud tariflerini ekle
+        // cloudTarifler'ı kontrol et ve yerel resimler varsa yükle
         for (var tarif in cloudTarifler) {
+          List<String> originalPaths = List.from(tarif.tarif_resimler);
+          List<String> cloudPaths = await _checkAndUploadLocalImages(originalPaths);
+          
+          // Eğer yollar değiştiyse (yerel resimler yüklendi ise) Firebase'i güncelle
+          if (!_listEquals(originalPaths, cloudPaths)) {
+            tarif.tarif_resimler = cloudPaths;
+            await updateTarifInFirebase(tarif);
+          }
           tarifMap[tarif.tarif_id] = tarif;
         }
         
-        // Sonra yerel tarifleri ekle (eğer aynı ID yoksa)
+        // Sonra yerel tarifleri işle
         for (var tarif in localTarifler) {
           if (!tarifMap.containsKey(tarif.tarif_id)) {
-            tarifMap[tarif.tarif_id] = tarif;
-            // Yeni yerel tarifi Firebase'e de kaydet
+            // Yeni yerel tarif - fotağrafları yükle ve Firebase'e kaydet
             await saveTarifToFirebase(tarif);
+            // saveTarifToFirebase zaten _checkAndUploadLocalImages çağırıyor ve 
+            // tarif nesnesini güncellemiyor,Firestore'a yüklüyor. 
+            // Bu yüzden yerel listeye de güncel halini alabilmek için:
+            tarif.tarif_resimler = await _checkAndUploadLocalImages(tarif.tarif_resimler);
+            tarifMap[tarif.tarif_id] = tarif;
+          } else {
+            // Eğer hem yerel hem bulutta varsa, yerel olanın fotağrafları daha yeni olabilir mi?
+            // Şimdilik buluttakini koruyoruz (yukarıda yapıldı).
           }
         }
         
         mergedTarifler[klasorId] = tarifMap.values.toList();
       }
-      
+
+
       // 6. Birleştirilmiş klasörleri oluştur (cloud öncelikli, ama yerel olanları da ekle)
       final Map<int, KlasorData> mergedKlasorlerMap = {};
       
@@ -539,5 +561,37 @@ class FirebaseService {
       print('Görsel yükleme hatası: $e');
       return null;
     }
+  }
+
+  // Yerel görselleri kontrol et ve buluta yükle
+  Future<List<String>> _checkAndUploadLocalImages(List<String> paths) async {
+    List<String> results = [];
+    for (String path in paths) {
+      if (path.startsWith('http')) {
+        results.add(path);
+      } else {
+        File file = File(path);
+        if (file.existsSync()) {
+          String? url = await uploadImage(file);
+          if (url != null) {
+            results.add(url);
+          } else {
+            results.add(path);
+          }
+        } else {
+          results.add(path);
+        }
+      }
+    }
+    return results;
+  }
+
+  // Yardımcı fonksiyon: Listeleri karşılaştır
+  bool _listEquals(List a, List b) {
+    if (a.length != b.length) return false;
+    for (int i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
   }
 }
