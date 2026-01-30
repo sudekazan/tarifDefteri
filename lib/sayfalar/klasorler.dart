@@ -37,8 +37,10 @@ class _KlasorlerState extends State<Klasorler> {
   void initState() {
     super.initState();
     _loadBannerAd();
-    // App Open Ad gösterilmeye çalışılır
-    AdService.showAdIfAvailable();
+    // App Open Ad gösterilmeye çalışılır - 1 saniye gecikme ile
+    Future.delayed(const Duration(seconds: 1), () {
+      AdService.showAdIfAvailable();
+    });
     _temizleEskiKlasorler();
     _klasorleriYukle().then((_) {
       // Klasörler yüklendikten sonra filtreli listeyi de güncelle
