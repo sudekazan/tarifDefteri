@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:app_tracking_transparency/app_tracking_transparency.dart';
+
 
 class AdService {
   static AppOpenAd? _appOpenAd;
@@ -31,16 +33,47 @@ class AdService {
     } else {
       return Platform.isAndroid
           ? 'ca-app-pub-2127302088980655/3542042807'
-          : 'ca-app-pub-2127302088980655/3542042807';
+          : 'ca-app-pub-2127302088980655/5976634451';
+    }
+  }
+
+  static String get bannerAdUnitId {
+    if (kDebugMode) {
+      return Platform.isAndroid
+          ? 'ca-app-pub-3940256099942544/6300978111'
+          : 'ca-app-pub-3940256099942544/2934735716';
+    } else {
+      return Platform.isAndroid
+          ? 'ca-app-pub-2127302088980655/7429316929'
+          : 'ca-app-pub-2127302088980655/9262656239';
+    }
+  }
+
+  /// Request Tracking Authorization for iOS
+  static Future<void> requestTrackingAuthorization() async {
+    if (Platform.isIOS) {
+      try {
+        final status = await AppTrackingTransparency.trackingAuthorizationStatus;
+        if (status == TrackingStatus.notDetermined) {
+          // Wait a bit to ensure the app is in foreground
+          await Future.delayed(const Duration(milliseconds: 200));
+          await AppTrackingTransparency.requestTrackingAuthorization();
+        }
+      } catch (e) {
+        print('Error requesting tracking authorization: $e');
+      }
     }
   }
 
   /// Load an AppOpenAd.
   static void loadAppOpenAd() {
-    if (_isLoadingAd || _appOpenAd != null) return;
+    if (_isLoadingAd || _appOpenAd != null) {
+      print('### AD_DEBUG: loadAppOpenAd called but skipped. isLoading: $_isLoadingAd, hasAd: ${_appOpenAd != null}');
+      return;
+    }
     
     _isLoadingAd = true;
-    print('Loading AppOpenAd ($appOpenAdUnitId)...');
+    print('### AD_DEBUG: Loading AppOpenAd ($appOpenAdUnitId)...');
     
     AppOpenAd.load(
       adUnitId: appOpenAdUnitId,
@@ -49,14 +82,15 @@ class AdService {
         onAdLoaded: (ad) {
           _appOpenAd = ad;
           _isLoadingAd = false;
-          print('AppOpenAd loaded successfully.');
+          print('### AD_DEBUG: AppOpenAd loaded successfully.');
           if (_showAfterLoad) {
             _showAfterLoad = false;
+            print('### AD_DEBUG: showing ad because _showAfterLoad was true');
             showAdIfAvailable();
           }
         },
         onAdFailedToLoad: (error) {
-          print('AppOpenAd failed to load: ${error.message} (Code: ${error.code})');
+          print('### AD_DEBUG: AppOpenAd failed to load: ${error.message} (Code: ${error.code})');
           _isLoadingAd = false;
           _showAfterLoad = false;
         },
@@ -160,8 +194,4 @@ class AdService {
 
     _interstitialAd!.show();
   }
-
 }
-
-
-

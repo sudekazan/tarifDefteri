@@ -1,7 +1,7 @@
 name: tarif_defteri
 description: "Tarif Defteri - Kişisel tarif koleksiyonunuzu oluşturun, düzenleyin ve favorilerinizi yönetin. Fotoğraflarla zenginleştirilmiş tariflerinizi organize edin."
 publish_to: 'none'
-version: 1.0.17+37
+version: 1.0.20+41
 
 environment:
   sdk: ^3.8.1
@@ -31,6 +31,11 @@ dependencies:
   google_fonts: ^6.1.0
   easy_localization: ^3.0.0
   firebase_storage: ^12.4.10
+  app_tracking_transparency: ^2.0.6+1
+  in_app_review: ^2.0.11
+  http: ^1.6.0
+  upgrader: ^10.3.0
+
 
 dev_dependencies:
   flutter_test:
@@ -42,7 +47,9 @@ dev_dependencies:
 flutter_icons:
   android: true
   ios: true
-  image_path: "assets/logo.png"
+  image_path: "assets/logo_white_bg.png"
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/logo.png"
   remove_alpha_ios: true
 
 flutter_native_splash:

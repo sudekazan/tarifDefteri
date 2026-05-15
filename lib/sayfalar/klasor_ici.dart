@@ -12,6 +12,7 @@ import '../services/firebase_service.dart';
 import '../services/ai_recipe_service.dart';
 import '../services/ad_service.dart';
 import '../widgets/banner_ad_widget.dart';
+import '../utils/error_helper.dart';
 
 class KlasorIci extends StatefulWidget {
   final KlasorData klasorData;
@@ -39,24 +40,108 @@ class _KlasorIciState extends State<KlasorIci> {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String key = 'tarifler_${widget.klasorData.klasor_id}';
     List<String> tariflerJson = prefs.getStringList(key) ?? [];
-    setState(() {
-      tarifListesi = tariflerJson.map((e) {
-        var map = json.decode(e);
-        return TarifData(
-          tarif_id: map['tarif_id'],
-          tarif_adi: map['tarif_adi'],
-          tarif_aciklama: map['tarif_aciklama'],
-          tarif_resimler: map['tarif_resimler'] != null
+
+    // 1. Önce SharedPreferences'tan hızlıca göster
+    final localList = tariflerJson.map((e) {
+      var map = json.decode(e);
+      return TarifData(
+        tarif_id: map['tarif_id'],
+        tarif_adi: map['tarif_adi'],
+        tarif_aciklama: map['tarif_aciklama'],
+        tarif_resimler: map['tarif_resimler'] != null
+            ? List<String>.from(map['tarif_resimler'])
+            : map['tarif_resim'] != null && map['tarif_resim'].isNotEmpty
+                ? [map['tarif_resim']]
+                : [],
+        klasor_id: map['klasor_id'],
+        isFavorite: map['isFavorite'] ?? false,
+      );
+    }).toList();
+
+    if (mounted) {
+      setState(() {
+        tarifListesi = localList;
+        filtreliTarifler = List.from(tarifListesi);
+      });
+    }
+
+    // 2. Giriş yapıldıysa Firebase'den çek ve bozuk yerel yolları düzelt
+    if (_firebaseService.isUserLoggedIn) {
+      try {
+        final cloudTarifler = await _firebaseService
+            .loadTariflerFromFirebase(widget.klasorData.klasor_id);
+
+        if (cloudTarifler.isEmpty || !mounted) return;
+
+        // Cloud verilerinden tarif_id → tarif eşlemesi oluştur
+        final cloudMap = {for (var t in cloudTarifler) t.tarif_id: t};
+
+        bool herhangiGuncellendi = false;
+        final yeniJson = tariflerJson.map((e) {
+          var map = json.decode(e) as Map<String, dynamic>;
+          final int tid = map['tarif_id'];
+          final List<String> mevcutResimler = map['tarif_resimler'] != null
               ? List<String>.from(map['tarif_resimler'])
-              : map['tarif_resim'] != null && map['tarif_resim'].isNotEmpty
-                  ? [map['tarif_resim']]
+              : [];
+
+          // Bozuk (http olmayan) yol varsa cloud'dan al
+          final bool bozukYolVar = mevcutResimler.any((p) => !p.startsWith('http'));
+          final cloudTarif = cloudMap[tid];
+          if (bozukYolVar && cloudTarif != null && cloudTarif.tarif_resimler.isNotEmpty) {
+            final cloudResimler = cloudTarif.tarif_resimler
+                .where((p) => p.startsWith('http'))
+                .toList();
+            if (cloudResimler.isNotEmpty) {
+              map['tarif_resimler'] = cloudResimler;
+              herhangiGuncellendi = true;
+            }
+          }
+          return json.encode(map);
+        }).toList();
+
+        // Ayrıca cloud'da olup yerel'de olmayan tarifleri ekle
+        final localIds = localList.map((t) => t.tarif_id).toSet();
+        for (var ct in cloudTarifler) {
+          if (!localIds.contains(ct.tarif_id)) {
+            yeniJson.add(json.encode({
+              'tarif_id': ct.tarif_id,
+              'tarif_adi': ct.tarif_adi,
+              'tarif_aciklama': ct.tarif_aciklama,
+              'tarif_resimler': ct.tarif_resimler,
+              'klasor_id': ct.klasor_id,
+              'isFavorite': ct.isFavorite,
+            }));
+            herhangiGuncellendi = true;
+          }
+        }
+
+        if (herhangiGuncellendi) {
+          await prefs.setStringList(key, yeniJson);
+          // Güncel listeyi tekrar yükle
+          final guncelList = yeniJson.map((e) {
+            var map = json.decode(e);
+            return TarifData(
+              tarif_id: map['tarif_id'],
+              tarif_adi: map['tarif_adi'],
+              tarif_aciklama: map['tarif_aciklama'],
+              tarif_resimler: map['tarif_resimler'] != null
+                  ? List<String>.from(map['tarif_resimler'])
                   : [],
-          klasor_id: map['klasor_id'],
-          isFavorite: map['isFavorite'] ?? false,
-        );
-      }).toList();
-      filtreliTarifler = List.from(tarifListesi);
-    });
+              klasor_id: map['klasor_id'],
+              isFavorite: map['isFavorite'] ?? false,
+            );
+          }).toList();
+          if (mounted) {
+            setState(() {
+              tarifListesi = guncelList;
+              filtreliTarifler = List.from(tarifListesi);
+            });
+          }
+        }
+      } catch (e) {
+        print('Firebase\'den görsel güncelleme hatası: $e');
+      }
+    }
   }
 
   void _filtreleTarifler(String arama) {
@@ -76,20 +161,24 @@ class _KlasorIciState extends State<KlasorIci> {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String key = 'tarifler_${widget.klasorData.klasor_id}';
     List<String> tariflerJson = prefs.getStringList(key) ?? [];
-    yeniTarif.tarif_id = tariflerJson.length + 1;
+    
+    // Silinmiş tarif ID'leri ile çakışmayı önlemek için zaman damgası kullanıyoruz
+    yeniTarif.tarif_id = DateTime.now().millisecondsSinceEpoch;
+
+    // Firebase'e kaydet ve cloud URL'lerini al
+    final cloudResimler = await _firebaseService.saveTarifToFirebase(yeniTarif);
+
+    // Cloud URL'leri ile SharedPreferences'a kaydet
     tariflerJson.add(json.encode({
       'tarif_id': yeniTarif.tarif_id,
       'tarif_adi': yeniTarif.tarif_adi,
       'tarif_aciklama': yeniTarif.tarif_aciklama,
-      'tarif_resimler': yeniTarif.tarif_resimler,
+      'tarif_resimler': cloudResimler,
       'klasor_id': yeniTarif.klasor_id,
       'isFavorite': yeniTarif.isFavorite,
     }));
     await prefs.setStringList(key, tariflerJson);
-    
-    // Firebase'e de kaydet
-    await _firebaseService.saveTarifToFirebase(yeniTarif);
-    
+
     _tarifleriYukle();
   }
 
@@ -99,17 +188,35 @@ class _KlasorIciState extends State<KlasorIci> {
     List<String> tariflerJson = prefs.getStringList(key) ?? [];
     int index = tariflerJson.indexWhere((e) => json.decode(e)['tarif_id'] == guncelTarif.tarif_id);
     if (index != -1) {
+      // Yerel görselleri buluta yükle ve cloud URL'lerini al
+      List<String> cloudResimler = guncelTarif.tarif_resimler;
+      if (_firebaseService.isUserLoggedIn) {
+        List<String> yuklenmisList = [];
+        for (String path in guncelTarif.tarif_resimler) {
+          if (path.startsWith('http')) {
+            yuklenmisList.add(path);
+          } else if (path.isNotEmpty && File(path).existsSync()) {
+            String? cloudUrl = await _firebaseService.uploadImage(File(path));
+            yuklenmisList.add(cloudUrl ?? path);
+          } else {
+            yuklenmisList.add(path);
+          }
+        }
+        cloudResimler = yuklenmisList;
+        guncelTarif.tarif_resimler = cloudResimler;
+      }
+
       tariflerJson[index] = json.encode({
         'tarif_id': guncelTarif.tarif_id,
         'tarif_adi': guncelTarif.tarif_adi,
         'tarif_aciklama': guncelTarif.tarif_aciklama,
-        'tarif_resimler': guncelTarif.tarif_resimler,
+        'tarif_resimler': cloudResimler,
         'klasor_id': guncelTarif.klasor_id,
         'isFavorite': guncelTarif.isFavorite,
       });
       await prefs.setStringList(key, tariflerJson);
       
-      // Firebase'de de güncelle
+      // Firebase'de de güncelle (artık cloud URL'ler ile)
       await _firebaseService.updateTarifInFirebase(guncelTarif);
       
       _tarifleriYukle();
@@ -183,10 +290,25 @@ class _KlasorIciState extends State<KlasorIci> {
               color: Colors.purple,
               title: 'add_option_ai'.tr(),
               isLocked: !_firebaseService.isUserLoggedIn,
-              onTap: () {
+              onTap: () async {
                 Navigator.pop(context); // Close sheet
                 if (_firebaseService.isUserLoggedIn) {
-                  _showAiDialog(); // New AI flow
+                  // İnternet kontrolü yap
+                  try {
+                    final result = await InternetAddress.lookup('google.com');
+                    if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
+                      if (context.mounted) _showAiDialog(); // New AI flow
+                    }
+                  } catch (_) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('auth_error_network'.tr()),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  }
                 } else {
                   // İsteğe bağlı: Giriş sayfasına yönlendir veya mesaj göster
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -403,11 +525,9 @@ class _KlasorIciState extends State<KlasorIci> {
     } catch (_) {}
     
     // Show Error (Validation or Server Error)
-    String message = e.toString();
-    if (message.contains("Exception:")) message = message.replaceAll("Exception:", "").trim();
-    if (message.contains("TimeoutException")) message = "Sunucu yanıt vermedi, lütfen tekrar deneyin.";
+    String message = ErrorHelper.getFriendlyErrorMessage(e);
     
-    // Translate specific validation error if strictly matching key, else show raw
+    // Translate specific validation error if strictly matching key, else show processed message
     if (message.contains("yemek tarifi değil") || message.contains("yemek ismi değil")) {
       message = 'ai_error_not_food'.tr();
     }
@@ -532,11 +652,10 @@ class _KlasorIciState extends State<KlasorIci> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         color: Theme.of(context).cardColor,
-                        child: SizedBox(
-                          height: 90,
-                          child: Padding(
-                            padding: const EdgeInsets.all(12.0),
+                        child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
                             child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
                                 // Görsel önizleme
                                 if (tarif.tarif_resimler.isNotEmpty)
@@ -752,7 +871,6 @@ class _KlasorIciState extends State<KlasorIci> {
                             ),
                           ),
                         ),
-                      ),
                     );
                   },
                 ),

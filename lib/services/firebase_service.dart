@@ -93,12 +93,12 @@ class FirebaseService {
     }
   }
 
-  // Tarifi Firebase'e kaydet
-  Future<void> saveTarifToFirebase(TarifData tarif) async {
-    if (!isUserLoggedIn) return;
+  // Tarifi Firebase'e kaydet — cloud URL listesini döndürür
+  Future<List<String>> saveTarifToFirebase(TarifData tarif) async {
+    if (!isUserLoggedIn) return tarif.tarif_resimler;
 
     try {
-      // Yerel fotağrafları buluta yükle ve yolları güncelle
+      // Yerel fotoğrafları buluta yükle ve URL'leri güncelle
       List<String> guncelResimler = await _checkAndUploadLocalImages(tarif.tarif_resimler);
 
       await _firestore
@@ -116,8 +116,11 @@ class FirebaseService {
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
       });
+
+      return guncelResimler; // Upload sonrası URL'leri döndür
     } catch (e) {
       print('Tarif kaydetme hatası: $e');
+      return tarif.tarif_resimler;
     }
   }
 
@@ -324,12 +327,9 @@ class FirebaseService {
         // Sonra yerel tarifleri işle
         for (var tarif in localTarifler) {
           if (!tarifMap.containsKey(tarif.tarif_id)) {
-            // Yeni yerel tarif - fotağrafları yükle ve Firebase'e kaydet
-            await saveTarifToFirebase(tarif);
-            // saveTarifToFirebase zaten _checkAndUploadLocalImages çağırıyor ve 
-            // tarif nesnesini güncellemiyor,Firestore'a yüklüyor. 
-            // Bu yüzden yerel listeye de güncel halini alabilmek için:
-            tarif.tarif_resimler = await _checkAndUploadLocalImages(tarif.tarif_resimler);
+            // Yeni yerel tarif - fotoğrafları yükle ve Firebase'e kaydet
+            // saveTarifToFirebase artık cloud URL listesi döndürüyor
+            tarif.tarif_resimler = await saveTarifToFirebase(tarif);
             tarifMap[tarif.tarif_id] = tarif;
           } else {
             // Eğer hem yerel hem bulutta varsa, yerel olanın fotağrafları daha yeni olabilir mi?

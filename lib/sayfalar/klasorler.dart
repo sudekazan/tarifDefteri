@@ -39,6 +39,9 @@ class _KlasorlerState extends State<Klasorler> {
     _loadBannerAd();
     // App Open Ad gösterilmeye çalışılır - 1 saniye gecikme ile
     Future.delayed(const Duration(seconds: 1), () {
+      print('### KLASORLER_DEBUG: timer triggered. Checking AdService...');
+      // Ensure it's loaded (idempotent if already loading/loaded)
+      AdService.loadAppOpenAd();
       AdService.showAdIfAvailable();
     });
     _temizleEskiKlasorler();
@@ -68,6 +71,8 @@ class _KlasorlerState extends State<Klasorler> {
       }
     }
   }
+
+  bool _isSyncing = false;
 
   Future<void> _klasorleriYukle() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -101,17 +106,39 @@ class _KlasorlerState extends State<Klasorler> {
       }).toList();
     });
 
-    // Eğer kullanıcı giriş yapmışsa, yerel verileri bulutla otomatik olarak senkronize et
-    if (_firebaseService.isUserLoggedIn) {
-      // Bu işlem asenkron olarak arka planda çalışır
+    // Eğer kullanıcı giriş yapmışsa ve halihazırda senkronize olmuyorsak
+    if (_firebaseService.isUserLoggedIn && !_isSyncing) {
+      _isSyncing = true;
       _firebaseService.mergeLocalAndCloudData().then((_) {
-        // Veriler birleştirildikten sonra listeyi tekrar yükle (eğer widget hala aktifse)
+        _isSyncing = false;
+        // Veriler birleştirildikten sonra listeyi tekrar yükle (ama sync tetiklemeden)
         if (mounted) {
-          _klasorleriYukle();
+          _klasorleriSadeceyukle();
         }
       }).catchError((e) {
+        _isSyncing = false;
         print("Otomatik senkronizasyon hatası: $e");
       });
+    }
+  }
+
+  /// Sadece SharedPreferences'tan klasörleri yükler, sync tetiklemez
+  Future<void> _klasorleriSadeceyukle() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    List<String> mevcutKlasorler = prefs.getStringList('klasorler') ?? [];
+    if (mounted) {
+      setState(() {
+        klasorListesi = mevcutKlasorler.asMap().entries.map((e) {
+          final map = json.decode(e.value);
+          final int klasorId = map['klasor_id'] ?? e.key + 1;
+          return KlasorData.fromMap({
+            'klasor_id': klasorId,
+            'klasor_adi': map['klasor_adi'],
+            'iconCode': map['iconCode'] ?? 0xe2c7,
+          });
+        }).toList();
+      });
+      _filtreleKlasorler(aramaController.text);
     }
   }
   
@@ -164,9 +191,12 @@ class _KlasorlerState extends State<Klasorler> {
 
   // Mevcut _klasorEkle metodunuzun güncellenmiş hali
   Future<void> _klasorEkle(String klasorAdi, int iconCode) async {
-    SharedPreferences prefs = await SharedPreferences.getInstance(); // prefs'i burada tanımla
-    List<String> klasorJsonList = prefs.getStringList('klasorler') ?? []; // klasorJsonList'i burada tanımla
-    int yeniKlasorId = klasorJsonList.length + 1;
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    List<String> klasorJsonList = prefs.getStringList('klasorler') ?? [];
+    
+    // Silme sonrası eski klasör ID'leri ile (özellikle 1,2,3,4 gibi varsayılanlarla) 
+    // veya silinmiş farklı klasörlerle çakışmayı önlemek için zaman damgası kullanarak eşsiz ID oluşturuyoruz.
+    int yeniKlasorId = DateTime.now().millisecondsSinceEpoch;
     
     klasorJsonList.add(json.encode({
       'klasor_id': yeniKlasorId,
@@ -227,26 +257,12 @@ class _KlasorlerState extends State<Klasorler> {
     }
   }
 
-  // Test ve gerçek reklam ID'leri
-  String get _bannerAdUnitId {
-    if (kDebugMode) {
-      // Debug modunda Google test ID'leri
-      return Platform.isAndroid
-          ? 'ca-app-pub-3940256099942544/6300978111'
-          : 'ca-app-pub-3940256099942544/2934735716';
-    } else {
-      // Release modunda gerçek ID'ler
-      return Platform.isAndroid
-          ? 'ca-app-pub-2127302088980655/7429316929'
-          : 'ca-app-pub-2127302088980655/9262656239';
-    }
-  }
-
   // _interstitialAdUnitId kaldırıldı.
+
 
   void _loadBannerAd() {
     _bannerAd = BannerAd(
-      adUnitId: _bannerAdUnitId,
+      adUnitId: AdService.bannerAdUnitId,
       size: AdSize.banner,
       request: const AdRequest(),
       listener: BannerAdListener(
@@ -446,23 +462,33 @@ class _KlasorlerState extends State<Klasorler> {
                         ),
                       ),
                       Expanded(
-                        child: Text(
-                          klasor.klasor_id == -1
-                              ? 'folders_favorites'.tr()
-                              : (klasor.klasor_id == 1 ? 'default_folder_desserts'.tr() :
-                                 klasor.klasor_id == 2 ? 'default_folder_soups'.tr() :
-                                 klasor.klasor_id == 3 ? 'default_folder_main_dishes'.tr() :
-                                 klasor.klasor_id == 4 ? 'default_folder_breakfast'.tr() :
-                                 klasor.klasor_adi),
-                          style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w500,
-                            color: klasor.klasor_id == -1
-                                ? (isDark ? Colors.redAccent : Colors.red)
-                                : Theme.of(context).textTheme.bodyLarge?.color,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                        child: Builder(
+                          builder: (context) {
+                            // Var olan 1,2,3,4 ID'li klasör eğer ismi değiştirilmiş sıradan bir klasör ise çevrilmesin
+                            String displayName = klasor.klasor_adi;
+                            if (klasor.klasor_id == 1 && (displayName == 'default_folder_desserts'.tr() || displayName == 'Tatlılar' || displayName == 'Desserts')) {
+                              displayName = 'default_folder_desserts'.tr();
+                            } else if (klasor.klasor_id == 2 && (displayName == 'default_folder_soups'.tr() || displayName == 'Çorbalar' || displayName == 'Soups')) {
+                              displayName = 'default_folder_soups'.tr();
+                            } else if (klasor.klasor_id == 3 && (displayName == 'default_folder_main_dishes'.tr() || displayName == 'Ana Yemekler' || displayName == 'Main Dishes')) {
+                              displayName = 'default_folder_main_dishes'.tr();
+                            } else if (klasor.klasor_id == 4 && (displayName == 'default_folder_breakfast'.tr() || displayName == 'Kahvaltılıklar' || displayName == 'Breakfast')) {
+                              displayName = 'default_folder_breakfast'.tr();
+                            }
+
+                            return Text(
+                              klasor.klasor_id == -1 ? 'folders_favorites'.tr() : displayName,
+                              style: TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.w500,
+                                color: klasor.klasor_id == -1
+                                    ? (isDark ? Colors.redAccent : Colors.red)
+                                    : Theme.of(context).textTheme.bodyLarge?.color,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            );
+                          }
                         ),
                       ),
 
@@ -514,11 +540,13 @@ class _KlasorlerState extends State<Klasorler> {
         ),
       ),
       bottomNavigationBar: _isBannerAdReady
-          ? Container(
-              color: Theme.of(context).scaffoldBackgroundColor,
-              height: _bannerAd!.size.height.toDouble(),
-              child: Center(
-                child: AdWidget(ad: _bannerAd!),
+          ? SafeArea(
+              child: Container(
+                color: Theme.of(context).scaffoldBackgroundColor,
+                height: _bannerAd!.size.height.toDouble(),
+                child: Center(
+                  child: AdWidget(ad: _bannerAd!),
+                ),
               ),
             )
           : null,
@@ -638,7 +666,7 @@ class _FavoriTariflerSayfasiState extends State<FavoriTariflerSayfasi> {
               ),
               color: Theme.of(context).cardColor,
               child: SizedBox(
-                height: 90,
+                height: 100,
                 child: Padding(
                   padding: const EdgeInsets.all(12.0),
                   child: Row(

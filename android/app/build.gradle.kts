@@ -35,8 +35,8 @@ android {
         applicationId = "com.sudekazan.tarif_defteri_yeni"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
-        versionCode = 39
-        versionName = "1.0.19"
+        versionCode = 41
+        versionName = "1.0.20"
         multiDexEnabled = true
     }
 

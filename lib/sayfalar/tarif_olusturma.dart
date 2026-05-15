@@ -11,6 +11,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../services/ai_recipe_service.dart';
 import '../services/firebase_service.dart';
+import '../utils/error_helper.dart';
 
 class TarifOlusturma extends StatefulWidget {
   @override
@@ -466,7 +467,7 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
       
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('${'ai_error_title'.tr()}: ${e.toString().replaceAll("Exception:", "")}'),
+          content: Text('${'ai_error_title'.tr()}: ${ErrorHelper.getFriendlyErrorMessage(e)}'),
           backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
         ),

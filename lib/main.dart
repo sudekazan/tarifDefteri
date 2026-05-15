@@ -10,6 +10,7 @@ import 'widgets/klasorler_with_theme.dart';
 import 'screens/settings_page.dart';
 
 import 'services/ad_service.dart';
+import 'screens/update_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,6 +21,7 @@ void main() async {
   await MobileAds.instance.initialize();
   
   // Reklamları yükle
+  await AdService.requestTrackingAuthorization();
   AdService.loadAppOpenAd();
   AdService.loadInterstitialAd();
   
@@ -56,11 +58,13 @@ class MyApp extends StatelessWidget {
             theme: AppThemeBuilder.buildLightTheme(appState.currentTheme),
             darkTheme: AppThemeBuilder.buildDarkTheme(appState.currentTheme),
             themeMode: appState.isDarkMode ? ThemeMode.dark : ThemeMode.light,
-            home: KlasorlerWithTheme(
-              onThemeChanged: appState.changeTheme,
-              currentTheme: appState.currentTheme,
-              isDarkMode: appState.isDarkMode,
-              onDarkModeChanged: appState.changeDarkMode,
+            home: TarifDefteriUpgradeAlert(
+              child: KlasorlerWithTheme(
+                onThemeChanged: appState.changeTheme,
+                currentTheme: appState.currentTheme,
+                isDarkMode: appState.isDarkMode,
+                onDarkModeChanged: appState.changeDarkMode,
+              ),
             ),
             routes: {
               '/settings': (context) => SettingsPage(

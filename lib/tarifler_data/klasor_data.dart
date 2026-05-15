@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-class KlasorData{
+class KlasorData {
   late int klasor_id;
   late String klasor_adi;
   late int iconCode;
@@ -12,9 +12,8 @@ class KlasorData{
   });
 
   static const IconData _defaultIcon = Icons.folder;
-  
+
   IconData get icon {
-    if (iconCode == 0xe2c7) return _defaultIcon;
     return IconData(iconCode, fontFamily: 'MaterialIcons');
   }
 

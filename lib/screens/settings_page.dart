@@ -4,6 +4,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:in_app_review/in_app_review.dart';
 import '../theme/app_theme.dart';
 import '../auth_screen.dart';
 import '../services/firebase_service.dart';
@@ -165,24 +166,30 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _rateApp() async {
-    final String packageName = "com.sudekazan.tarif_defteri_yeni";
-    final Uri url = Uri.parse(
-      Platform.isAndroid
-          ? "market://details?id=$packageName"
-          : "https://apps.apple.com/app/idYOUR_APP_ID", // TODO: iOS App ID ekleyin
-    );
-    
     try {
-      if (await canLaunchUrl(url)) {
-        await launchUrl(url, mode: LaunchMode.externalApplication);
+      final InAppReview inAppReview = InAppReview.instance;
+      
+      // Kullanıcıya uygulama içi (pop-up) değerlendirme penceresi göster (en rahatı)
+      if (await inAppReview.isAvailable()) {
+        await inAppReview.requestReview();
       } else {
-        // Market linki çalışmazsa (emülatör vb.) web linkini dene
-        final Uri webUrl = Uri.parse(
-          Platform.isAndroid
-              ? "https://play.google.com/store/apps/details?id=$packageName"
-              : "https://apps.apple.com/app/idYOUR_APP_ID",
-        );
-        await launchUrl(webUrl, mode: LaunchMode.externalApplication);
+        // Eğer pop-up çıkmazsa veya desteklenmiyorsa mağazaya yönlendir
+        final String packageName = "com.sudekazan.tarif_defteri_yeni";
+        final String appleId = "APPLE_APP_ID_BURAYA"; // TODO: Apple Developer (App Store Connect) hesabınızdaki numeric App ID'yi buraya yazın (örnek: 6512345678)
+        
+        await inAppReview.openStoreListing(
+          appStoreId: appleId,
+        ).catchError((_) async {
+          // Her ihtimale karşı tarayıcıdan açma yedeği
+          final Uri url = Uri.parse(
+            Platform.isAndroid
+                ? "https://play.google.com/store/apps/details?id=$packageName"
+                : "https://apps.apple.com/app/id$appleId",
+          );
+          if (await canLaunchUrl(url)) {
+            await launchUrl(url, mode: LaunchMode.externalApplication);
+          }
+        });
       }
     } catch (e) {
       if (mounted) {
