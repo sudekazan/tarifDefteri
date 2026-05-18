@@ -1,7 +1,7 @@
 name: tarif_defteri
 description: "Tarif Defteri - Kişisel tarif koleksiyonunuzu oluşturun, düzenleyin ve favorilerinizi yönetin. Fotoğraflarla zenginleştirilmiş tariflerinizi organize edin."
 publish_to: 'none'
-version: 1.0.20+41
+version: 1.0.21+42
 
 environment:
   sdk: ^3.8.1

@@ -32,6 +32,7 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
   
   // Her section için TextField controller'ı
   Map<int, TextEditingController> sectionControllers = {};
+  final ScrollController _scrollController = ScrollController();
   
   bool isAiGenerated = false;
   final FirebaseService _firebaseService = FirebaseService();
@@ -189,6 +190,7 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
   @override
   void dispose() {
     _aciklamaFocus.dispose();
+    _scrollController.dispose();
     // Section controller'larını temizle
     for (var controller in sectionControllers.values) {
       controller.dispose();
@@ -364,7 +366,10 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
 
     try {
       final aiService = AiRecipeService();
-      final recipeData = await aiService.generateRecipe(tfTaridAdi.text.trim());
+      final recipeData = await aiService.generateRecipe(
+        tfTaridAdi.text.trim(),
+        languageCode: context.locale.languageCode,
+      );
       
       // Dialogu kapat
       Navigator.pop(context);
@@ -636,6 +641,7 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
           color: Theme.of(context).scaffoldBackgroundColor,
           child: Center(
             child: SingleChildScrollView(
+              controller: _scrollController,
               child: Padding(
                 padding: const EdgeInsets.all(20.0),
                 child: Column(
@@ -1290,6 +1296,17 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
       };
       setState(() {
         sections.add(yeniSection);
+      });
+      
+      // Yeni bölüm eklendikten sonra ekranı o bölüme (en alta) kaydır
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (_scrollController.hasClients) {
+          _scrollController.animateTo(
+            _scrollController.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 400),
+            curve: Curves.easeOutCubic,
+          );
+        }
       });
     }
   }

@@ -8,24 +8,19 @@ class AiRecipeService {
   
   // Platforma göre doğru localhost adresini bulur
   String get _baseUrl {
-    if (kIsWeb) {
-      return 'http://localhost:3000/api';
-    } else if (Platform.isAndroid) {
-      return 'http://10.0.2.2:3000/api';
-    } else {
-      return 'http://localhost:3000/api';
-    }
+    // Uygulama yayına alındığı için artık tüm platformlarda canlı sunucuyu kullanıyoruz
+    return 'https://tarif-defteri-api.onrender.com/api';
   }
 
   /// Kullanıcının girdiği yemek ismine göre yapay zekadan tarif oluşturur.
-  Future<Map<String, dynamic>> generateRecipe(String dishName) async {
+  Future<Map<String, dynamic>> generateRecipe(String dishName, {String languageCode = 'en'}) async {
     try {
       // Firebase giriş yapmış olan kullanıcının kimlik token'ını alıyoruz
       User? user = FirebaseAuth.instance.currentUser;
       String idToken = "test-test-test"; // Test token'ı (Eğer kullanıcı giriş yapmadıysa test ortamı kabulü için)
       
       if (user != null) {
-        idToken = await user.getIdToken() ?? "test-test-test";
+        idToken = await user.getIdToken(true) ?? "test-test-test";
       }
 
       final url = Uri.parse('$_baseUrl/generate-recipe');
@@ -38,6 +33,7 @@ class AiRecipeService {
         },
         body: jsonEncode({
           'prompt': dishName,
+          'language': languageCode,
         }),
       ).timeout(const Duration(seconds: 45));
 

@@ -398,7 +398,7 @@ class _KlasorIciState extends State<KlasorIci> {
               controller: _promptController,
               autofocus: true,
               decoration: InputDecoration(
-                hintText: 'Mantı, Karnıyarık...',
+                hintText: 'ai_input_placeholder'.tr(),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               ),
             ),
@@ -439,7 +439,7 @@ class _KlasorIciState extends State<KlasorIci> {
   }
 
   Future<void> _generateAndNavigate(String dishName) async {
-    // Show Loading
+    // Show Loading dialog
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -470,11 +470,18 @@ class _KlasorIciState extends State<KlasorIci> {
     );
 
     try {
-      // AdMob: Geçiş reklamını göster, kapandıktan sonra AI işlemini başlat
+      // AI isteğini HEMEN başlat (reklam gösterilirken arka planda hazırlansın)
+      final languageCode = context.locale.languageCode;
+      final recipeFuture = _aiRecipeService.generateRecipe(
+        dishName,
+        languageCode: languageCode,
+      );
+
+      // Aynı anda reklamı göster
       AdService.showInterstitialAd(onAdClosed: () async {
         try {
-          // Reklam kapandıktan sonra AI servisini çağır
-          final recipeData = await _aiRecipeService.generateRecipe(dishName);
+          // Reklam kapandığında AI sonucunu bekle (muhtemelen zaten hazır!)
+          final recipeData = await recipeFuture;
           
           if (!mounted) return;
           Navigator.pop(context); // Close Loading
@@ -527,8 +534,13 @@ class _KlasorIciState extends State<KlasorIci> {
     // Show Error (Validation or Server Error)
     String message = ErrorHelper.getFriendlyErrorMessage(e);
     
-    // Translate specific validation error if strictly matching key, else show processed message
-    if (message.contains("yemek tarifi değil") || message.contains("yemek ismi değil")) {
+    // Hem Türkçe hem İngilizce hata mesajlarını yakala
+    if (message.contains("yemek tarifi değil") || 
+        message.contains("yemek ismi değil") ||
+        message.contains("not a food") ||
+        message.contains("not a dish") ||
+        message.contains("not a meal") ||
+        message.toLowerCase().contains("food name")) {
       message = 'ai_error_not_food'.tr();
     }
     
@@ -622,10 +634,32 @@ class _KlasorIciState extends State<KlasorIci> {
           color: Theme.of(context).scaffoldBackgroundColor,
           child: filtreliTarifler.isEmpty
               ? Center(
-                  child: Text(
-                    'recipes_empty_title'.tr(),
-                    style:
-                        TextStyle(fontSize: 18, color: Colors.grey[600]),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.menu_book_rounded,
+                        size: 80,
+                        color: Colors.grey[400],
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'recipes_empty_title'.tr(),
+                        style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey[600]),
+                      ),
+                      const SizedBox(height: 8),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 32.0),
+                        child: Text(
+                          'recipes_empty_subtitle'.tr(),
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+                        ),
+                      ),
+                    ],
                   ),
                 )
               : ListView.separated(
