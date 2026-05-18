@@ -177,7 +177,7 @@ class _SettingsPageState extends State<SettingsPage> {
         // iOS'ta openStoreListing bundle ID'yi otomatik algılar
         // Android'te packageName zorunlu
         const String androidPackageName = "com.sudekazan.tarif_defteri_yeni";
-        const String appleId = "6739165870"; // App Store Connect → App Information → Apple ID
+        const String appleId = "6759447259"; // App Store Connect → App Information → Apple ID
         
         try {
           await inAppReview.openStoreListing(
