@@ -10,7 +10,7 @@ const admin = require('firebase-admin');
 // client ID checks will reject. We will test it).
 // To prevent crashes if config is missing locally:
 admin.initializeApp({
-    projectId: "tarif-defteri-4522a" // Geçici olarak projeye ismini tahmin ederek verdik, hata çıkarsa kaldırabilirsiniz.
+    projectId: "tarifdefteriuygulamasi" // Doğru Firebase proje ID'si
 });
 
 const app = express();
