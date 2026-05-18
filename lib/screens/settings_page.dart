@@ -8,6 +8,7 @@ import 'package:in_app_review/in_app_review.dart';
 import '../theme/app_theme.dart';
 import '../auth_screen.dart';
 import '../services/firebase_service.dart';
+import '../services/review_service.dart';
 import '../widgets/banner_ad_widget.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -167,6 +168,9 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Future<void> _rateApp() async {
     try {
+      // Kullanıcı manuel olarak değerlendirmek istediği için otomatik sormayı tamamen kapatıyoruz.
+      await ReviewService.markAsRated();
+
       final InAppReview inAppReview = InAppReview.instance;
       
       // Önce uygulama içi (native pop-up) değerlendirme göster
