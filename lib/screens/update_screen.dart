@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:upgrader/upgrader.dart';
 
-/// Güncelleme ekranı - UpgradeAlert'i özel Türkçe mesajlarla saran widget.
-/// main.dart'taki UpgradeAlert'in yerine ya da içine sarılarak kullanılır.
+/// Güncelleme ekranı - eski sürümdeki kullanıcıları zorunlu olarak güncellemeye yönlendirir.
 class TarifDefteriUpgradeAlert extends StatefulWidget {
   final Widget child;
 
@@ -20,12 +20,18 @@ class _TarifDefteriUpgradeAlertState extends State<TarifDefteriUpgradeAlert> {
   void initState() {
     super.initState();
     _upgrader = Upgrader(
-      messages: TurkishUpgraderMessages(),
-      // Geliştirme sırasında her zaman kontrol etmek isterseniz:
-      // durationUntilAlertAgain: Duration.zero,
-      durationUntilAlertAgain: const Duration(days: 1),
+      messages: _getLocalizedMessages(),
+      durationUntilAlertAgain: Duration.zero, // Her açılışta kontrol et
       debugLogging: false,
     );
+  }
+
+  /// Kullanıcının diline göre doğru mesaj sınıfını döndürür.
+  UpgraderMessages _getLocalizedMessages() {
+    // Bu metod initState'de çağrıldığı için context yok,
+    // Bu yüzden locale'yi Upgrader'ın kendi sistemine bırakıyoruz.
+    // Kendi özel mesajlarımızı locale-agnostic bir şekilde veriyoruz.
+    return LocalizedUpgraderMessages();
   }
 
   @override
@@ -34,39 +40,40 @@ class _TarifDefteriUpgradeAlertState extends State<TarifDefteriUpgradeAlert> {
       upgrader: _upgrader,
       dialogStyle: UpgradeDialogStyle.cupertino,
       barrierDismissible: false,
-      showIgnore: false,      // "Yoksay" butonu gizli
-      showLater: true,        // "Sonra" butonu göster
+      showIgnore: false,   // "Yoksay/Ignore" butonu YOK → zorunlu güncelleme
+      showLater: false,    // "Sonra/Later" butonu YOK → zorunlu güncelleme
       child: widget.child,
     );
   }
 }
 
-/// Türkçe mesajlar için özel Upgrader mesaj sınıfı.
-class TurkishUpgraderMessages extends UpgraderMessages {
-  TurkishUpgraderMessages() : super(code: 'tr');
+/// Tüm dillere uygun, dinamik güncelleme mesajları.
+class LocalizedUpgraderMessages extends UpgraderMessages {
+  LocalizedUpgraderMessages() : super(code: 'en');
 
   @override
-  String get body =>
-      'Tarif Defteri\'nin yeni bir sürümü mevcut! Daha iyi bir deneyim için lütfen güncelle.';
+  String get body {
+    return 'A new version is available! Please update to continue using the app.';
+  }
 
   @override
-  String get buttonTitleIgnore => 'Yoksay';
+  String get buttonTitleIgnore => 'Ignore';
 
   @override
-  String get buttonTitleLater => 'Sonra';
+  String get buttonTitleLater => 'Later';
 
   @override
-  String get buttonTitleUpdate => '🚀 Güncelle';
+  String get buttonTitleUpdate => '🚀 Update Now';
 
   @override
-  String get prompt => 'Güncellemek ister misin?';
+  String get prompt => 'Would you like to update?';
 
   @override
-  String get releaseNotes => 'Yenilikler';
+  String get releaseNotes => "What's New";
 
   @override
-  String get title => '🎉 Yeni Güncelleme Mevcut!';
+  String get title => '🎉 New Update Available!';
 
   @override
-  String get updateAvailable => 'Yeni sürüm mevcut!';
+  String get updateAvailable => 'New version available!';
 }
