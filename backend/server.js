@@ -4,20 +4,14 @@ const cors = require('cors');
 const OpenAI = require('openai');
 const admin = require('firebase-admin');
 
-// Initialize Firebase Admin (Note: Running this locally without a service account 
-// may throw an error if google application credentials are not set, but verifyIdToken 
-// often works without credentials if we supply project id in some cases. However, if it fails,
-// client ID checks will reject. We will test it).
-// To prevent crashes if config is missing locally:
 admin.initializeApp({
-    projectId: "tarifdefteriuygulamasi" // Doğru Firebase proje ID'si
+    projectId: "tarifdefteriuygulamasi"
 });
 
 const app = express();
 app.use(cors({ origin: true }));
 app.use(express.json());
 
-require('dotenv').config();
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 
 const openai = new OpenAI({
@@ -25,23 +19,21 @@ const openai = new OpenAI({
     baseURL: "https://openrouter.ai/api/v1",
     defaultHeaders: {
         "HTTP-Referer": "https://tarifdefteri.app",
-        "X-Title": "Tarif Defteri App",
+        "X-Title": "Recipe Keeper App",
     }
 });
 
-// Middleware: Uygulama içinden gelen giriş isteklerini kontrol eder.
+// Middleware: Authenticate requests
 const authenticate = async (req, res, next) => {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        console.log("Yetkisiz istek: Token yok.");
-        return res.status(401).json({ success: false, message: 'Bu işlemi gerçekleştirmek için giriş yapmalısınız.' });
+        return res.status(401).json({ success: false, message: 'Authentication required.' });
     }
 
     const idToken = authHeader.split('Bearer ')[1];
-    
-    // Geliştirme kolaylığı için curl ile backend testinde dummy "test-test-test" token'ını kabul edelim.
+
+    // Allow test token for development
     if (idToken === "test-test-test") {
-        console.log("Dev ortamı: Curl ile yetkilendirildi.");
         req.user = { uid: "test-user" };
         return next();
     }
@@ -51,12 +43,12 @@ const authenticate = async (req, res, next) => {
         req.user = decodedToken;
         next();
     } catch (error) {
-        console.error("Token doğrulama hatası:", error);
-        return res.status(401).json({ success: false, message: 'Geçersiz veya süresi dolmuş giriş tokeni.' });
+        console.error("Token verification error:", error);
+        return res.status(401).json({ success: false, message: 'Invalid or expired token.' });
     }
 };
 
-// Genel log
+// Request logging
 app.use((req, res, next) => {
     console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
     next();
@@ -65,12 +57,17 @@ app.use((req, res, next) => {
 // Recipe API Endpoint
 app.post('/api/generate-recipe', authenticate, async (req, res) => {
     const userPrompt = req.body.prompt;
+    const languageCode = req.body.language || 'en';
 
     if (!userPrompt || typeof userPrompt !== 'string' || userPrompt.trim().length === 0) {
-        return res.status(400).json({ success: false, message: 'Lütfen geçerli bir yemek ismi giriniz.' });
+        return res.status(400).json({ success: false, message: 'Please enter a valid food name.' });
     }
 
-    console.log(`Yemek tarifi isteniyor: ${userPrompt}`);
+    console.log(`Recipe requested: "${userPrompt}" | Language: ${languageCode}`);
+
+    const measurementRule = languageCode === 'en'
+        ? 'Use US Imperial measurements (cups, oz, tbsp, tsp, °F) for all quantities and temperatures.'
+        : 'Use metric measurements (grams, ml, °C) for all quantities and temperatures.';
 
     try {
         const response = await openai.chat.completions.create({
@@ -78,29 +75,45 @@ app.post('/api/generate-recipe', authenticate, async (req, res) => {
             messages: [
                 {
                     "role": "system",
-                    "content": `Sen deneyimli bir şefsin. Senden istenen yemek için çok detaylı bir tarif oluşturacaksın.
-                    
-                    TEKNİK STİL: Tariflerin mutlaka "Nefis Yemek Tarifleri" sitesindeki gibi tam ölçülü, denenmiş ve güvenilir olmalı. 
-                    Ölçülerde "göz kararı" gibi muğlak ifadeler asla kullanma. Bunun yerine "su bardağı", "yemek kaşığı", "gram" gibi net birimler kullan.
-                    
-                    ÖNEMLİ KURAL: Kullanıcının girdiği şey yenilebilir bir yemek veya içecek DEĞİLSE, JSON içinde "success": false ve "message": "Bu bir yemek ismi değil." döndür.
-                    
-                    Yanıtın SADECE geçerli bir JSON formatında olmalı.
-                    
-                    Kullanılacak JSON Şeması (Başarılı):
-                    {
-                        "baslik": "Yemek Adı",
-                        "icindekiler": [ { "bolum_adi": "Genel", "malzemeler": ["Malzeme 1"] } ],
-                        "adimlar": ["Adım 1", "Adım 2"],
-                        "puf_noktasi": "Varsa püf noktası",
-                        "success": true
-                    }
+                    "content": `You are an expert chef assistant. Your job is to generate a detailed, reliable recipe for the dish the user requests.
 
-                    (Hata Durumu): { "success": false, "message": "Girdiğiniz ifade bir yemek tarifi değil." }`
+=== LANGUAGE (HIGHEST PRIORITY) ===
+User's language code: '${languageCode}'
+- Write ALL text values in the JSON response in this language ONLY.
+- Never mix languages.
+- ${measurementRule}
+
+=== FOOD NAME INTERPRETATION ===
+Always interpret the dish name in the culinary/cultural context of language code '${languageCode}'.
+Examples:
+- language='en', input='pasta' → Italian-style pasta dish (spaghetti, penne, etc.) NOT a Turkish cream cake.
+- language='tr', input='pasta' → Turkish cream cake.
+- language='en', input='mantı' → Turkish-style dumplings (explain what it is in English).
+Apply the meaning that is most natural and common in the cuisine of the given language.
+
+=== VALIDATION ===
+If the input is clearly NOT a food or drink name in any language, return:
+{ "success": false, "message": "<appropriate error message translated to '${languageCode}'>" }
+
+=== RESPONSE FORMAT (CRITICAL) ===
+Return ONLY valid JSON. No markdown, no code fences, no extra text.
+JSON keys must stay EXACTLY as shown below. Only translate the VALUES.
+
+Success:
+{
+    "baslik": "Recipe title in '${languageCode}'",
+    "icindekiler": [ { "bolum_adi": "Section name in '${languageCode}'", "malzemeler": ["Ingredient with precise quantity"] } ],
+    "adimlar": ["Detailed step 1", "Detailed step 2"],
+    "puf_noktasi": "Chef tip in '${languageCode}', or empty string if none",
+    "success": true
+}
+
+Error:
+{ "success": false, "message": "Reason in '${languageCode}'" }`
                 },
                 {
                     "role": "user",
-                    "content": `Bana şu yemek için bir tarif ver: ${userPrompt}`
+                    "content": `Generate a recipe for: ${userPrompt}`
                 }
             ],
             temperature: 0.7,
@@ -112,18 +125,18 @@ app.post('/api/generate-recipe', authenticate, async (req, res) => {
         const recipeData = JSON.parse(jsonContent);
 
         if (recipeData.success === false) {
-            return res.json({ success: false, message: recipeData.message || "Bu bir yemek tarifi gibi görünmüyor." });
+            return res.json({ success: false, message: recipeData.message || "This does not appear to be a valid food name." });
         }
 
         return res.json({ success: true, data: recipeData });
 
     } catch (error) {
-        console.error("API Hatası:", error);
-        return res.status(500).json({ success: false, message: 'Tarif oluşturulurken bir hata oluştu: ' + error.message });
+        console.error("API Error:", error);
+        return res.status(500).json({ success: false, message: 'Failed to generate recipe: ' + error.message });
     }
 });
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`Backend server çalışıyor: Port ${PORT}`);
+    console.log(`Backend server running on port ${PORT}`);
 });
