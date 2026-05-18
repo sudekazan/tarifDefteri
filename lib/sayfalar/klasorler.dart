@@ -14,6 +14,7 @@ import 'dart:io';
 import 'klasor_kayit.dart';
 import '../services/firebase_service.dart';
 import '../services/ad_service.dart';
+import '../services/review_service.dart';
 
 class Klasorler extends StatefulWidget {
   @override
@@ -46,8 +47,12 @@ class _KlasorlerState extends State<Klasorler> {
     });
     _temizleEskiKlasorler();
     _klasorleriYukle().then((_) {
-      // Klasörler yüklendikten sonra filtreli listeyi de güncelle
       _filtreleKlasorler('');
+    });
+
+    // Uygulama açıldığında review kontrolü yap (3 saniye gecikme ile - reklamdan sonra)
+    Future.delayed(const Duration(seconds: 3), () {
+      if (mounted) ReviewService.checkAndRequestReview(context);
     });
   }
 
@@ -734,7 +739,7 @@ class _FavoriTariflerSayfasiState extends State<FavoriTariflerSayfasi> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              'Detayları görmek için tıklayın',
+                              'recipes_tap_for_details'.tr(),
                               style: TextStyle(
                                 fontSize: 12,
                                 color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.7),
