@@ -169,27 +169,31 @@ class _SettingsPageState extends State<SettingsPage> {
     try {
       final InAppReview inAppReview = InAppReview.instance;
       
-      // Kullanıcıya uygulama içi (pop-up) değerlendirme penceresi göster (en rahatı)
+      // Önce uygulama içi (native pop-up) değerlendirme göster
       if (await inAppReview.isAvailable()) {
         await inAppReview.requestReview();
       } else {
-        // Eğer pop-up çıkmazsa veya desteklenmiyorsa mağazaya yönlendir
-        final String packageName = "com.sudekazan.tarif_defteri_yeni";
-        final String appleId = "APPLE_APP_ID_BURAYA"; // TODO: Apple Developer (App Store Connect) hesabınızdaki numeric App ID'yi buraya yazın (örnek: 6512345678)
+        // Native pop-up desteklenmiyorsa mağaza sayfasına yönlendir
+        // iOS'ta openStoreListing bundle ID'yi otomatik algılar
+        // Android'te packageName zorunlu
+        const String androidPackageName = "com.sudekazan.tarif_defteri_yeni";
+        const String appleId = "6739165870"; // App Store Connect → App Information → Apple ID
         
-        await inAppReview.openStoreListing(
-          appStoreId: appleId,
-        ).catchError((_) async {
-          // Her ihtimale karşı tarayıcıdan açma yedeği
-          final Uri url = Uri.parse(
-            Platform.isAndroid
-                ? "https://play.google.com/store/apps/details?id=$packageName"
-                : "https://apps.apple.com/app/id$appleId",
+        try {
+          await inAppReview.openStoreListing(
+            appStoreId: appleId,         // iOS için
+            microsoftStoreId: null,
           );
+        } catch (_) {
+          // openStoreListing başarısız olursa tarayıcıda aç
+          final Uri url = Platform.isAndroid
+              ? Uri.parse("https://play.google.com/store/apps/details?id=$androidPackageName")
+              : Uri.parse("https://apps.apple.com/app/id$appleId");
+          
           if (await canLaunchUrl(url)) {
             await launchUrl(url, mode: LaunchMode.externalApplication);
           }
-        });
+        }
       }
     } catch (e) {
       if (mounted) {
