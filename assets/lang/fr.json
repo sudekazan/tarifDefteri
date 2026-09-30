@@ -91,6 +91,8 @@
     "common_yes": "Oui",
     "common_no": "Non",
     "common_save": "Enregistrer",
+    "common_ok": "OK",
+    "common_error": "Erreur",
     "folders_search_hint": "Rechercher un dossier...",
     "folders_empty_title": "Pas encore de dossiers",
     "folders_empty_subtitle": "Ajoutez un nouveau dossier pour organiser vos recettes.",

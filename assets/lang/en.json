@@ -91,6 +91,8 @@
   "common_yes": "Yes",
   "common_no": "No",
   "common_save": "Save",
+  "common_ok": "OK",
+  "common_error": "Error",
   "folders_search_hint": "Search folder...",
   "folders_empty_title": "No folders yet",
   "folders_empty_subtitle": "Add a new folder to organize your recipes.",

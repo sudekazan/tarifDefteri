@@ -9,14 +9,12 @@ import 'package:path/path.dart' as path;
 import '../widgets/banner_ad_widget.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:easy_localization/easy_localization.dart';
-import '../services/ai_recipe_service.dart';
 import '../services/firebase_service.dart';
-import '../utils/error_helper.dart';
 
 class TarifOlusturma extends StatefulWidget {
   @override
   State<TarifOlusturma> createState() => _TarifOlusturmaState();
-  TarifData tarifData;
+  final TarifData tarifData;
   final Map<String, dynamic>? aiResultMap;
   final bool isManual;
 
@@ -36,7 +34,6 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
   
   bool isAiGenerated = false;
   final FirebaseService _firebaseService = FirebaseService();
-  bool _isUploading = false;
 
   // Görseli kalıcı klasöre kopyala
   Future<String> _copyImageToPermanentLocation(String sourcePath) async {
@@ -293,195 +290,6 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
     }
   }
 
-  // Yapay Zeka ile Tarif Oluştur
-  Future<void> _generateRecipeWithAI() async {
-    // Yemek adı boşsa uyarı ver
-    if (tfTaridAdi.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('ai_name_warning'.tr()),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return;
-    }
-
-    // Yükleniyor dialogu göster - İyileştirilmiş UI
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => Dialog(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        child: Container(
-          padding: EdgeInsets.all(24),
-          decoration: BoxDecoration(
-             color: Theme.of(context).cardColor,
-             borderRadius: BorderRadius.circular(24),
-             boxShadow: [
-               BoxShadow(
-                 color: Colors.black26,
-                 blurRadius: 16,
-                 offset: Offset(0, 4),
-               )
-             ]
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Özel bir animasyonlu ikon yerine şimdilik renkli progress indicator
-              SizedBox(
-                height: 60,
-                width: 60,
-                child: CircularProgressIndicator(
-                  strokeWidth: 4,
-                  valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).primaryColor),
-                  backgroundColor: Theme.of(context).primaryColor.withOpacity(0.2),
-                ),
-              ),
-              SizedBox(height: 24),
-              Text(
-                'ai_generating_title'.tr(),
-                style: TextStyle(
-                  fontSize: 18, 
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).textTheme.bodyLarge?.color
-                ),
-                textAlign: TextAlign.center,
-              ),
-              SizedBox(height: 12),
-              Text(
-                'ai_generating_message'.tr(),
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.8),
-                  height: 1.4,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-
-    try {
-      final aiService = AiRecipeService();
-      final recipeData = await aiService.generateRecipe(
-        tfTaridAdi.text.trim(),
-        languageCode: context.locale.languageCode,
-      );
-      
-      // Dialogu kapat
-      Navigator.pop(context);
-
-      // Gelen veriyi form alanlarına doldur
-      setState(() {
-        // Mevcut bölümleri temizle
-        sections.clear();
-        
-        // --- MALZEMELER PARSING ---
-        var icindekilerData = recipeData['icindekiler'] ?? recipeData['ingredients'];
-        
-        // 1. Durum: icindekiler bir liste (Beklenen format)
-        if (icindekilerData != null && icindekilerData is List) {
-          for (var bolum in icindekilerData) {
-             if (bolum is! Map) continue; // Hatalı format koruması
-
-             String bolumAdi = bolum['bolum_adi'] ?? bolum['section_name'] ?? bolum['title'] ?? 'Genel';
-             var mData = bolum['malzemeler'] ?? bolum['ingredients'] ?? [];
-             List<String> malzemeler = [];
-             
-             if (mData is List) {
-               malzemeler = List<String>.from(mData.map((e) => e.toString()));
-             } else if (mData is String) {
-               malzemeler = mData.split('\n').where((e) => e.trim().isNotEmpty).toList();
-             }
-             
-             String title = bolumAdi == 'Genel' ? 'recipe_section_ingredients'.tr() : bolumAdi;
-             
-             // Tip belirle
-             String type = 'malzemeler';
-             String lowerTitle = title.toLowerCase();
-             
-             if (lowerTitle.contains('sos') || lowerTitle.contains('sauce')) type = 'sos'; 
-             else if (lowerTitle.contains('hamur') || lowerTitle.contains('dough')) type = 'hamur';
-             else if (lowerTitle.contains('şerbet') || lowerTitle.contains('serbet') || lowerTitle.contains('syrup')) type = 'serbet';
-             else if (lowerTitle.contains('harç') || lowerTitle.contains('harc') || lowerTitle.contains('filling')) type = 'harc';
-             
-             _addSectionIfNotEmpty(title, type, malzemeler);
-          }
-        } 
-        // 2. Durum: icindekiler yerine direkt üst seviyede malzemeler var (Tekdüze format)
-        else {
-           var flatMalzemeler = recipeData['malzemeler'] ?? recipeData['ingredients'];
-           if (flatMalzemeler != null) {
-              List<String> list = [];
-              if (flatMalzemeler is List) {
-                list = List<String>.from(flatMalzemeler.map((e) => e.toString()));
-              } else if (flatMalzemeler is String) {
-                list = flatMalzemeler.split('\n').where((e) => e.trim().isNotEmpty).toList();
-              }
-              _addSectionIfNotEmpty('recipe_section_ingredients'.tr(), 'malzemeler', list);
-           }
-        }
-
-        // --- ADIMLAR PARSING ---
-        var adimlarData = recipeData['adimlar'] ?? recipeData['steps'] ?? recipeData['instructions'];
-        if (adimlarData != null) {
-          List<String> adimlar = [];
-          if (adimlarData is List) {
-             adimlar = List<String>.from(adimlarData.map((e) => e.toString()));
-          } else if (adimlarData is String) {
-             adimlar = adimlarData.split('\n').where((e) => e.trim().isNotEmpty).toList();
-          }
-          
-          _addSectionIfNotEmpty(
-            'recipe_section_instructions'.tr(), 
-            'yapilis', 
-            adimlar
-          );
-        }
-
-        // --- PÜF NOKTASI PARSING ---
-        var pufData = recipeData['puf_noktasi'] ?? recipeData['tips'] ?? recipeData['tip'] ?? recipeData['chef_notes'];
-        if (pufData != null && pufData.toString().isNotEmpty) {
-           _addSectionIfNotEmpty(
-            'Püf Noktası', 
-            'puf_noktasi', 
-            [pufData.toString()]
-          );
-        }
-      });
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('ai_success_message'.tr()), 
-          backgroundColor: Colors.green,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-      
-      setState(() {
-        isAiGenerated = true;
-      });
-
-
-    } catch (e) {
-      // Dialogu kapat
-      Navigator.pop(context);
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('${'ai_error_title'.tr()}: ${ErrorHelper.getFriendlyErrorMessage(e)}'),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    }
-  }
-  
-
-
   void _showBigPhoto(File file) {
     showDialog(
       context: context,
@@ -511,8 +319,6 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
       onWillPop: () async {
         // Geri tuşuna basıldığında uyarı göster
         if (tfTaridAdi.text.isNotEmpty || sections.isNotEmpty || photos.isNotEmpty) {
-          // İlk kez oluşturuyor mu yoksa düzenliyor mu kontrol et
-          bool isEditing = widget.tarifData.tarif_adi.isNotEmpty;
           
           final result = await showDialog<bool>(
             context: context,
@@ -626,7 +432,7 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
               icon: Icon(Icons.photo_camera, color: Theme.of(context).iconTheme.color),
               onPressed: () async {
                 final picked = await _picker.pickMultiImage();
-                if (picked != null && picked.isNotEmpty) {
+                if (picked.isNotEmpty) {
                   setState(() {
                     photos.addAll(picked);
                   });
@@ -659,7 +465,7 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
                           GestureDetector(
                             onTap: () async {
                               final picked = await _picker.pickMultiImage();
-                              if (picked != null && picked.isNotEmpty) {
+                              if (picked.isNotEmpty) {
                                 setState(() {
                                   photos.addAll(picked);
                                 });

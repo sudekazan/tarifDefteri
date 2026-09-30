@@ -11,8 +11,6 @@ class KlasorData {
     this.iconCode = 0xe2c7, // Varsayılan: Icons.folder
   });
 
-  static const IconData _defaultIcon = Icons.folder;
-
   IconData get icon {
     return IconData(iconCode, fontFamily: 'MaterialIcons');
   }

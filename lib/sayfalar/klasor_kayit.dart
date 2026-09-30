@@ -1,7 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:tarif_defteri/tarifler_data/klasor_data.dart';
 import '../widgets/banner_ad_widget.dart';
 
 class KlasorKayit extends StatefulWidget {

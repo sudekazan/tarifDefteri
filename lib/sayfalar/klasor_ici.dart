@@ -144,6 +144,35 @@ class _KlasorIciState extends State<KlasorIci> {
     }
   }
 
+  /// Varsayılan klasörlerin adını aktif dile göre döndürür.
+  /// Kullanıcının kendi oluşturduğu klasörlerde orijinal isim korunur.
+  String _getDisplayName() {
+    final name = widget.klasorData.klasor_adi;
+    final id = widget.klasorData.klasor_id;
+    if (id == 1 &&
+        (name == 'Tatlılar' ||
+            name == 'Desserts' ||
+            name == 'default_folder_desserts'.tr())) {
+      return 'default_folder_desserts'.tr();
+    } else if (id == 2 &&
+        (name == 'Çorbalar' ||
+            name == 'Soups' ||
+            name == 'default_folder_soups'.tr())) {
+      return 'default_folder_soups'.tr();
+    } else if (id == 3 &&
+        (name == 'Ana Yemekler' ||
+            name == 'Main Dishes' ||
+            name == 'default_folder_main_dishes'.tr())) {
+      return 'default_folder_main_dishes'.tr();
+    } else if (id == 4 &&
+        (name == 'Kahvaltılıklar' ||
+            name == 'Breakfast' ||
+            name == 'default_folder_breakfast'.tr())) {
+      return 'default_folder_breakfast'.tr();
+    }
+    return name;
+  }
+
   void _filtreleTarifler(String arama) {
     setState(() {
       if (arama.isEmpty) {
@@ -220,19 +249,6 @@ class _KlasorIciState extends State<KlasorIci> {
       await _firebaseService.updateTarifInFirebase(guncelTarif);
       
       _tarifleriYukle();
-    }
-  }
-
-  void _tarifDuzenle(TarifData tarif) async {
-    final guncelTarif = await Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => TarifOlusturma(
-        tarifData: tarif,
-        isManual: true,
-      )),
-    );
-    if (guncelTarif != null && guncelTarif is TarifData && guncelTarif.tarif_adi.isNotEmpty) {
-      _tarifGuncelle(guncelTarif);
     }
   }
 
@@ -552,7 +568,7 @@ class _KlasorIciState extends State<KlasorIci> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Tamam'),
+            child: Text('common_ok'.tr()),
           )
         ],
       ),
@@ -600,7 +616,7 @@ class _KlasorIciState extends State<KlasorIci> {
                     }
                   },
                 )
-              : Text(widget.klasorData.klasor_adi, style: const TextStyle(fontWeight: FontWeight.bold)),
+              : Text(_getDisplayName(), style: const TextStyle(fontWeight: FontWeight.bold)),
           backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
           actions: [
             aramaYapiliyorMu

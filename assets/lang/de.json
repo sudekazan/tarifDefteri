@@ -105,6 +105,8 @@
     "common_yes": "Ja",
     "common_no": "Nein",
     "common_save": "Speichern",
+    "common_ok": "OK",
+    "common_error": "Fehler",
     "folders_search_hint": "Ordner suchen...",
     "folders_empty_title": "Noch keine Ordner",
     "folders_empty_subtitle": "Fügen Sie einen neuen Ordner hinzu, um Ihre Rezepte zu organisieren.",

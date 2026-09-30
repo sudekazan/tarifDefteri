@@ -91,6 +91,8 @@
   "common_yes": "Evet",
   "common_no": "Hayır",
   "common_save": "Kaydet",
+  "common_ok": "Tamam",
+  "common_error": "Hata",
   "folders_search_hint": "Klasör ara...",
   "folders_empty_title": "Henüz klasör yok",
   "folders_empty_subtitle": "Tariflerini düzenlemek için yeni bir klasör ekle.",

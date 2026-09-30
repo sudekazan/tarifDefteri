@@ -91,6 +91,8 @@
     "common_yes": "Sí",
     "common_no": "No",
     "common_save": "Guardar",
+    "common_ok": "Aceptar",
+    "common_error": "Error",
     "folders_search_hint": "Buscar carpeta...",
     "folders_empty_title": "Aún no hay carpetas",
     "folders_empty_subtitle": "Añade una nueva carpeta para organizar tus recetas.",

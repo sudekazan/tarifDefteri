@@ -91,6 +91,8 @@
     "common_yes": "Sim",
     "common_no": "Não",
     "common_save": "Salvar",
+    "common_ok": "OK",
+    "common_error": "Erro",
     "folders_search_hint": "Pesquisar pasta...",
     "folders_empty_title": "Ainda não há pastas",
     "folders_empty_subtitle": "Adicione uma nova pasta para organizar suas receitas.",

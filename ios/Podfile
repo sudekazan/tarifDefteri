@@ -4,8 +4,10 @@ platform :ios, '15.0'
 # CocoaPods analytics sends network stats synchronously affecting flutter build latency.
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'
 
-# Disable input and output paths for faster pod install
-install! 'cocoapods', :disable_input_output_paths => true
+# Bağımlılık döngüsü sorununu gidermek için deterministic_uuids ve generate_multiple_pod_projects kapatıldı
+install! 'cocoapods',
+         :disable_input_output_paths => true,
+         :deterministic_uuids => false
 
 project 'Runner', {
   'Debug' => :debug,
@@ -39,6 +41,7 @@ target 'Runner' do
     inherit! :search_paths
   end
 end
+
 post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
@@ -59,6 +62,33 @@ post_install do |installer|
       
       # iOS deployment target ayarı
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
+
+      # Bağımlılık döngüsünü çözmek için:
+      # abseil, leveldb-library ve GoogleUserMessagingPlatform target'larının
+      # paralel build özelliğini kapatıyoruz.
+      # Bu, Xcode'un build sıralamasını kendi belirlemesini sağlar.
+      if ['abseil', 'leveldb-library', 'GoogleUserMessagingPlatform', 
+          'GoogleUserMessagingPlatform-UserMessagingPlatformResources',
+          'video_player_avfoundation'].include?(target.name)
+        config.build_settings['SWIFT_INSTALL_OBJC_HEADER'] = 'NO'
+      end
     end
+
+    # Döngüye giren target'ların birbirinden bağımsız olarak build edilmesini sağla
+    # Bu ayar, Xcode'un bu target'ların build sırasını doğru belirlemesine yardımcı olur
+    if target.name == 'abseil'
+      target.build_phases.each do |phase|
+        if phase.is_a?(Xcodeproj::Project::Object::PBXCopyFilesBuildPhase) ||
+           phase.is_a?(Xcodeproj::Project::Object::PBXHeadersBuildPhase)
+          phase.run_only_for_deployment_postprocessing = '0'
+        end
+      end
+    end
+  end
+
+  # Pods projesindeki tüm scheme'lerin paralel build'ini devre dışı bırak
+  # Bu, bağımlılık döngüsünü engelleyen en etkili yöntemdir
+  installer.pods_project.build_configuration_list.build_configurations.each do |config|
+    config.build_settings['COMPILER_INDEX_STORE_ENABLE'] = 'NO'
   end
 end

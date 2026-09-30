@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:easy_localization/easy_localization.dart';
 import 'package:upgrader/upgrader.dart';
 
 /// Güncelleme ekranı - eski sürümdeki kullanıcıları zorunlu olarak güncellemeye yönlendirir.
@@ -74,6 +73,5 @@ class LocalizedUpgraderMessages extends UpgraderMessages {
   @override
   String get title => '🎉 New Update Available!';
 
-  @override
   String get updateAvailable => 'New version available!';
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../theme/app_theme.dart';
 
 class ThemeSettingsPage extends StatelessWidget {
@@ -14,7 +15,7 @@ class ThemeSettingsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Tema Seçimi')),
+      appBar: AppBar(title: Text('settings_theme_title'.tr())),
       body: ListView(
         children: AppTheme.values.map((theme) {
           return RadioListTile<AppTheme>(

@@ -11,6 +11,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:share_plus/share_plus.dart';
 import 'klasor_kayit.dart';
 import '../services/firebase_service.dart';
 import '../services/ad_service.dart';
@@ -89,13 +90,8 @@ class _KlasorlerState extends State<Klasorler> {
     // Bu sayede güncelleme yapan kullanıcıların mevcut klasörleri korunur
     bool defaultsAdded = prefs.getBool('defaultFoldersAdded') ?? false;
     
-    if (mevcutKlasorler.isEmpty && !defaultsAdded) {
-      // Yeni kullanıcı - hiç klasörü yok
-      await _varsayilanKlasorleriEkle(prefs);
-      await prefs.setBool('defaultFoldersAdded', true);
-      mevcutKlasorler = prefs.getStringList('klasorler') ?? [];
-    } else if (!defaultsAdded) {
-      // Mevcut kullanıcı - klasörleri var, sadece flag'i ayarla
+    if (!defaultsAdded) {
+      // Yeni kullanıcı veya mevcut kullanıcı - sadece flag'i ayarla, varsayılan klasör ekleme
       await prefs.setBool('defaultFoldersAdded', true);
     }
     
@@ -566,7 +562,7 @@ class _KlasorlerState extends State<Klasorler> {
   }
 }
 
-// Favori tarifler için özel sayfa (Bu kısım aynı kalmalı)
+// Favori tarifler için özel sayfa
 class FavoriTariflerSayfasi extends StatefulWidget {
   final List<TarifData> favoriTarifler;
   const FavoriTariflerSayfasi({super.key, required this.favoriTarifler});
@@ -577,21 +573,24 @@ class FavoriTariflerSayfasi extends StatefulWidget {
 
 class _FavoriTariflerSayfasiState extends State<FavoriTariflerSayfasi> {
   List<TarifData> filtreliTarifler = [];
+  List<TarifData> tumFavoriler = []; // Arama sırasında filtrelenmemiş tam liste
   bool aramaYapiliyorMu = false;
   TextEditingController aramaController = TextEditingController();
+  final FirebaseService _firebaseService = FirebaseService();
 
   @override
   void initState() {
     super.initState();
-    filtreliTarifler = List.from(widget.favoriTarifler);
+    tumFavoriler = List.from(widget.favoriTarifler);
+    filtreliTarifler = List.from(tumFavoriler);
   }
 
   void _filtreleTarifler(String arama) {
     setState(() {
       if (arama.isEmpty) {
-        filtreliTarifler = List.from(widget.favoriTarifler);
+        filtreliTarifler = List.from(tumFavoriler);
       } else {
-        filtreliTarifler = widget.favoriTarifler.where((tarif) =>
+        filtreliTarifler = tumFavoriler.where((tarif) =>
           tarif.tarif_adi.toLowerCase().contains(arama.toLowerCase()) ||
           tarif.tarif_aciklama.toLowerCase().contains(arama.toLowerCase())
         ).toList();
@@ -599,15 +598,89 @@ class _FavoriTariflerSayfasiState extends State<FavoriTariflerSayfasi> {
     });
   }
 
+  /// Favori durumunu hem UI'da hem de kalıcı depoda günceller
   Future<void> _favoriDurumunuDegistir(TarifData tarif) async {
-    // Bu kısım şimdilik basit bir toggle işlemi yapıyor
-    // Gerçek uygulamada veritabanında güncelleme yapılacak
     setState(() {
       tarif.isFavorite = !tarif.isFavorite;
       if (!tarif.isFavorite) {
+        tumFavoriler.removeWhere((t) => t.tarif_id == tarif.tarif_id);
         filtreliTarifler.removeWhere((t) => t.tarif_id == tarif.tarif_id);
       }
     });
+
+    // SharedPreferences'ta favori durumunu güncelle
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final key = 'tarifler_${tarif.klasor_id}';
+      final tariflerJson = prefs.getStringList(key) ?? [];
+      final idx = tariflerJson.indexWhere(
+          (e) => json.decode(e)['tarif_id'] == tarif.tarif_id);
+      if (idx != -1) {
+        final map = json.decode(tariflerJson[idx]) as Map<String, dynamic>;
+        map['isFavorite'] = tarif.isFavorite;
+        tariflerJson[idx] = json.encode(map);
+        await prefs.setStringList(key, tariflerJson);
+      }
+      // Firebase'de de güncelle
+      await _firebaseService.updateTarifInFirebase(tarif);
+    } catch (e) {
+      print('Favori güncelleme hatası: $e');
+    }
+  }
+
+  /// Tarifi hem SharedPreferences'tan hem Firebase'den kalıcı olarak siler
+  Future<void> _tarifSil(TarifData tarif) async {
+    // Önce UI'dan kaldır
+    setState(() {
+      tumFavoriler.removeWhere((t) => t.tarif_id == tarif.tarif_id);
+      filtreliTarifler.removeWhere((t) => t.tarif_id == tarif.tarif_id);
+    });
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final key = 'tarifler_${tarif.klasor_id}';
+      final tariflerJson = prefs.getStringList(key) ?? [];
+      tariflerJson.removeWhere(
+          (e) => json.decode(e)['tarif_id'] == tarif.tarif_id);
+      await prefs.setStringList(key, tariflerJson);
+
+      // Firebase'den de sil
+      await _firebaseService.deleteTarifFromFirebase(
+          tarif.klasor_id, tarif.tarif_id);
+    } catch (e) {
+      print('Tarif silme hatası: $e');
+    }
+  }
+
+  /// Tarif içeriğini paylaşır
+  Future<void> _tarifPaylas(BuildContext btnContext, TarifData tarif) async {
+    try {
+      String shareText = '📖 ${tarif.tarif_adi}\n\n';
+      shareText += tarif.tarif_aciklama;
+      shareText += '\n\n━━━━━━━━━━━━━━━━━━\n';
+      shareText += 'share_from_app'.tr();
+
+      // iOS için butonun konumunu al (iPad popup için)
+      final box = btnContext.findRenderObject() as RenderBox?;
+      final sharePositionOrigin =
+          box != null ? box.localToGlobal(Offset.zero) & box.size : null;
+
+      await Share.share(
+        shareText,
+        subject: tarif.tarif_adi,
+        sharePositionOrigin: sharePositionOrigin,
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('share_error_generic'.tr()),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -635,7 +708,7 @@ class _FavoriTariflerSayfasiState extends State<FavoriTariflerSayfasi> {
                 if (aramaYapiliyorMu) {
                   aramaYapiliyorMu = false;
                   aramaController.clear();
-                  filtreliTarifler = List.from(widget.favoriTarifler);
+                  filtreliTarifler = List.from(tumFavoriler);
                 } else {
                   aramaYapiliyorMu = true;
                 }
@@ -647,159 +720,204 @@ class _FavoriTariflerSayfasiState extends State<FavoriTariflerSayfasi> {
       body: filtreliTarifler.isEmpty
           ? Center(child: Text('favorites_empty_text'.tr()))
           : ListView.separated(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-        itemCount: filtreliTarifler.length,
-        separatorBuilder: (context, index) => const SizedBox(height: 8),
-        itemBuilder: (context, index) {
-          var tarif = filtreliTarifler[index];
-          return GestureDetector(
-            onTap: () async {
-              final guncelTarif = await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => TarifDetay(tarif: tarif),
-                ),
-              );
-              if (guncelTarif != null && guncelTarif is TarifData) {
-                _favoriDurumunuDegistir(guncelTarif);
-              }
-            },
-            child: Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              color: Theme.of(context).cardColor,
-              child: SizedBox(
-                height: 100,
-                child: Padding(
-                  padding: const EdgeInsets.all(12.0),
-                  child: Row(
-                    children: [
-                      if (tarif.tarif_resimler.isNotEmpty)
-                        Container(
-                          width: 60,
-                          height: 60,
-                          margin: const EdgeInsets.only(right: 12),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: tarif.tarif_resimler.first.startsWith('http')
-                                ? Image.network(
-                                    tarif.tarif_resimler.first,
-                                    width: 60,
-                                    height: 60,
-                                    fit: BoxFit.cover,
-                                    loadingBuilder: (context, child, loadingProgress) {
-                                      if (loadingProgress == null) return child;
-                                      return Center(
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          value: loadingProgress.expectedTotalBytes != null
-                                              ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
-                                              : null,
-                                        ),
-                                      );
-                                    },
-                                    errorBuilder: (context, error, stackTrace) {
-                                      return Container(
-                                        color: Colors.grey[300],
-                                        child: Icon(Icons.broken_image, color: Colors.grey[600], size: 24),
-                                      );
-                                    },
-                                  )
-                                : Image.file(
-                                    File(tarif.tarif_resimler.first),
-                                    width: 60,
-                                    height: 60,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) {
-                                      return Container(
-                                        color: Colors.grey[300],
-                                        child: Icon(Icons.broken_image, color: Colors.grey[600], size: 24),
-                                      );
-                                    },
-                                  ),
-                          ),
-                        ),
-                      
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.center,
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+              itemCount: filtreliTarifler.length,
+              separatorBuilder: (context, index) => const SizedBox(height: 8),
+              itemBuilder: (context, index) {
+                final tarif = filtreliTarifler[index];
+                return GestureDetector(
+                  onTap: () async {
+                    final guncelTarif = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => TarifDetay(tarif: tarif),
+                      ),
+                    );
+                    if (guncelTarif != null && guncelTarif is TarifData) {
+                      _favoriDurumunuDegistir(guncelTarif);
+                    }
+                  },
+                  child: Card(
+                    elevation: 2,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    color: Theme.of(context).cardColor,
+                    child: SizedBox(
+                      height: 100,
+                      child: Padding(
+                        padding: const EdgeInsets.all(12.0),
+                        child: Row(
                           children: [
-                            Text(
-                              tarif.tarif_adi,
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w600,
-                                color: Theme.of(context).textTheme.bodyLarge?.color,
+                            // Tarif görseli
+                            if (tarif.tarif_resimler.isNotEmpty)
+                              Container(
+                                width: 60,
+                                height: 60,
+                                margin: const EdgeInsets.only(right: 12),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: tarif.tarif_resimler.first.startsWith('http')
+                                      ? Image.network(
+                                          tarif.tarif_resimler.first,
+                                          width: 60,
+                                          height: 60,
+                                          fit: BoxFit.cover,
+                                          loadingBuilder: (context, child, loadingProgress) {
+                                            if (loadingProgress == null) return child;
+                                            return const Center(
+                                              child: CircularProgressIndicator(strokeWidth: 2),
+                                            );
+                                          },
+                                          errorBuilder: (context, error, stackTrace) =>
+                                              Container(
+                                                color: Colors.grey[300],
+                                                child: Icon(Icons.broken_image,
+                                                    color: Colors.grey[600], size: 24),
+                                              ),
+                                        )
+                                      : File(tarif.tarif_resimler.first).existsSync()
+                                          ? Image.file(
+                                              File(tarif.tarif_resimler.first),
+                                              width: 60,
+                                              height: 60,
+                                              fit: BoxFit.cover,
+                                              errorBuilder: (context, error, stackTrace) =>
+                                                  Container(
+                                                    color: Colors.grey[300],
+                                                    child: Icon(Icons.broken_image,
+                                                        color: Colors.grey[600], size: 24),
+                                                  ),
+                                            )
+                                          : Container(
+                                              color: Colors.grey[300],
+                                              child: Icon(Icons.image_not_supported,
+                                                  color: Colors.grey[600], size: 24),
+                                            ),
+                                ),
                               ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+
+                            // Tarif adı ve alt yazı
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    tarif.tarif_adi,
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w600,
+                                      color: Theme.of(context).textTheme.bodyLarge?.color,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'recipes_tap_for_details'.tr(),
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Theme.of(context)
+                                          .textTheme
+                                          .bodyMedium
+                                          ?.color
+                                          ?.withValues(alpha: 0.7),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'recipes_tap_for_details'.tr(),
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.7),
-                              ),
+
+                            // Aksiyon butonları
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                // Favori kaldır
+                                IconButton(
+                                  icon: Icon(
+                                    tarif.isFavorite
+                                        ? Icons.favorite
+                                        : Icons.favorite_border,
+                                    color: Colors.red,
+                                    size: 20,
+                                  ),
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(
+                                      minWidth: 32, minHeight: 32),
+                                  onPressed: () => _favoriDurumunuDegistir(tarif),
+                                ),
+
+                                // Paylaş
+                                Builder(
+                                  builder: (btnContext) => IconButton(
+                                    icon: Icon(
+                                      Icons.share,
+                                      color: Theme.of(context).primaryColor,
+                                      size: 20,
+                                    ),
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(
+                                        minWidth: 32, minHeight: 32),
+                                    onPressed: () =>
+                                        _tarifPaylas(btnContext, tarif),
+                                  ),
+                                ),
+
+                                // Sil
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.delete,
+                                    color: Colors.red,
+                                    size: 20,
+                                  ),
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(
+                                      minWidth: 32, minHeight: 32),
+                                  onPressed: () {
+                                    showDialog(
+                                      context: context,
+                                      builder: (ctx) => AlertDialog(
+                                        title: Text(
+                                            'recipes_delete_title'.tr()),
+                                        content: Text(
+                                          '${tarif.tarif_adi}${'recipes_delete_confirm_suffix'.tr()}',
+                                        ),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () =>
+                                                Navigator.pop(ctx),
+                                            child: Text('common_no'.tr()),
+                                          ),
+                                          ElevatedButton(
+                                            onPressed: () {
+                                              Navigator.pop(ctx);
+                                              _tarifSil(tarif);
+                                            },
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: Colors.red,
+                                            ),
+                                            child: Text(
+                                              'common_yes'.tr(),
+                                              style: const TextStyle(
+                                                  color: Colors.white),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ],
                             ),
                           ],
                         ),
                       ),
-                    
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          // Favori butonu
-                          IconButton(
-                            icon: Icon(
-                              tarif.isFavorite ? Icons.favorite : Icons.favorite_border,
-                              color: Colors.red,
-                              size: 20,
-                            ),
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                            onPressed: () => _favoriDurumunuDegistir(tarif),
-                          ),
-                          // Paylaş butonu
-                          IconButton(
-                            icon: Icon(
-                              Icons.share,
-                              color: Theme.of(context).primaryColor,
-                              size: 20,
-                            ),
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                            onPressed: () {
-                              // Paylaşma işlevi burada olacak
-                            },
-                          ),
-                          // Silme butonu
-                          IconButton(
-                            icon: const Icon(
-                              Icons.delete,
-                              color: Colors.red,
-                              size: 20,
-                            ),
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                            onPressed: () {
-                              // Silme işlevi burada olacak
-                            },
-                          ),
-                        ],
-                      ),
-                    ],
+                    ),
                   ),
-                ),
-              ),
+                );
+              },
             ),
-          );
-        },
-      ),
     );
   }
 }
