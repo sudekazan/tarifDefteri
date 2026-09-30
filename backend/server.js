@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 const OpenAI = require('openai');
 const admin = require('firebase-admin');
 
@@ -11,6 +12,9 @@ admin.initializeApp({
 const app = express();
 app.use(cors({ origin: true }));
 app.use(express.json());
+
+// Serve static website files
+app.use(express.static(path.join(__dirname, 'public')));
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 
@@ -54,8 +58,8 @@ app.use((req, res, next) => {
     next();
 });
 
-// Root endpoint
-app.get('/', (req, res) => {
+// API status endpoint
+app.get('/api/status', (req, res) => {
     res.json({
         status: 'ok',
         message: 'Tarif Defteri API is running!',
