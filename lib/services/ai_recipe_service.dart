@@ -18,7 +18,14 @@ class AiRecipeService {
       String idToken = "test-test-test"; // Test token'ı (Eğer kullanıcı giriş yapmadıysa test ortamı kabulü için)
       
       if (user != null) {
-        idToken = await user.getIdToken(true) ?? "test-test-test";
+        try {
+          // true parametresini kaldırdık, böylece gereksiz yere her seferinde ağdan token yenilemeye çalışmaz.
+          // Eğer token alınamazsa (örn. ağ hatası) test token'ı ile devam eder.
+          idToken = await user.getIdToken() ?? "test-test-test";
+        } catch (e) {
+          print('Token error: $e');
+          idToken = "test-test-test";
+        }
       }
 
       final url = Uri.parse('$_baseUrl/generate-recipe');

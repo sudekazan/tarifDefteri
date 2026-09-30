@@ -290,6 +290,46 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
     }
   }
 
+  void _editSectionItem(int sectionIndex, int itemIndex) {
+    TextEditingController editController = TextEditingController(
+      text: sections[sectionIndex]['items'][itemIndex],
+    );
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('recipe_edit_edit_item'.tr(defaultValue: 'Maddeyi Düzenle')),
+        content: TextField(
+          controller: editController,
+          autofocus: true,
+          maxLines: null,
+          decoration: InputDecoration(
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('common_cancel'.tr(defaultValue: 'İptal')),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (editController.text.trim().isNotEmpty) {
+                setState(() {
+                  sections[sectionIndex]['items'][itemIndex] = editController.text.trim();
+                });
+              }
+              Navigator.pop(context);
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).primaryColor),
+            child: Text('common_save'.tr(defaultValue: 'Kaydet'), style: const TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showBigPhoto(File file) {
     showDialog(
       context: context,
@@ -756,6 +796,7 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
                                           child: section['type'] == 'linkler' && _isValidUrl(section['items'][i])
                                               ? InkWell(
                                                   onTap: () => _launchUrl(section['items'][i]),
+                                                  onLongPress: () => _editSectionItem(secIndex, i),
                                                   borderRadius: BorderRadius.circular(4),
                                                   child: Padding(
                                                     padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
@@ -782,11 +823,18 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
                                                     ),
                                                   ),
                                                 )
-                                              : Text(
-                                                  section['items'][i],
-                                                  style: TextStyle(
-                                                    color: Theme.of(context).textTheme.bodyMedium?.color,
-                                                    fontSize: 16,
+                                              : InkWell(
+                                                  onTap: () => _editSectionItem(secIndex, i),
+                                                  borderRadius: BorderRadius.circular(8),
+                                                  child: Padding(
+                                                    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                                                    child: Text(
+                                                      section['items'][i],
+                                                      style: TextStyle(
+                                                        color: Theme.of(context).textTheme.bodyMedium?.color,
+                                                        fontSize: 16,
+                                                      ),
+                                                    ),
                                                   ),
                                                 ),
                                         ),
