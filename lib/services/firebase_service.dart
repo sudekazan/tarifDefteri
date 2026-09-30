@@ -420,6 +420,20 @@ class FirebaseService {
   // Çıkış yap
   Future<void> signOut() async {
     await _auth.signOut();
+    
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      // Yalnızca klasör ve tarif verilerini sil, ayarları (tema vb.) koru
+      final keys = prefs.getKeys();
+      for (String key in keys) {
+        if (key == 'klasorler' || key.startsWith('tarifler_')) {
+          await prefs.remove(key);
+        }
+      }
+      print('Çıkış yapıldı ve yerel kullanıcı verileri temizlendi.');
+    } catch (e) {
+      print('Çıkış yaparken yerel veri temizleme hatası: $e');
+    }
   }
 
   // Kullanıcı hesabını ve tüm verilerini kalıcı olarak sil
