@@ -22,8 +22,8 @@ class AdService {
           : 'ca-app-pub-3940256099942544/5662855259';
     } else {
       return Platform.isAndroid
-          ? 'ca-app-pub-2127302088980655/9413134086'
-          : 'ca-app-pub-2127302088980655/3694560082';
+          ? 'ca-app-pub-7331912696640483/9388360220'
+          : 'ca-app-pub-7331912696640483/5884229487';
     }
   }
 
@@ -46,8 +46,8 @@ class AdService {
           : 'ca-app-pub-3940256099942544/2934735716';
     } else {
       return Platform.isAndroid
-          ? 'ca-app-pub-2127302088980655/7429316929'
-          : 'ca-app-pub-2127302088980655/9262656239';
+          ? 'ca-app-pub-7331912696640483/8861660897'
+          : 'ca-app-pub-7331912696640483/7346408402';
     }
   }
 
@@ -57,10 +57,9 @@ class AdService {
           ? 'ca-app-pub-3940256099942544/5224354917' // Test ID for Android Rewarded
           : 'ca-app-pub-3940256099942544/1712485313'; // Test ID for iOS Rewarded
     } else {
-      // TODO: Replace with real rewarded ad unit IDs when ready
       return Platform.isAndroid
-          ? 'ca-app-pub-2127302088980655/4444444444' // Replace with real Android ID
-          : 'ca-app-pub-2127302088980655/5555555555'; // Replace with real iOS ID
+          ? 'ca-app-pub-7331912696640483/3790306779'
+          : 'ca-app-pub-7331912696640483/8510392826';
     }
   }
 
