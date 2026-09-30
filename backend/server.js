@@ -54,6 +54,22 @@ app.use((req, res, next) => {
     next();
 });
 
+// Root endpoint
+app.get('/', (req, res) => {
+    res.json({
+        status: 'ok',
+        message: 'Tarif Defteri API is running!',
+        endpoints: {
+            generateRecipe: 'POST /api/generate-recipe'
+        }
+    });
+});
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
 // Recipe API Endpoint
 app.post('/api/generate-recipe', authenticate, async (req, res) => {
     const userPrompt = req.body.prompt;
