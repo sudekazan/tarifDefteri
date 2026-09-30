@@ -34,6 +34,7 @@ class _KlasorIciState extends State<KlasorIci> {
     super.initState();
     _tarifleriYukle();
     AdService.loadInterstitialAd();
+    AdService.loadRewardedAd();
   }
 
   Future<void> _tarifleriYukle() async {
@@ -494,7 +495,12 @@ class _KlasorIciState extends State<KlasorIci> {
       );
 
       // Aynı anda reklamı göster
-      AdService.showInterstitialAd(onAdClosed: () async {
+      AdService.showRewardedAd(
+        onUserEarnedReward: (reward) {
+          // Kullanıcı ödülü kazandı (reklamı tam izledi)
+          print('Kullanıcı reklamı başarıyla izledi: ${reward.amount} ${reward.type}');
+        },
+        onAdClosed: () async {
         try {
           // Reklam kapandığında AI sonucunu bekle (muhtemelen zaten hazır!)
           final recipeData = await recipeFuture;

@@ -24,6 +24,7 @@ void main() async {
   await AdService.requestTrackingAuthorization();
   AdService.loadAppOpenAd();
   AdService.loadInterstitialAd();
+  AdService.loadRewardedAd();
   
   runApp(
     EasyLocalization(

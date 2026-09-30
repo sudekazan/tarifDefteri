@@ -7,10 +7,12 @@ import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 class AdService {
   static AppOpenAd? _appOpenAd;
   static InterstitialAd? _interstitialAd;
+  static RewardedAd? _rewardedAd;
   static bool _isShowingAd = false;
   static bool _showAfterLoad = false;
   static bool _isLoadingAd = false;
   static bool _isLoadingInterstitial = false;
+  static bool _isLoadingRewarded = false;
 
   /// Test and Real Ad Units
   static String get appOpenAdUnitId {
@@ -46,6 +48,19 @@ class AdService {
       return Platform.isAndroid
           ? 'ca-app-pub-2127302088980655/7429316929'
           : 'ca-app-pub-2127302088980655/9262656239';
+    }
+  }
+
+  static String get rewardedAdUnitId {
+    if (kDebugMode) {
+      return Platform.isAndroid
+          ? 'ca-app-pub-3940256099942544/5224354917' // Test ID for Android Rewarded
+          : 'ca-app-pub-3940256099942544/1712485313'; // Test ID for iOS Rewarded
+    } else {
+      // TODO: Replace with real rewarded ad unit IDs when ready
+      return Platform.isAndroid
+          ? 'ca-app-pub-2127302088980655/4444444444' // Replace with real Android ID
+          : 'ca-app-pub-2127302088980655/5555555555'; // Replace with real iOS ID
     }
   }
 
@@ -193,5 +208,72 @@ class AdService {
     );
 
     _interstitialAd!.show();
+  }
+
+  /// Load Rewarded Ad.
+  static void loadRewardedAd() {
+    if (_isLoadingRewarded || _rewardedAd != null) return;
+
+    _isLoadingRewarded = true;
+    print('Loading RewardedAd ($rewardedAdUnitId)...');
+
+    RewardedAd.load(
+      adUnitId: rewardedAdUnitId,
+      request: const AdRequest(),
+      rewardedAdLoadCallback: RewardedAdLoadCallback(
+        onAdLoaded: (ad) {
+          _rewardedAd = ad;
+          _isLoadingRewarded = false;
+          print('RewardedAd loaded successfully.');
+        },
+        onAdFailedToLoad: (error) {
+          print('RewardedAd failed to load: $error');
+          _isLoadingRewarded = false;
+        },
+      ),
+    );
+  }
+
+  /// Show Rewarded Ad.
+  static void showRewardedAd({VoidCallback? onAdClosed, Function(RewardItem)? onUserEarnedReward}) {
+    if (_rewardedAd == null) {
+      print('RewardedAd not ready yet (null). Attempting to load...');
+      loadRewardedAd();
+      // If ad is not ready, we proceed as if they watched it so the flow doesn't break
+      onUserEarnedReward?.call(RewardItem(0, 'fallback'));
+      onAdClosed?.call();
+      return;
+    }
+
+    print('Attempting to show RewardedAd...');
+    _rewardedAd!.fullScreenContentCallback = FullScreenContentCallback(
+      onAdShowedFullScreenContent: (ad) {
+        _isShowingAd = true;
+        print('RewardedAd showed full screen content.');
+      },
+      onAdDismissedFullScreenContent: (ad) {
+        print('RewardedAd dismissed.');
+        _isShowingAd = false;
+        ad.dispose();
+        _rewardedAd = null;
+        loadRewardedAd();
+        onAdClosed?.call();
+      },
+      onAdFailedToShowFullScreenContent: (ad, error) {
+        print('RewardedAd failed to show: $error');
+        _isShowingAd = false;
+        ad.dispose();
+        _rewardedAd = null;
+        loadRewardedAd();
+        // Even if it fails to show, we proceed so user isn't stuck
+        onUserEarnedReward?.call(RewardItem(0, 'fallback_error'));
+        onAdClosed?.call();
+      },
+    );
+
+    _rewardedAd!.show(onUserEarnedReward: (AdWithoutView ad, RewardItem rewardItem) {
+      print('User earned reward: ${rewardItem.amount} ${rewardItem.type}');
+      onUserEarnedReward?.call(rewardItem);
+    });
   }
 }
