@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tarif_defteri/services/firebase_service.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:tarif_defteri/tarifler_data/tarif_data.dart';
 import 'package:tarif_defteri/sayfalar/tarif_olusturma.dart';
@@ -336,6 +338,12 @@ class _TarifDetayState extends State<TarifDetay> {
               );
             },
           ),
+          // Taşı Butonu
+          IconButton(
+            icon: Icon(Icons.drive_file_move_outline, color: Theme.of(context).iconTheme.color),
+            onPressed: () => _showMoveDialog(context),
+            tooltip: 'folders_move'.tr(defaultValue: 'Klasöre Taşı'),
+          ),
           // Düzenle butonu
           IconButton(
             icon: Icon(Icons.edit, color: Theme.of(context).iconTheme.color),
@@ -655,6 +663,111 @@ class _TarifDetayState extends State<TarifDetay> {
       ),
       bottomNavigationBar: const BannerAdWidget(),
     );
+  }
+
+  void _showMoveDialog(BuildContext context) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    List<String> klasorJsonList = prefs.getStringList('klasorler') ?? [];
+    List<Map<String, dynamic>> klasorler = [];
+    for (String j in klasorJsonList) {
+      klasorler.add(json.decode(j));
+    }
+    
+    if (!mounted) return;
+    
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.symmetric(vertical: 20),
+          constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.7),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'folders_select_move'.tr(defaultValue: 'Taşınacak Klasörü Seçin'),
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 10),
+              Expanded(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: klasorler.length,
+                  itemBuilder: (context, index) {
+                    final klasorMap = klasorler[index];
+                    int kId = klasorMap['klasor_id'] ?? (index + 1);
+                    if (kId == widget.tarif.klasor_id) return const SizedBox.shrink(); // Zaten bu klasörde
+                    
+                    String displayName = klasorMap['klasor_adi'] ?? '';
+                    if (kId == 1 && (displayName == 'default_folder_desserts'.tr() || displayName == 'Tatlılar' || displayName == 'Desserts')) {
+                      displayName = 'default_folder_desserts'.tr();
+                    } else if (kId == 2 && (displayName == 'default_folder_soups'.tr() || displayName == 'Çorbalar' || displayName == 'Soups')) {
+                      displayName = 'default_folder_soups'.tr();
+                    } else if (kId == 3 && (displayName == 'default_folder_main_dishes'.tr() || displayName == 'Ana Yemekler' || displayName == 'Main Dishes')) {
+                      displayName = 'default_folder_main_dishes'.tr();
+                    } else if (kId == 4 && (displayName == 'default_folder_breakfast'.tr() || displayName == 'Kahvaltılıklar' || displayName == 'Breakfast')) {
+                      displayName = 'default_folder_breakfast'.tr();
+                    }
+                    
+                    return ListTile(
+                      leading: Icon(Icons.folder, color: Theme.of(context).primaryColor),
+                      title: Text(displayName),
+                      onTap: () async {
+                        Navigator.pop(context);
+                        await _moveTarif(kId);
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _moveTarif(int newKlasorId) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    
+    // Eski klasörden çıkar
+    String oldKey = 'tarifler_${widget.tarif.klasor_id}';
+    List<String> oldList = prefs.getStringList(oldKey) ?? [];
+    oldList.removeWhere((t) {
+      var map = json.decode(t);
+      return map['tarif_id'] == widget.tarif.tarif_id;
+    });
+    await prefs.setStringList(oldKey, oldList);
+    
+    // Firebase'den eski doc'u sil
+    FirebaseService fs = FirebaseService();
+    await fs.deleteTarifFromFirebase(widget.tarif.klasor_id, widget.tarif.tarif_id);
+    
+    // Yeni klasöre ekle
+    widget.tarif.klasor_id = newKlasorId;
+    widget.tarif.updatedAt = DateTime.now().millisecondsSinceEpoch;
+    String newKey = 'tarifler_$newKlasorId';
+    List<String> newList = prefs.getStringList(newKey) ?? [];
+    newList.add(json.encode(widget.tarif.toMap()));
+    await prefs.setStringList(newKey, newList);
+    
+    // Firebase'e yeni doc olarak ekle
+    await fs.saveTarifToFirebase(widget.tarif);
+    
+    if (!mounted) return;
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('folders_move_success'.tr(defaultValue: 'Tarif başarıyla taşındı.')),
+        backgroundColor: Colors.green,
+      ),
+    );
+    
+    Navigator.pop(context, true); // Pop the screen and return true to indicate change
   }
 }
 

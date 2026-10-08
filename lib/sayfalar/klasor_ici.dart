@@ -698,7 +698,9 @@ class _KlasorIciState extends State<KlasorIci> {
                             builder: (context) => TarifDetay(tarif: tarif),
                           ),
                         );
-                        if (guncelTarif != null && guncelTarif is TarifData) {
+                        if (guncelTarif == true) {
+                          _tarifleriYukle();
+                        } else if (guncelTarif != null && guncelTarif is TarifData) {
                           _tarifGuncelle(guncelTarif);
                         }
                       },
