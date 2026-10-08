@@ -2,10 +2,7 @@ import json
 import glob
 
 new_keys = {
-    "recipe_detail_cooking_mode": "Yemek Yapma Modu",
-    "cooking_mode_ingredients": "Malzemeler",
-    "cooking_mode_step": "Adım",
-    "cooking_mode_steps": "Yapılışı"
+    "recipe_detail_portions": "Porsiyon Çarpanı:"
 }
 
 for filepath in glob.glob('assets/lang/*.json'):

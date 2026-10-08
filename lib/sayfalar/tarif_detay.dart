@@ -22,6 +22,33 @@ class TarifDetay extends StatefulWidget {
 
 class _TarifDetayState extends State<TarifDetay> {
   List<Map<String, dynamic>> sections = [];
+  double _portionMultiplier = 1.0;
+
+  String _scaleIngredient(String ingredient, double multiplier) {
+    if (multiplier == 1.0) return ingredient;
+    
+    // İlk rakamı veya kesri eşleştir
+    final regExp = RegExp(r'(?:^|\s)(\d+(?:[.,]\d+)?(?:\/\d+)?)(?=\s|$)');
+    
+    var match = regExp.firstMatch(ingredient);
+    if (match != null) {
+      String numStr = match.group(1)!;
+      double? val;
+      if (numStr.contains('/')) {
+        var parts = numStr.split('/');
+        val = double.parse(parts[0]) / double.parse(parts[1]);
+      } else {
+        val = double.tryParse(numStr.replaceAll(',', '.'));
+      }
+      
+      if (val != null) {
+        double scaled = val * multiplier;
+        String result = scaled.toStringAsFixed(2).replaceAll(RegExp(r'0*$'), '').replaceAll(RegExp(r'\.$'), '');
+        return ingredient.replaceFirst(numStr, result, match.start);
+      }
+    }
+    return ingredient;
+  }
 
   @override
   void initState() {
@@ -487,6 +514,62 @@ class _TarifDetayState extends State<TarifDetay> {
 
               const SizedBox(height: 24),
 
+              // Porsiyon Ayarlama
+              if (sections.any((s) => s['type'] == 'malzemeler' || s['type'] == 'harc' || s['type'] == 'hamur'))
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'recipe_detail_portions'.tr(),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).textTheme.bodyLarge?.color,
+                        ),
+                      ),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).cardColor,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 4,
+                            )
+                          ]
+                        ),
+                        child: Row(
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.remove),
+                              onPressed: _portionMultiplier > 0.5 ? () {
+                                setState(() {
+                                  _portionMultiplier -= 0.5;
+                                });
+                              } : null,
+                            ),
+                            Text(
+                              '${_portionMultiplier}x',
+                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.add),
+                              onPressed: () {
+                                setState(() {
+                                  _portionMultiplier += 0.5;
+                                });
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+
               // Bölümleri göster
               if (sections.isNotEmpty)
                 ...sections.map((section) {
@@ -600,7 +683,9 @@ class _TarifDetayState extends State<TarifDetay> {
                                         : Padding(
                                             padding: const EdgeInsets.only(top: 4),
                                             child: Text(
-                                              section['items'][i],
+                                              (section['type'] == 'malzemeler' || section['type'] == 'harc' || section['type'] == 'hamur' || section['type'] == 'serbet' || section['type'] == 'sos')
+                                                  ? _scaleIngredient(section['items'][i], _portionMultiplier)
+                                                  : section['items'][i],
                                               style: TextStyle(
                                                 color: Theme.of(context).textTheme.bodyMedium?.color,
                                                 fontSize: 16,
@@ -667,7 +752,7 @@ class _TarifDetayState extends State<TarifDetay> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => YemekYapmaModu(tarif: widget.tarif),
+              builder: (context) => YemekYapmaModu(tarif: widget.tarif, portionMultiplier: _portionMultiplier),
             ),
           );
         },

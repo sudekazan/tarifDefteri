@@ -6,8 +6,9 @@ import 'package:tarif_defteri/tarifler_data/tarif_data.dart';
 
 class YemekYapmaModu extends StatefulWidget {
   final TarifData tarif;
+  final double portionMultiplier;
 
-  const YemekYapmaModu({Key? key, required this.tarif}) : super(key: key);
+  const YemekYapmaModu({Key? key, required this.tarif, this.portionMultiplier = 1.0}) : super(key: key);
 
   @override
   State<YemekYapmaModu> createState() => _YemekYapmaModuState();
@@ -34,6 +35,28 @@ class _YemekYapmaModuState extends State<YemekYapmaModu> {
     super.dispose();
   }
 
+  String _scaleIngredient(String ingredient, double multiplier) {
+    if (multiplier == 1.0) return ingredient;
+    final regExp = RegExp(r'(?:^|\s)(\d+(?:[.,]\d+)?(?:\/\d+)?)(?=\s|$)');
+    var match = regExp.firstMatch(ingredient);
+    if (match != null) {
+      String numStr = match.group(1)!;
+      double? val;
+      if (numStr.contains('/')) {
+        var parts = numStr.split('/');
+        val = double.parse(parts[0]) / double.parse(parts[1]);
+      } else {
+        val = double.tryParse(numStr.replaceAll(',', '.'));
+      }
+      if (val != null) {
+        double scaled = val * multiplier;
+        String result = scaled.toStringAsFixed(2).replaceAll(RegExp(r'0*$'), '').replaceAll(RegExp(r'\.$'), '');
+        return ingredient.replaceFirst(numStr, result, match.start);
+      }
+    }
+    return ingredient;
+  }
+
   void _preparePages() {
     List<Widget> pages = [];
     
@@ -48,7 +71,7 @@ class _YemekYapmaModuState extends State<YemekYapmaModu> {
           if (section['type'] == 'malzemeler' || section['type'] == 'harc' || section['type'] == 'hamur' || section['type'] == 'serbet' || section['type'] == 'sos') {
             malzemeler.add('${section['title']}:');
             for (var item in (section['items'] ?? [])) {
-              malzemeler.add('• $item');
+              malzemeler.add('• ' + _scaleIngredient(item.toString(), widget.portionMultiplier));
             }
             malzemeler.add('');
           } else if (section['type'] == 'yapilis') {
@@ -79,7 +102,7 @@ class _YemekYapmaModuState extends State<YemekYapmaModu> {
         if (isYapilis) {
           adimlar.add(trimmed);
         } else {
-          malzemeler.add(trimmed);
+          malzemeler.add(_scaleIngredient(trimmed, widget.portionMultiplier));
         }
       }
     }
