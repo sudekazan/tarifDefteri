@@ -4,6 +4,16 @@ const cors = require('cors');
 const path = require('path');
 const OpenAI = require('openai');
 const admin = require('firebase-admin');
+const rateLimit = require('express-rate-limit');
+
+// Her kullanıcı/IP için 1 saatte maksimum 15 tarif isteği
+const recipeLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000,
+    max: 15,
+    message: { success: false, message: 'Rate limit exceeded. Please try again later.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
 
 admin.initializeApp({
     projectId: "tarifdefteriuygulamasi"
@@ -36,11 +46,7 @@ const authenticate = async (req, res, next) => {
 
     const idToken = authHeader.split('Bearer ')[1];
 
-    // Allow test token for development
-    if (idToken === "test-test-test") {
-        req.user = { uid: "test-user" };
-        return next();
-    }
+    // (Test token backdoor removed for security)
 
     try {
         const decodedToken = await admin.auth().verifyIdToken(idToken);
@@ -75,7 +81,7 @@ app.get('/health', (req, res) => {
 });
 
 // Recipe API Endpoint
-app.post('/api/generate-recipe', authenticate, async (req, res) => {
+app.post('/api/generate-recipe', recipeLimiter, authenticate, async (req, res) => {
     const userPrompt = req.body.prompt;
     const languageCode = req.body.language || 'en';
 

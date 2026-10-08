@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:firebase_auth/firebase_auth.dart';
-
+import 'package:easy_localization/easy_localization.dart';
 class AiRecipeService {
   
   // Platforma göre doğru localhost adresini bulur
@@ -15,17 +15,20 @@ class AiRecipeService {
     try {
       // Firebase giriş yapmış olan kullanıcının kimlik token'ını alıyoruz
       User? user = FirebaseAuth.instance.currentUser;
-      String idToken = "test-test-test"; // Test token'ı (Eğer kullanıcı giriş yapmadıysa test ortamı kabulü için)
       
-      if (user != null) {
-        try {
-          // true parametresini kaldırdık, böylece gereksiz yere her seferinde ağdan token yenilemeye çalışmaz.
-          // Eğer token alınamazsa (örn. ağ hatası) test token'ı ile devam eder.
-          idToken = await user.getIdToken() ?? "test-test-test";
-        } catch (e) {
-          print('Token error: $e');
-          idToken = "test-test-test";
+      if (user == null) {
+        throw Exception('auth_required_for_ai'.tr(defaultValue: 'Yapay zeka asistanını kullanmak için lütfen giriş yapın.'));
+      }
+      
+      String idToken = '';
+      try {
+        idToken = await user.getIdToken() ?? '';
+        if (idToken.isEmpty) {
+          throw Exception('Token boş döndü.');
         }
+      } catch (e) {
+        print('Token error: $e');
+        throw Exception('Oturum doğrulanamadı. Lütfen tekrar giriş yapın.');
       }
 
       final url = Uri.parse('$_baseUrl/generate-recipe');

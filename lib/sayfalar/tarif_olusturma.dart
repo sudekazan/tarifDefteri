@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'dart:convert';
 import 'package:tarif_defteri/tarifler_data/tarif_data.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
@@ -195,6 +196,23 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
     super.dispose();
   }
   void _parseExistingTarif(String tarifAciklama) {
+    if (widget.tarifData.tarif_aciklama_json != null && widget.tarifData.tarif_aciklama_json!.isNotEmpty) {
+      try {
+        final List<dynamic> decoded = json.decode(widget.tarifData.tarif_aciklama_json!);
+        sections = decoded.map((e) {
+          return {
+            'title': e['title'],
+            'type': e['type'],
+            'items': List<String>.from(e['items'] ?? []),
+            'isExpanded': e['isExpanded'] ?? true
+          };
+        }).toList();
+        return;
+      } catch (e) {
+        print('JSON parsing error in tarif_olusturma: $e');
+      }
+    }
+
     if (tarifAciklama.isEmpty) return;
     
     final lines = tarifAciklama.split('\n');
@@ -1046,11 +1064,19 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
                           print('Kaydedilecek görsel sayısı: ${resimYollari.length}');
                           print('Görsel yolları: $resimYollari');
                           
+                          String tarifAciklamaJson = '';
+                          try {
+                            tarifAciklamaJson = json.encode(sections);
+                          } catch (e) {
+                            print('Error encoding JSON: $e');
+                          }
+                          
                           if (mounted) {
                             Navigator.pop(context, TarifData(
                               tarif_id: widget.tarifData.tarif_id,
                               tarif_adi: tfTaridAdi.text.trim(),
                               tarif_aciklama: tarifAciklama.trim(),
+                              tarif_aciklama_json: tarifAciklamaJson,
                               tarif_resimler: resimYollari,
                               klasor_id: widget.tarifData.klasor_id,
                             ));

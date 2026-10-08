@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
+import 'dart:convert';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:tarif_defteri/tarifler_data/tarif_data.dart';
 import 'package:tarif_defteri/sayfalar/tarif_olusturma.dart';
@@ -26,6 +27,24 @@ class _TarifDetayState extends State<TarifDetay> {
   }
 
   void _parseTarifAciklama() {
+    if (widget.tarif.tarif_aciklama_json != null && widget.tarif.tarif_aciklama_json!.isNotEmpty) {
+      try {
+        final List<dynamic> decoded = json.decode(widget.tarif.tarif_aciklama_json!);
+        sections = decoded.map((e) {
+          // Geri dönen öğelerin listeler olduğundan emin olalım
+          return {
+            'title': e['title'],
+            'type': e['type'],
+            'items': List<String>.from(e['items'] ?? []),
+            'isExpanded': e['isExpanded'] ?? true
+          };
+        }).toList();
+        return;
+      } catch (e) {
+        print('JSON parsing error in tarif_detay: $e');
+      }
+    }
+
     String tarifAciklama = widget.tarif.tarif_aciklama;
     if (tarifAciklama.isEmpty) return;
     

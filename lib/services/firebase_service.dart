@@ -33,7 +33,8 @@ class FirebaseService {
         'klasor_adi': klasor.klasor_adi,
         'iconCode': klasor.iconCode,
         'createdAt': FieldValue.serverTimestamp(),
-      });
+        'updatedAt': klasor.updatedAt,
+      }, SetOptions(merge: true));
     } catch (e) {
       print('Klasör kaydetme hatası: $e');
     }
@@ -52,10 +53,19 @@ class FirebaseService {
 
       return snapshot.docs.map((doc) {
         final data = doc.data();
+        int? updatedAt;
+        if (data['updatedAt'] != null) {
+          if (data['updatedAt'] is Timestamp) {
+            updatedAt = (data['updatedAt'] as Timestamp).millisecondsSinceEpoch;
+          } else if (data['updatedAt'] is int) {
+            updatedAt = data['updatedAt'];
+          }
+        }
         return KlasorData(
           klasor_id: data['klasor_id'],
           klasor_adi: data['klasor_adi'],
           iconCode: data['iconCode'],
+          updatedAt: updatedAt,
         );
       }).toList();
     } catch (e) {
@@ -110,12 +120,13 @@ class FirebaseService {
         'tarif_id': tarif.tarif_id,
         'tarif_adi': tarif.tarif_adi,
         'tarif_aciklama': tarif.tarif_aciklama,
+        'tarif_aciklama_json': tarif.tarif_aciklama_json,
         'tarif_resimler': guncelResimler,
         'klasor_id': tarif.klasor_id,
         'isFavorite': tarif.isFavorite,
         'createdAt': FieldValue.serverTimestamp(),
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
+        'updatedAt': tarif.updatedAt,
+      }, SetOptions(merge: true));
 
       return guncelResimler; // Upload sonrası URL'leri döndür
     } catch (e) {
@@ -137,7 +148,11 @@ class FirebaseService {
           .get();
 
       return snapshot.docs.map((doc) {
-        return TarifData.fromMap(doc.data());
+        final data = doc.data();
+        if (data['updatedAt'] != null && data['updatedAt'] is Timestamp) {
+          data['updatedAt'] = (data['updatedAt'] as Timestamp).millisecondsSinceEpoch;
+        }
+        return TarifData.fromMap(data);
       }).toList();
     } catch (e) {
       print('Tarif yükleme hatası: $e');
@@ -177,9 +192,10 @@ class FirebaseService {
           .update({
         'tarif_adi': tarif.tarif_adi,
         'tarif_aciklama': tarif.tarif_aciklama,
+        'tarif_aciklama_json': tarif.tarif_aciklama_json,
         'tarif_resimler': guncelResimler,
         'isFavorite': tarif.isFavorite,
-        'updatedAt': FieldValue.serverTimestamp(),
+        'updatedAt': tarif.updatedAt,
       });
     } catch (e) {
       print('Tarif güncelleme hatası: $e');
@@ -250,6 +266,7 @@ class FirebaseService {
             'tarif_id': tarif.tarif_id,
             'tarif_adi': tarif.tarif_adi,
             'tarif_aciklama': tarif.tarif_aciklama,
+            'tarif_aciklama_json': tarif.tarif_aciklama_json,
             'tarif_resimler': tarif.tarif_resimler,
             'klasor_id': tarif.klasor_id,
             'isFavorite': tarif.isFavorite,
@@ -270,14 +287,11 @@ class FirebaseService {
     try {
       final prefs = await SharedPreferences.getInstance();
       
-      // 1. Önce yerel verileri Firebase'e yedekle
-      await backupLocalDataToFirebase();
-      
-      // 2. Firebase'den güncel verileri çek
+      // 1. Firebase'den güncel verileri çek
       final cloudKlasorler = await loadKlasorlerFromFirebase();
       final localKlasorJsonList = prefs.getStringList('klasorler') ?? [];
       
-      // 3. Yerel klasörleri oku
+      // 2. Yerel klasörleri oku
       final List<KlasorData> localKlasorler = [];
       for (int i = 0; i < localKlasorJsonList.length; i++) {
         final map = json.decode(localKlasorJsonList[i]);
@@ -286,104 +300,92 @@ class FirebaseService {
           klasor_id: klasorId,
           klasor_adi: map['klasor_adi'],
           iconCode: map['iconCode'] ?? 0xe2c7,
+          updatedAt: map['updatedAt'],
         ));
       }
       
-      // 4. Klasör ID'lerini birleştir (hem yerel hem de cloud'dan gelenleri)
-      final Set<int> allKlasorIds = {};
-      allKlasorIds.addAll(localKlasorler.map((k) => k.klasor_id));
-      allKlasorIds.addAll(cloudKlasorler.map((k) => k.klasor_id));
+      // 3. Klasör ID'lerini birleştir ve en güncelini seç
+      final Map<int, KlasorData> mergedKlasorlerMap = {};
       
-      // 5. Her klasör için tarifleri birleştir
+      for (var k in cloudKlasorler) {
+        mergedKlasorlerMap[k.klasor_id] = k;
+      }
+      
+      for (var k in localKlasorler) {
+        if (!mergedKlasorlerMap.containsKey(k.klasor_id)) {
+          mergedKlasorlerMap[k.klasor_id] = k;
+          await saveKlasorToFirebase(k);
+        } else {
+          // İkisi de varsa updatedAt'e bak
+          final cloudK = mergedKlasorlerMap[k.klasor_id]!;
+          if (k.updatedAt > cloudK.updatedAt) {
+            mergedKlasorlerMap[k.klasor_id] = k; // Yerel daha yeni
+            await saveKlasorToFirebase(k);
+          }
+        }
+      }
+      
+      // 4. Her klasör için tarifleri birleştir
       Map<int, List<TarifData>> mergedTarifler = {};
       
-      for (final klasorId in allKlasorIds) {
-        // Yerel tarifleri oku
+      for (final klasorId in mergedKlasorlerMap.keys) {
         final localKey = 'tarifler_$klasorId';
         final localTariflerJson = prefs.getStringList(localKey) ?? [];
         final List<TarifData> localTarifler = localTariflerJson.map((e) {
           return TarifData.fromMap(json.decode(e));
         }).toList();
         
-        // Cloud tariflerini oku
         final cloudTarifler = await loadTariflerFromFirebase(klasorId);
         
-        // Tarifleri birleştir (tarif_id'ye göre deduplicate et)
         final Map<int, TarifData> tarifMap = {};
         
-        // cloudTarifler'ı kontrol et ve yerel resimler varsa yükle
+        // Cloud tariflerini haritaya ekle
         for (var tarif in cloudTarifler) {
+          tarifMap[tarif.tarif_id] = tarif;
+        }
+        
+        // Yerel tarifleri kontrol et
+        for (var tarif in localTarifler) {
+          if (!tarifMap.containsKey(tarif.tarif_id)) {
+            // Sadece yerelde var
+            tarif.tarif_resimler = await saveTarifToFirebase(tarif);
+            tarifMap[tarif.tarif_id] = tarif;
+          } else {
+            // Her ikisinde de var
+            final cloudT = tarifMap[tarif.tarif_id]!;
+            if (tarif.updatedAt > cloudT.updatedAt) {
+              // Yerel tarif daha yeni, cloud'u güncelle
+              await updateTarifInFirebase(tarif);
+              tarifMap[tarif.tarif_id] = tarif;
+            }
+          }
+        }
+        
+        // Resimleri kontrol et
+        for (var tarif in tarifMap.values) {
           List<String> originalPaths = List.from(tarif.tarif_resimler);
           List<String> cloudPaths = await _checkAndUploadLocalImages(originalPaths);
-          
-          // Eğer yollar değiştiyse (yerel resimler yüklendi ise) Firebase'i güncelle
           if (!_listEquals(originalPaths, cloudPaths)) {
             tarif.tarif_resimler = cloudPaths;
             await updateTarifInFirebase(tarif);
           }
-          tarifMap[tarif.tarif_id] = tarif;
         }
-        
-        // Sonra yerel tarifleri işle
-        for (var tarif in localTarifler) {
-          if (!tarifMap.containsKey(tarif.tarif_id)) {
-            // Yeni yerel tarif - fotoğrafları yükle ve Firebase'e kaydet
-            // saveTarifToFirebase artık cloud URL listesi döndürüyor
-            tarif.tarif_resimler = await saveTarifToFirebase(tarif);
-            tarifMap[tarif.tarif_id] = tarif;
-          } else {
-            // Eğer hem yerel hem bulutta varsa, yerel olanın fotağrafları daha yeni olabilir mi?
-            // Şimdilik buluttakini koruyoruz (yukarıda yapıldı).
-          }
-        }
-        
+
         mergedTarifler[klasorId] = tarifMap.values.toList();
       }
 
-
-      // 6. Birleştirilmiş klasörleri oluştur (cloud öncelikli, ama yerel olanları da ekle)
-      final Map<int, KlasorData> mergedKlasorlerMap = {};
-      
-      // Cloud klasörleri ekle
-      for (var klasor in cloudKlasorler) {
-        mergedKlasorlerMap[klasor.klasor_id] = klasor;
-      }
-      
-      // Yerel klasörleri ekle (eğer cloud'da yoksa)
-      for (var klasor in localKlasorler) {
-        if (!mergedKlasorlerMap.containsKey(klasor.klasor_id)) {
-          mergedKlasorlerMap[klasor.klasor_id] = klasor;
-          // Yeni yerel klasörü Firebase'e de kaydet
-          await saveKlasorToFirebase(klasor);
-        }
-      }
-      
-      // 7. Birleştirilmiş verileri yerel depolamaya kaydet
+      // 5. Birleştirilmiş verileri yerel depolamaya kaydet
       final mergedKlasorList = mergedKlasorlerMap.values.toList();
       final List<String> klasorJsonList = mergedKlasorList.map((klasor) {
-        final map = {
-          'klasor_id': klasor.klasor_id,
-          'klasor_adi': klasor.klasor_adi,
-          'iconCode': klasor.iconCode,
-        };
-        return json.encode(map);
+        return json.encode(klasor.toMap());
       }).toList();
       
       await prefs.setStringList('klasorler', klasorJsonList);
       
-      // Tarifleri kaydet
       for (final entry in mergedTarifler.entries) {
         final key = 'tarifler_${entry.key}';
         final List<String> tariflerJson = entry.value.map((tarif) {
-          final map = {
-            'tarif_id': tarif.tarif_id,
-            'tarif_adi': tarif.tarif_adi,
-            'tarif_aciklama': tarif.tarif_aciklama,
-            'tarif_resimler': tarif.tarif_resimler,
-            'klasor_id': tarif.klasor_id,
-            'isFavorite': tarif.isFavorite,
-          };
-          return json.encode(map);
+          return json.encode(tarif.toMap());
         }).toList();
         await prefs.setStringList(key, tariflerJson);
       }
@@ -524,15 +526,65 @@ class FirebaseService {
           "\n\n🔥 Kalori: ${recipeData['kalori'] ?? 'Belirtilmedi'}"
           "\n⏱️ Süre: ${recipeData['tahmini_sure'] ?? 'Belirtilmedi'}";
       
+      List<Map<String, dynamic>> sections = [];
+      
+      if (recipeData['icindekiler'] != null) {
+        for (var bolum in recipeData['icindekiler']) {
+          String bolumAdi = bolum['bolum_adi'] ?? '';
+          List<dynamic>? malzemelerList = bolum['malzemeler'];
+          
+          if (malzemelerList != null) {
+            String sectionType = 'malzemeler';
+            if (bolumAdi.toLowerCase().contains('sos')) sectionType = 'sos';
+            else if (bolumAdi.toLowerCase().contains('hamur')) sectionType = 'hamur';
+            else if (bolumAdi.toLowerCase().contains('harç') || bolumAdi.toLowerCase().contains('iç')) sectionType = 'harc';
+            else if (bolumAdi.toLowerCase().contains('şerbet') || bolumAdi.toLowerCase().contains('serbet')) sectionType = 'serbet';
+            
+            sections.add({
+              'title': (bolumAdi.isNotEmpty && bolumAdi != 'Genel') ? bolumAdi : 'Malzemeler',
+              'type': sectionType,
+              'items': malzemelerList.map((e) => e.toString()).toList(),
+              'isExpanded': true
+            });
+          }
+        }
+      }
+
+      if (recipeData['adimlar'] != null) {
+        sections.add({
+          'title': 'Yapılışı',
+          'type': 'yapilis',
+          'items': (recipeData['adimlar'] as List).map((e) => e.toString()).toList(),
+          'isExpanded': true
+        });
+      }
+
+      if (recipeData['puf_noktasi'] != null && recipeData['puf_noktasi'].toString().isNotEmpty) {
+        sections.add({
+          'title': 'Püf Noktası',
+          'type': 'puf_noktasi',
+          'items': [recipeData['puf_noktasi'].toString()],
+          'isExpanded': true
+        });
+      }
+
+      String tarifAciklamaJson = '';
+      try {
+        tarifAciklamaJson = json.encode(sections);
+      } catch (e) {
+        print('JSON encoding error in AI save: $e');
+      }
+
       final tarifMap = {
         'tarif_id': newTarifId,
         'tarif_adi': recipeData['baslik'],
         'tarif_aciklama': fullDescription,
+        'tarif_aciklama_json': tarifAciklamaJson,
         'tarif_resimler': [],
         'klasor_id': klasorId,
         'isFavorite': false,
         'createdAt': FieldValue.serverTimestamp(),
-        'updatedAt': FieldValue.serverTimestamp(),
+        'updatedAt': DateTime.now().millisecondsSinceEpoch, // Use int for sync compatibility
         'source': 'AI',
       };
 
