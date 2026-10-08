@@ -17,7 +17,7 @@ class AiRecipeService {
       User? user = FirebaseAuth.instance.currentUser;
       
       if (user == null) {
-        throw Exception('auth_required_for_ai'.tr(defaultValue: 'Yapay zeka asistanını kullanmak için lütfen giriş yapın.'));
+        throw Exception('auth_required_for_ai'.tr);
       }
       
       String idToken = '';

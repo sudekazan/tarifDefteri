@@ -5,6 +5,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:tarif_defteri/sayfalar/klasor_ici.dart';
 import 'package:tarif_defteri/sayfalar/tarif_detay.dart';
+import 'package:tarif_defteri/sayfalar/arama_sayfasi.dart';
 import 'package:tarif_defteri/tarifler_data/klasor_data.dart';
 import 'package:tarif_defteri/tarifler_data/tarif_data.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -254,11 +255,11 @@ class _KlasorlerState extends State<Klasorler> {
     await showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('folders_rename'.tr(defaultValue: 'Yeniden Adlandır')),
+        title: Text('folders_rename'.tr),
         content: TextField(
           controller: nameController,
           decoration: InputDecoration(
-            labelText: 'folders_new_name'.tr(defaultValue: 'Yeni İsim'),
+            labelText: 'folders_new_name'.tr,
             border: const OutlineInputBorder(),
           ),
           autofocus: true,
@@ -266,7 +267,7 @@ class _KlasorlerState extends State<Klasorler> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('common_cancel'.tr(defaultValue: 'İptal')),
+            child: Text('common_cancel'.tr),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -279,7 +280,7 @@ class _KlasorlerState extends State<Klasorler> {
             style: ElevatedButton.styleFrom(
               backgroundColor: Theme.of(context).primaryColor,
             ),
-            child: Text('common_save'.tr(defaultValue: 'Kaydet'), style: const TextStyle(color: Colors.white)),
+            child: Text('common_save'.tr, style: const TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -353,57 +354,35 @@ class _KlasorlerState extends State<Klasorler> {
     final isDark = theme.brightness == Brightness.dark;
     return Scaffold(
       appBar: AppBar(
-        title: aramaYapiliyorMu
-            ? TextField(
-                controller: aramaController, // Arama kontrolcüsünü ata
-                autofocus: true,
-                decoration: InputDecoration(
-                  hintText: 'folders_search_hint'.tr(),
-                ),
-                onChanged: (arama) {
-                  _filtreleKlasorler(arama); // Arama yapıldığında filtreleme metodunu çağır
-                },
-              )
-            : Text(
-                'app_title'.tr(),
-                style:
-                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
-              ),
+        title: Text(
+          'app_title'.tr(),
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
+        ),
         backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
         actions: [
-          aramaYapiliyorMu
-              ? IconButton(
-            icon: const Icon(Icons.clear),
-                onPressed: () {
-                  setState(() {
-                    aramaYapiliyorMu = false;
-                    aramaController.clear(); // Arama metnini temizle
-                    _filtreleKlasorler(''); // Filtreyi sıfırla (tüm klasörleri göster)
-                  });
-                },
-              )
-              : IconButton(
-                  icon: const Icon(Icons.search,color: Colors.black,),
-                  onPressed: () {
-                    setState(() {
-                      aramaYapiliyorMu = true;
-                    });
-                  },
-                ),
           IconButton(
-            icon: const Icon(Icons.settings,color: Colors.black,),
+            icon: Icon(Icons.search, color: Theme.of(context).iconTheme.color ?? Colors.black),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const AramaSayfasi()),
+              ).then((_) {
+                _klasorleriYukle().then((_) => _filtreleKlasorler(''));
+              });
+            },
+          ),
+          IconButton(
+            icon: Icon(Icons.settings, color: Theme.of(context).iconTheme.color ?? Colors.black),
             onPressed: () async {
               await Navigator.pushNamed(context, '/settings');
-              _klasorleriYukle().then((_) {
-                _filtreleKlasorler(aramaController.text);
-              });
+              _klasorleriYukle().then((_) => _filtreleKlasorler(''));
             },
           ),
         ],
       ),
       body: Container(
         color: Theme.of(context).scaffoldBackgroundColor,
-        child: klasorListesi.isEmpty && !aramaYapiliyorMu
+        child: klasorListesi.isEmpty
             ? Center(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 32.0),
@@ -459,14 +438,6 @@ class _KlasorlerState extends State<Klasorler> {
                   ),
                 ),
               )
-            : (filtrelenmisKlasorler.isEmpty && aramaYapiliyorMu)
-                ? Center(
-                    child: Text(
-                      'folders_search_no_results'.tr(),
-                      style:
-                          TextStyle(fontSize: 18, color: Colors.grey[600]),
-                    ),
-                  )
             : ListView.separated(
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
           itemCount: filtrelenmisKlasorler.length, // filtrelenmisKlasorler'i kullan
@@ -604,7 +575,7 @@ class _KlasorlerState extends State<Klasorler> {
                                 children: [
                                   Icon(Icons.edit, size: 20, color: Theme.of(context).primaryColor),
                                   const SizedBox(width: 8),
-                                  Text('folders_rename'.tr(defaultValue: 'Yeniden Adlandır')),
+                                  Text('folders_rename'.tr),
                                 ],
                               ),
                             ),
@@ -614,7 +585,7 @@ class _KlasorlerState extends State<Klasorler> {
                                 children: [
                                   const Icon(Icons.delete, size: 20, color: Colors.red),
                                   const SizedBox(width: 8),
-                                  Text('folders_delete_title'.tr(defaultValue: 'Sil')),
+                                  Text('folders_delete_title'.tr),
                                 ],
                               ),
                             ),

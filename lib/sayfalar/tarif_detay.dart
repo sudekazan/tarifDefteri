@@ -342,7 +342,7 @@ class _TarifDetayState extends State<TarifDetay> {
           IconButton(
             icon: Icon(Icons.drive_file_move_outline, color: Theme.of(context).iconTheme.color),
             onPressed: () => _showMoveDialog(context),
-            tooltip: 'folders_move'.tr(defaultValue: 'Klasöre Taşı'),
+            tooltip: 'folders_move'.tr,
           ),
           // Düzenle butonu
           IconButton(
@@ -689,7 +689,7 @@ class _TarifDetayState extends State<TarifDetay> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'folders_select_move'.tr(defaultValue: 'Taşınacak Klasörü Seçin'),
+                'folders_select_move'.tr,
                 style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 10),
@@ -762,7 +762,7 @@ class _TarifDetayState extends State<TarifDetay> {
     
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('folders_move_success'.tr(defaultValue: 'Tarif başarıyla taşındı.')),
+        content: Text('folders_move_success'.tr),
         backgroundColor: Colors.green,
       ),
     );

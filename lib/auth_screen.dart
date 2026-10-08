@@ -150,7 +150,7 @@ class _AuthScreenState extends State<AuthScreen> {
     final email = _emailController.text.trim();
     if (email.isEmpty || !email.contains('@')) {
       setState(() {
-        _errorMessage = 'auth_reset_password_email_required'.tr(defaultValue: 'Şifre sıfırlamak için geçerli bir e-posta adresi girin.');
+        _errorMessage = 'auth_reset_password_email_required'.tr;
       });
       return;
     }
@@ -165,7 +165,7 @@ class _AuthScreenState extends State<AuthScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('auth_reset_password_success'.tr(defaultValue: 'Şifre sıfırlama bağlantısı e-posta adresinize gönderildi.')),
+          content: Text('auth_reset_password_success'.tr),
           backgroundColor: Colors.green,
         ),
       );
@@ -346,7 +346,7 @@ class _AuthScreenState extends State<AuthScreen> {
                               child: TextButton(
                                 onPressed: _isLoading ? null : _resetPassword,
                                 child: Text(
-                                  'auth_forgot_password'.tr(defaultValue: 'Şifremi Unuttum'),
+                                  'auth_forgot_password'.tr,
                                   style: TextStyle(
                                     color: Theme.of(context).primaryColor,
                                     fontWeight: FontWeight.w600,
