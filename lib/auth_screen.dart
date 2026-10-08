@@ -77,10 +77,16 @@ class _AuthScreenState extends State<AuthScreen> {
         }
       } else {
         // Kayıt ol
-        await _auth.createUserWithEmailAndPassword(
+        UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
           email: _email,
           password: _password,
         );
+        
+        // E-posta doğrulama gönder
+        if (userCredential.user != null && !userCredential.user!.emailVerified) {
+          await userCredential.user!.sendEmailVerification();
+        }
+
         // Yeni hesap oluşturulduğunda yerel verileri Firebase'e yedekle
         await _firebaseService.backupLocalDataToFirebase();
         if (mounted) {
@@ -91,7 +97,7 @@ class _AuthScreenState extends State<AuthScreen> {
                 children: [
                   const Icon(Icons.check_circle, color: Colors.white),
                   const SizedBox(width: 12),
-                  Text('auth_register_success'.tr()),
+                  Expanded(child: Text('auth_register_success_verify'.tr())),
                 ],
               ),
               backgroundColor: Colors.green,
