@@ -146,6 +146,52 @@ class _AuthScreenState extends State<AuthScreen> {
     }
   }
 
+  Future<void> _resetPassword() async {
+    final email = _emailController.text.trim();
+    if (email.isEmpty || !email.contains('@')) {
+      setState(() {
+        _errorMessage = 'auth_reset_password_email_required'.tr(defaultValue: 'Şifre sıfırlamak için geçerli bir e-posta adresi girin.');
+      });
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      await _auth.sendPasswordResetEmail(email: email);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('auth_reset_password_success'.tr(defaultValue: 'Şifre sıfırlama bağlantısı e-posta adresinize gönderildi.')),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        if (e.code == 'user-not-found') {
+          _errorMessage = 'auth_error_user_not_found'.tr();
+        } else {
+          _errorMessage = e.message ?? 'Bir hata oluştu.';
+        }
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = 'Bilinmeyen bir hata oluştu.';
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -294,7 +340,22 @@ class _AuthScreenState extends State<AuthScreen> {
                               _password = value!;
                             },
                           ),
-                          const SizedBox(height: 24),
+                          if (_isLogin)
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: TextButton(
+                                onPressed: _isLoading ? null : _resetPassword,
+                                child: Text(
+                                  'auth_forgot_password'.tr(defaultValue: 'Şifremi Unuttum'),
+                                  style: TextStyle(
+                                    color: Theme.of(context).primaryColor,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            )
+                          else
+                            const SizedBox(height: 24),
                           
                           // Hata Mesajı
                           if (_errorMessage != null)

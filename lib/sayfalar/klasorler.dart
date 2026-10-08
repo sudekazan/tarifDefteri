@@ -248,6 +248,70 @@ class _KlasorlerState extends State<Klasorler> {
     }
   }
 
+  Future<void> _klasorYenidenAdlandirDialog(KlasorData klasor) async {
+    final TextEditingController nameController = TextEditingController(text: klasor.klasor_adi);
+    
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('folders_rename'.tr(defaultValue: 'Yeniden Adlandır')),
+        content: TextField(
+          controller: nameController,
+          decoration: InputDecoration(
+            labelText: 'folders_new_name'.tr(defaultValue: 'Yeni İsim'),
+            border: const OutlineInputBorder(),
+          ),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('common_cancel'.tr(defaultValue: 'İptal')),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              String yeniAd = nameController.text.trim();
+              if (yeniAd.isNotEmpty && yeniAd != klasor.klasor_adi) {
+                Navigator.pop(context);
+                await _klasorYenidenAdlandir(klasor, yeniAd);
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).primaryColor,
+            ),
+            child: Text('common_save'.tr(defaultValue: 'Kaydet'), style: const TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _klasorYenidenAdlandir(KlasorData klasor, String yeniAd) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    List<String> klasorJsonList = prefs.getStringList('klasorler') ?? [];
+    
+    for (int i = 0; i < klasorJsonList.length; i++) {
+      final map = json.decode(klasorJsonList[i]);
+      final int storedId = map['klasor_id'] ?? (i + 1);
+      if (storedId == klasor.klasor_id) {
+        map['klasor_adi'] = yeniAd;
+        map['updatedAt'] = DateTime.now().millisecondsSinceEpoch;
+        klasorJsonList[i] = json.encode(map);
+        break;
+      }
+    }
+    
+    await prefs.setStringList('klasorler', klasorJsonList);
+    
+    klasor.klasor_adi = yeniAd;
+    klasor.updatedAt = DateTime.now().millisecondsSinceEpoch;
+    await _firebaseService.saveKlasorToFirebase(klasor);
+    
+    _klasorleriYukle().then((_) {
+      _filtreleKlasorler(aramaController.text);
+    });
+  }
+
   void _yeniKlasorEkle() async {
     final result = await Navigator.push(
       context,
@@ -494,43 +558,67 @@ class _KlasorlerState extends State<Klasorler> {
                       ),
 
                       if (klasor.klasor_id != -1)
-                        IconButton(
-                          onPressed: () {
-                            showDialog(
-                              context: context,
-                              builder: (context) => AlertDialog(
-                                title: Text('folders_delete_title'.tr()),
-                                content: Text(
-                                  '${klasor.klasor_adi}${'folders_delete_confirm_suffix'.tr()}',
-                                ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () => Navigator.pop(context),
-                                    child: Text('common_no'.tr()),
-                                  ),
-                                  ElevatedButton(
-                                    onPressed: () {
-                                      Navigator.pop(context);
-                                      sil(klasor.klasor_id);
-                                    },
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor:
-                                          Theme.of(context).primaryColor,
-                                    ),
-                                    child: Text(
-                                      'common_yes'.tr(),
-                                      style:
-                                          const TextStyle(color: Colors.white),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
+                        PopupMenuButton<String>(
                           icon: Icon(
-                            Icons.clear,
+                            Icons.more_vert,
                             color: Theme.of(context).primaryColor,
                           ),
+                          onSelected: (value) {
+                            if (value == 'rename') {
+                              _klasorYenidenAdlandirDialog(klasor);
+                            } else if (value == 'delete') {
+                              showDialog(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  title: Text('folders_delete_title'.tr()),
+                                  content: Text(
+                                    '${klasor.klasor_adi}${'folders_delete_confirm_suffix'.tr()}',
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(context),
+                                      child: Text('common_no'.tr()),
+                                    ),
+                                    ElevatedButton(
+                                      onPressed: () {
+                                        Navigator.pop(context);
+                                        sil(klasor.klasor_id);
+                                      },
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Theme.of(context).primaryColor,
+                                      ),
+                                      child: Text(
+                                        'common_yes'.tr(),
+                                        style: const TextStyle(color: Colors.white),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }
+                          },
+                          itemBuilder: (context) => [
+                            PopupMenuItem(
+                              value: 'rename',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.edit, size: 20, color: Theme.of(context).primaryColor),
+                                  const SizedBox(width: 8),
+                                  Text('folders_rename'.tr(defaultValue: 'Yeniden Adlandır')),
+                                ],
+                              ),
+                            ),
+                            PopupMenuItem(
+                              value: 'delete',
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.delete, size: 20, color: Colors.red),
+                                  const SizedBox(width: 8),
+                                  Text('folders_delete_title'.tr(defaultValue: 'Sil')),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
                     ],
                   ),
