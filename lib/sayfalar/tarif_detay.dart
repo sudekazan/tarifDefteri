@@ -56,6 +56,25 @@ class _TarifDetayState extends State<TarifDetay> {
     _parseTarifAciklama();
   }
 
+  Future<void> _addToShoppingList(String ingredient) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    List<String> list = prefs.getStringList('shopping_list_todo') ?? [];
+    if (!list.contains(ingredient)) {
+      list.insert(0, ingredient);
+      await prefs.setStringList('shopping_list_todo', list);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('recipe_detail_add_to_cart'.tr()),
+            duration: const Duration(seconds: 2),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    }
+  }
+
   void _parseTarifAciklama() {
     if (widget.tarif.tarif_aciklama_json != null && widget.tarif.tarif_aciklama_json!.isNotEmpty) {
       try {
@@ -694,6 +713,17 @@ class _TarifDetayState extends State<TarifDetay> {
                                             ),
                                           ),
                                   ),
+                                  if (section['type'] == 'malzemeler' || section['type'] == 'harc' || section['type'] == 'hamur' || section['type'] == 'serbet' || section['type'] == 'sos')
+                                    IconButton(
+                                      icon: const Icon(Icons.add_shopping_cart, size: 22),
+                                      color: Colors.grey,
+                                      padding: EdgeInsets.zero,
+                                      constraints: const BoxConstraints(),
+                                      onPressed: () {
+                                        String scaled = _scaleIngredient(section['items'][i], _portionMultiplier);
+                                        _addToShoppingList(scaled);
+                                      },
+                                    ),
                                 ],
                               ),
                             );

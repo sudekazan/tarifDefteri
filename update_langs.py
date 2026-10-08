@@ -2,7 +2,11 @@ import json
 import glob
 
 new_keys = {
-    "recipe_detail_portions": "Porsiyon Çarpanı:"
+    "shopping_list_title": "Alışveriş Listesi",
+    "shopping_list_add_hint": "Yeni malzeme ekle...",
+    "shopping_list_todo": "Alınacaklar",
+    "shopping_list_done": "Alınanlar",
+    "recipe_detail_add_to_cart": "Alışveriş Listesine Ekle"
 }
 
 for filepath in glob.glob('assets/lang/*.json'):

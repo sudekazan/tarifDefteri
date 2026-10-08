@@ -6,6 +6,7 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:tarif_defteri/sayfalar/klasor_ici.dart';
 import 'package:tarif_defteri/sayfalar/tarif_detay.dart';
 import 'package:tarif_defteri/sayfalar/arama_sayfasi.dart';
+import 'package:tarif_defteri/sayfalar/alisveris_listesi.dart';
 import 'package:tarif_defteri/tarifler_data/klasor_data.dart';
 import 'package:tarif_defteri/tarifler_data/tarif_data.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -369,6 +370,15 @@ class _KlasorlerState extends State<Klasorler> {
               ).then((_) {
                 _klasorleriYukle().then((_) => _filtreleKlasorler(''));
               });
+            },
+          ),
+          IconButton(
+            icon: Icon(Icons.shopping_cart, color: Theme.of(context).iconTheme.color ?? Colors.black),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const AlisverisListesi()),
+              );
             },
           ),
           IconButton(

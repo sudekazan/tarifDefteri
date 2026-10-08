@@ -180,5 +180,10 @@
   "cooking_mode_ingredients": "Malzemeler",
   "cooking_mode_step": "Adım",
   "cooking_mode_steps": "Yapılışı",
-  "recipe_detail_portions": "Porsiyon Çarpanı:"
+  "recipe_detail_portions": "Porsiyon Çarpanı:",
+  "shopping_list_title": "Alışveriş Listesi",
+  "shopping_list_add_hint": "Yeni malzeme ekle...",
+  "shopping_list_todo": "Alınacaklar",
+  "shopping_list_done": "Alınanlar",
+  "recipe_detail_add_to_cart": "Alışveriş Listesine Ekle"
 }
