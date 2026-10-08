@@ -5,8 +5,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class RevenueCatService {
   // Lütfen bu anahtarları kendi RevenueCat API anahtarlarınız ile değiştirin.
-  static const _appleApiKey = 'appl_YOUR_APPLE_API_KEY_HERE';
-  static const _googleApiKey = 'goog_YOUR_GOOGLE_API_KEY_HERE';
+  static const _appleApiKey = 'test_tDvTyPtPmVhNXJdXCJjMCLkBfWC';
+  static const _googleApiKey = 'test_tDvTyPtPmVhNXJdXCJjMCLkBfWC';
 
   // Entitlement ID (RevenueCat panelinden ayarlanacak, örn: "pro")
   static const _entitlementID = 'pro';
