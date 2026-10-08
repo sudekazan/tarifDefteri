@@ -12,7 +12,9 @@ import 'dart:io';
 import '../services/firebase_service.dart';
 import '../services/ai_recipe_service.dart';
 import '../services/ad_service.dart';
+import '../services/revenuecat_service.dart';
 import '../widgets/banner_ad_widget.dart';
+import 'package:tarif_defteri/sayfalar/premium_sayfasi.dart';
 import '../utils/error_helper.dart';
 
 class KlasorIci extends StatefulWidget {
@@ -459,6 +461,18 @@ class _KlasorIciState extends State<KlasorIci> {
   }
 
   Future<void> _generateAndNavigate(String input, [bool isUrl = false]) async {
+    bool canUseAi = await RevenueCatService.canUseAi();
+    if (!canUseAi) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('ai_limit_reached'.tr()), backgroundColor: Colors.orange),
+      );
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const PremiumSayfasi()),
+      );
+      return;
+    }
+
     // Show Loading dialog
     showDialog(
       context: context,
@@ -540,6 +554,8 @@ class _KlasorIciState extends State<KlasorIci> {
             klasor_id: widget.klasorData.klasor_id,
             isFavorite: false,
           );
+
+          await RevenueCatService.incrementAiUsage();
 
           // Navigate to Edit Page with Pre-filled Data
           final result = await Navigator.push(

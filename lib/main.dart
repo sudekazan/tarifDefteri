@@ -10,6 +10,7 @@ import 'widgets/klasorler_with_theme.dart';
 import 'screens/settings_page.dart';
 
 import 'services/ad_service.dart';
+import 'services/revenuecat_service.dart';
 import 'screens/update_screen.dart';
 
 void main() async {
@@ -18,6 +19,7 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  await RevenueCatService.init();
   await MobileAds.instance.initialize();
   
   // Reklamları yükle

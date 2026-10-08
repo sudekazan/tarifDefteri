@@ -7,6 +7,8 @@ import 'package:tarif_defteri/sayfalar/klasor_ici.dart';
 import 'package:tarif_defteri/sayfalar/tarif_detay.dart';
 import 'package:tarif_defteri/sayfalar/arama_sayfasi.dart';
 import 'package:tarif_defteri/sayfalar/alisveris_listesi.dart';
+import 'package:tarif_defteri/sayfalar/premium_sayfasi.dart';
+import 'package:tarif_defteri/services/revenuecat_service.dart';
 import 'package:tarif_defteri/tarifler_data/klasor_data.dart';
 import 'package:tarif_defteri/tarifler_data/tarif_data.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -381,6 +383,16 @@ class _KlasorlerState extends State<Klasorler> {
               );
             },
           ),
+          if (!RevenueCatService.isProUser)
+            IconButton(
+              icon: Icon(Icons.workspace_premium, color: Colors.amber[700]),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const PremiumSayfasi()),
+                ).then((_) => setState(() {}));
+              },
+            ),
           IconButton(
             icon: Icon(Icons.settings, color: Theme.of(context).iconTheme.color ?? Colors.black),
             onPressed: () async {

@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:app_tracking_transparency/app_tracking_transparency.dart';
-
+import 'package:tarif_defteri/services/revenuecat_service.dart';
 
 class AdService {
   static AppOpenAd? _appOpenAd;
@@ -81,6 +81,7 @@ class AdService {
 
   /// Load an AppOpenAd.
   static void loadAppOpenAd() {
+    if (RevenueCatService.isProUser) return;
     if (_isLoadingAd || _appOpenAd != null) {
       print('### AD_DEBUG: loadAppOpenAd called but skipped. isLoading: $_isLoadingAd, hasAd: ${_appOpenAd != null}');
       return;
@@ -114,6 +115,7 @@ class AdService {
 
   /// Show the ad if available.
   static void showAdIfAvailable() {
+    if (RevenueCatService.isProUser) return;
     if (_appOpenAd == null) {
       print('Ad not ready yet, set to show after load.');
       _showAfterLoad = true;
@@ -151,6 +153,7 @@ class AdService {
 
   /// Load Interstitial Ad.
   static void loadInterstitialAd() {
+    if (RevenueCatService.isProUser) return;
     if (_isLoadingInterstitial || _interstitialAd != null) return;
 
     _isLoadingInterstitial = true;
@@ -175,6 +178,10 @@ class AdService {
 
   /// Show Interstitial Ad.
   static void showInterstitialAd({VoidCallback? onAdClosed}) {
+    if (RevenueCatService.isProUser) {
+      onAdClosed?.call();
+      return;
+    }
     if (_interstitialAd == null) {
       print('InterstitialAd not ready yet (null). Attempting to load...');
       loadInterstitialAd();
@@ -211,6 +218,7 @@ class AdService {
 
   /// Load Rewarded Ad.
   static void loadRewardedAd() {
+    if (RevenueCatService.isProUser) return;
     if (_isLoadingRewarded || _rewardedAd != null) return;
 
     _isLoadingRewarded = true;
@@ -235,6 +243,11 @@ class AdService {
 
   /// Show Rewarded Ad.
   static void showRewardedAd({VoidCallback? onAdClosed, Function(RewardItem)? onUserEarnedReward}) {
+    if (RevenueCatService.isProUser) {
+      onUserEarnedReward?.call(RewardItem(1, 'premium_skip'));
+      onAdClosed?.call();
+      return;
+    }
     if (_rewardedAd == null) {
       print('RewardedAd not ready yet (null). Attempting to load...');
       loadRewardedAd();

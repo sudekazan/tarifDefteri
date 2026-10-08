@@ -2,11 +2,17 @@ import json
 import glob
 
 new_keys = {
-    "shopping_list_title": "Alışveriş Listesi",
-    "shopping_list_add_hint": "Yeni malzeme ekle...",
-    "shopping_list_todo": "Alınacaklar",
-    "shopping_list_done": "Alınanlar",
-    "recipe_detail_add_to_cart": "Alışveriş Listesine Ekle"
+    "premium_success": "Premium özellikler aktifleştirildi!",
+    "premium_restored": "Satın alımlar geri yüklendi!",
+    "premium_restore_failed": "Geri yüklenecek abonelik bulunamadı.",
+    "premium_title": "Premium'a Geç",
+    "premium_restore": "Geri Yükle",
+    "premium_headline": "Tarif Defteri Pro ile Sınırları Kaldırın!",
+    "premium_feature_ads": "Tüm reklamları kalıcı olarak kaldırın.",
+    "premium_feature_ai": "Sınırsız yapay zeka ile tarif oluşturma.",
+    "premium_feature_link": "İnternet linklerinden sınırsız tarif çekme.",
+    "premium_no_packages": "Şu an paket bulunmamaktadır. Lütfen daha sonra tekrar deneyin.",
+    "ai_limit_reached": "Günlük ücretsiz AI kullanım hakkınız doldu. Lütfen Premium'a geçin."
 }
 
 for filepath in glob.glob('assets/lang/*.json'):
