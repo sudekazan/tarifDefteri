@@ -2,17 +2,10 @@ import json
 import glob
 
 new_keys = {
-    "auth_register_success_verify": "Hesabınız oluşturuldu. Lütfen e-postanıza gönderilen doğrulama bağlantısına tıklayın.",
-    "folders_rename": "Yeniden Adlandır",
-    "folders_new_name": "Yeni İsim",
-    "folders_move": "Klasöre Taşı",
-    "folders_select_move": "Taşınacak Klasörü Seçin",
-    "folders_move_success": "Tarif başarıyla taşındı.",
-    "auth_reset_password_email_required": "Şifre sıfırlamak için geçerli bir e-posta adresi girin.",
-    "auth_reset_password_success": "Şifre sıfırlama bağlantısı e-posta adresinize gönderildi.",
-    "auth_forgot_password": "Şifremi Unuttum",
-    "recipe_edit_edit_item": "Maddeyi Düzenle",
-    "recipe_search_prompt": "Aramak istediğiniz tarifi yazın."
+    "recipe_detail_cooking_mode": "Yemek Yapma Modu",
+    "cooking_mode_ingredients": "Malzemeler",
+    "cooking_mode_step": "Adım",
+    "cooking_mode_steps": "Yapılışı"
 }
 
 for filepath in glob.glob('assets/lang/*.json'):

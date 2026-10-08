@@ -6,6 +6,7 @@ import 'package:tarif_defteri/services/firebase_service.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:tarif_defteri/tarifler_data/tarif_data.dart';
 import 'package:tarif_defteri/sayfalar/tarif_olusturma.dart';
+import 'package:tarif_defteri/sayfalar/yemek_yapma_modu.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../widgets/banner_ad_widget.dart';
@@ -659,6 +660,22 @@ class _TarifDetayState extends State<TarifDetay> {
               const SizedBox(height: 20),
             ],
           ),
+        ),
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => YemekYapmaModu(tarif: widget.tarif),
+            ),
+          );
+        },
+        backgroundColor: Theme.of(context).primaryColor,
+        icon: const Icon(Icons.restaurant, color: Colors.white),
+        label: Text(
+          'recipe_detail_cooking_mode'.tr(),
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
       ),
       bottomNavigationBar: const BannerAdWidget(),

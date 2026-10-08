@@ -172,5 +172,9 @@
   "auth_reset_password_success": "Şifre sıfırlama bağlantısı e-posta adresinize gönderildi.",
   "auth_forgot_password": "Şifremi Unuttum",
   "recipe_edit_edit_item": "Maddeyi Düzenle",
-  "recipe_search_prompt": "Aramak istediğiniz tarifi yazın."
+  "recipe_search_prompt": "Aramak istediğiniz tarifi yazın.",
+  "recipe_detail_cooking_mode": "Yemek Yapma Modu",
+  "cooking_mode_ingredients": "Malzemeler",
+  "cooking_mode_step": "Adım",
+  "cooking_mode_steps": "Yapılışı"
 }
