@@ -6,6 +6,7 @@ import 'package:tarif_defteri/tarifler_data/klasor_data.dart';
 import 'package:tarif_defteri/tarifler_data/tarif_data.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:share_plus/share_plus.dart';
 import 'dart:io';
 import '../services/firebase_service.dart';
@@ -409,13 +410,14 @@ class _KlasorIciState extends State<KlasorIci> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('ai_input_hint'.tr()),
+            Text('ai_input_hint'.tr),
             const SizedBox(height: 16),
             TextField(
               controller: _promptController,
               autofocus: true,
+              maxLines: null,
               decoration: InputDecoration(
-                hintText: 'ai_input_placeholder'.tr(),
+                hintText: 'ai_input_placeholder'.tr,
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               ),
             ),
@@ -436,8 +438,9 @@ class _KlasorIciState extends State<KlasorIci> {
                  return;
               }
               
-              // Saçma sapan yazı kontrolü (Örn: "asdfasdf" veya çok kısa)
-              if (text.length < 2 || !RegExp(r'[a-zA-ZçğıöşüÇĞİÖŞÜ]').hasMatch(text)) {
+              // Link kontrolü veya saçma kelime kontrolü
+              bool isUrl = Uri.tryParse(text)?.hasAbsolutePath ?? false;
+              if (!isUrl && (text.length < 2 || !RegExp(r'[a-zA-ZçğıöşüÇĞİÖŞÜ]').hasMatch(text))) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text('ai_error_not_food'.tr()), backgroundColor: Colors.red),
                 );
@@ -445,7 +448,7 @@ class _KlasorIciState extends State<KlasorIci> {
               }
 
               Navigator.pop(context); // Close dialog
-              _generateAndNavigate(text); // Start magic
+              _generateAndNavigate(text, isUrl); // Start magic
             },
             style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).primaryColor),
             child: Text('ai_dialog_create'.tr(), style: const TextStyle(color: Colors.white)),
@@ -455,7 +458,7 @@ class _KlasorIciState extends State<KlasorIci> {
     );
   }
 
-  Future<void> _generateAndNavigate(String dishName) async {
+  Future<void> _generateAndNavigate(String input, [bool isUrl = false]) async {
     // Show Loading dialog
     showDialog(
       context: context,
@@ -487,10 +490,30 @@ class _KlasorIciState extends State<KlasorIci> {
     );
 
     try {
+      String finalPrompt = input;
+      
+      if (isUrl) {
+        try {
+          final response = await http.get(Uri.parse(input)).timeout(const Duration(seconds: 15));
+          if (response.statusCode == 200) {
+            String htmlText = response.body;
+            final bodyMatch = RegExp(r'<body[^>]*>(.*?)</body>', dotAll: true).firstMatch(htmlText);
+            if (bodyMatch != null) htmlText = bodyMatch.group(1)!;
+            String plainText = htmlText.replaceAll(RegExp(r'<[^>]*>'), ' ').replaceAll(RegExp(r'\s+'), ' ');
+            if (plainText.length > 5000) plainText = plainText.substring(0, 5000);
+            
+            finalPrompt = "Lütfen şu metin içerisindeki yemek tarifini çıkar ve belirtilen formata göre döndür. Metin: " + plainText;
+          }
+        } catch (e) {
+          print("Link okuma hatası: $e");
+          // Eğer okuyamazsa linkin kendisini göndeririz, belki backend/AI anlar.
+        }
+      }
+
       // AI isteğini HEMEN başlat (reklam gösterilirken arka planda hazırlansın)
       final languageCode = context.locale.languageCode;
       final recipeFuture = _aiRecipeService.generateRecipe(
-        dishName,
+        finalPrompt,
         languageCode: languageCode,
       );
 
@@ -511,7 +534,7 @@ class _KlasorIciState extends State<KlasorIci> {
           // Create TarifData from JSON
           final yeniTarif = TarifData(
             tarif_id: 0,
-            tarif_adi: recipeData['baslik'] ?? dishName,
+            tarif_adi: recipeData['baslik'] ?? (isUrl ? 'Linkten Tarif' : input),
             tarif_aciklama: '',
             tarif_resimler: [],
             klasor_id: widget.klasorData.klasor_id,
