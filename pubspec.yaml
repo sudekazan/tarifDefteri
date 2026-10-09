@@ -51,7 +51,7 @@ flutter_icons:
   ios: true
   image_path: "assets/logo_white_bg.png"
   adaptive_icon_background: "#FFFFFF"
-  adaptive_icon_foreground: "assets/logo.png"
+  adaptive_icon_foreground: "assets/logo_adaptive_foreground.png"
   remove_alpha_ios: true
 
 flutter_native_splash:
