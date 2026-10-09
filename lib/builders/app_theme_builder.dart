@@ -10,7 +10,7 @@ class AppThemeBuilder {
       primarySwatch: swatch,
       primaryColor: swatch,
       scaffoldBackgroundColor: const Color(0xFFF8F9FC),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         elevation: 2,
         shadowColor: swatch.withOpacity(0.08),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -74,7 +74,7 @@ class AppThemeBuilder {
       primaryColor: darkPrimary,
       scaffoldBackgroundColor: const Color(0xFF10121A),
       cardColor: const Color(0xFF1A1D2B),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         elevation: 4,
         shadowColor: Colors.black45,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),

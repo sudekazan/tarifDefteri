@@ -343,7 +343,7 @@ class _AuthScreenState extends State<AuthScreen> {
                                         fontSize: 14,
                                         color: _isLogin
                                             ? Colors.white
-                                            : (isDark ? Colors.white60 : Colors.black60),
+                                            : (isDark ? Colors.white60 : Colors.black54),
                                       ),
                                     ),
                                   ),
@@ -385,7 +385,7 @@ class _AuthScreenState extends State<AuthScreen> {
                                         fontSize: 14,
                                         color: !_isLogin
                                             ? Colors.white
-                                            : (isDark ? Colors.white60 : Colors.black60),
+                                            : (isDark ? Colors.white60 : Colors.black54),
                                       ),
                                     ),
                                   ),

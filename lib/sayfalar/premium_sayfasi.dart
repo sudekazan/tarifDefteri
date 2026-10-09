@@ -285,7 +285,7 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
                 ),
                 if (_isPurchasing)
                   Container(
-                    color: Colors.black70,
+                    color: Colors.black.withOpacity(0.7),
                     child: const Center(
                       child: CircularProgressIndicator(
                         valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFFD700)),
