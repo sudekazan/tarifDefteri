@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:tarif_defteri/sayfalar/tarif_olusturma.dart';
 import 'package:tarif_defteri/sayfalar/tarif_detay.dart';
@@ -313,11 +314,10 @@ class _KlasorIciState extends State<KlasorIci> {
               onTap: () async {
                 Navigator.pop(context); // Close sheet
                 if (_firebaseService.isUserLoggedIn) {
-                  // İnternet kontrolü yap
                   try {
                     final result = await InternetAddress.lookup('google.com');
                     if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
-                      if (context.mounted) _showAiDialog(); // New AI flow
+                      if (context.mounted) _showAiDialog();
                     }
                   } catch (_) {
                     if (context.mounted) {
@@ -330,7 +330,37 @@ class _KlasorIciState extends State<KlasorIci> {
                     }
                   }
                 } else {
-                  // İsteğe bağlı: Giriş sayfasına yönlendir veya mesaj göster
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('ai_login_required'.tr())),
+                  );
+                }
+              },
+            ),
+            const SizedBox(height: 16),
+            _buildOptionTile(
+              icon: Icons.link_rounded, 
+              color: Colors.teal,
+              title: 'add_option_link'.tr(),
+              isLocked: !_firebaseService.isUserLoggedIn,
+              onTap: () async {
+                Navigator.pop(context); // Close sheet
+                if (_firebaseService.isUserLoggedIn) {
+                  try {
+                    final result = await InternetAddress.lookup('google.com');
+                    if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
+                      if (context.mounted) _showLinkImportDialog();
+                    }
+                  } catch (_) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('auth_error_network'.tr()),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  }
+                } else {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text('ai_login_required'.tr())),
                   );
@@ -399,6 +429,87 @@ class _KlasorIciState extends State<KlasorIci> {
             Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey[400]),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showLinkImportDialog() {
+    final TextEditingController urlController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Icon(Icons.link_rounded, color: Theme.of(context).primaryColor),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'link_dialog_title'.tr(),
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'link_dialog_hint'.tr(),
+              style: const TextStyle(fontSize: 14),
+            ),
+            const SizedBox(height: 14),
+            TextField(
+              controller: urlController,
+              autofocus: true,
+              keyboardType: TextInputType.url,
+              decoration: InputDecoration(
+                hintText: 'link_dialog_placeholder'.tr(),
+                prefixIcon: const Icon(Icons.language_rounded),
+                suffixIcon: IconButton(
+                  icon: const Icon(Icons.content_paste_rounded),
+                  tooltip: 'link_dialog_paste'.tr(),
+                  onPressed: () async {
+                    final data = await Clipboard.getData(Clipboard.kTextPlain);
+                    if (data?.text != null) {
+                      urlController.text = data!.text!;
+                    }
+                  },
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('ai_dialog_cancel'.tr(), style: const TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton.icon(
+            onPressed: () {
+              final url = urlController.text.trim();
+              if (url.isEmpty || !url.contains('.')) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('link_error_invalid'.tr()),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+                return;
+              }
+
+              Navigator.pop(context);
+              _generateAndNavigate(url, true);
+            },
+            icon: const Icon(Icons.download_rounded, color: Colors.white, size: 20),
+            label: Text('link_dialog_import'.tr(), style: const TextStyle(color: Colors.white)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).primaryColor,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
+        ],
       ),
     );
   }
