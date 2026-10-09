@@ -435,7 +435,7 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
                                 badgeText,
                                 style: const TextStyle(
                                   fontSize: 10,
-                                  fontWeight: FontWeight.extrabold,
+                                  fontWeight: FontWeight.w800,
                                   color: Color(0xFF0F111A),
                                 ),
                               ),
