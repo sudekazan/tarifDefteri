@@ -38,7 +38,7 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
       setState(() => _isPurchasing = false);
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('premium_success'.tr), backgroundColor: Colors.green),
+          SnackBar(content: Text('premium_success'.tr()), backgroundColor: Colors.green),
         );
         Navigator.pop(context, true); // Pro oldu bilgisini döndür
       }
@@ -52,12 +52,12 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
       setState(() => _isPurchasing = false);
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('premium_restored'.tr), backgroundColor: Colors.green),
+          SnackBar(content: Text('premium_restored'.tr()), backgroundColor: Colors.green),
         );
         Navigator.pop(context, true);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('premium_restore_failed'.tr), backgroundColor: Colors.red),
+          SnackBar(content: Text('premium_restore_failed'.tr()), backgroundColor: Colors.red),
         );
       }
     }
@@ -67,11 +67,11 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('premium_title'.tr(defaultValue: 'Premium\'a Geç')),
+        title: Text('premium_title'.tr()),
         actions: [
           TextButton(
             onPressed: _isPurchasing ? null : _restore,
-            child: Text('premium_restore'.tr, style: const TextStyle(color: Colors.white)),
+            child: Text('premium_restore'.tr(), style: const TextStyle(color: Colors.white)),
           )
         ],
       ),
@@ -87,16 +87,16 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
                       Icon(Icons.workspace_premium, size: 100, color: Colors.amber[700]),
                       const SizedBox(height: 24),
                       Text(
-                        'premium_headline'.tr,
+                        'premium_headline'.tr(),
                         textAlign: TextAlign.center,
                         style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 32),
-                      _buildFeatureRow(Icons.no_cell, 'premium_feature_ads'.tr),
+                      _buildFeatureRow(Icons.no_cell, 'premium_feature_ads'.tr()),
                       const SizedBox(height: 16),
-                      _buildFeatureRow(Icons.auto_awesome, 'premium_feature_ai'.tr),
+                      _buildFeatureRow(Icons.auto_awesome, 'premium_feature_ai'.tr()),
                       const SizedBox(height: 16),
-                      _buildFeatureRow(Icons.link, 'premium_feature_link'.tr),
+                      _buildFeatureRow(Icons.link, 'premium_feature_link'.tr()),
                       
                       const SizedBox(height: 48),
                       
@@ -105,7 +105,7 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
                       else
                         Center(
                           child: Text(
-                            'premium_no_packages'.tr,
+                            'premium_no_packages'.tr(),
                             textAlign: TextAlign.center,
                             style: const TextStyle(color: Colors.grey),
                           ),

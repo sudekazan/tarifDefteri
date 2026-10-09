@@ -258,11 +258,11 @@ class _KlasorlerState extends State<Klasorler> {
     await showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('folders_rename'.tr),
+        title: Text('folders_rename'.tr()),
         content: TextField(
           controller: nameController,
           decoration: InputDecoration(
-            labelText: 'folders_new_name'.tr,
+            labelText: 'folders_new_name'.tr(),
             border: const OutlineInputBorder(),
           ),
           autofocus: true,
@@ -270,7 +270,7 @@ class _KlasorlerState extends State<Klasorler> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('common_cancel'.tr),
+            child: Text('common_cancel'.tr()),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -283,7 +283,7 @@ class _KlasorlerState extends State<Klasorler> {
             style: ElevatedButton.styleFrom(
               backgroundColor: Theme.of(context).primaryColor,
             ),
-            child: Text('common_save'.tr, style: const TextStyle(color: Colors.white)),
+            child: Text('common_save'.tr(), style: const TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -597,7 +597,7 @@ class _KlasorlerState extends State<Klasorler> {
                                 children: [
                                   Icon(Icons.edit, size: 20, color: Theme.of(context).primaryColor),
                                   const SizedBox(width: 8),
-                                  Text('folders_rename'.tr),
+                                  Text('folders_rename'.tr()),
                                 ],
                               ),
                             ),
@@ -607,7 +607,7 @@ class _KlasorlerState extends State<Klasorler> {
                                 children: [
                                   const Icon(Icons.delete, size: 20, color: Colors.red),
                                   const SizedBox(width: 8),
-                                  Text('folders_delete_title'.tr),
+                                  Text('folders_delete_title'.tr()),
                                 ],
                               ),
                             ),

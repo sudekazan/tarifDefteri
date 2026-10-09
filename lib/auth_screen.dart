@@ -156,7 +156,7 @@ class _AuthScreenState extends State<AuthScreen> {
     final email = _emailController.text.trim();
     if (email.isEmpty || !email.contains('@')) {
       setState(() {
-        _errorMessage = 'auth_reset_password_email_required'.tr;
+        _errorMessage = 'auth_reset_password_email_required'.tr();
       });
       return;
     }
@@ -171,7 +171,7 @@ class _AuthScreenState extends State<AuthScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('auth_reset_password_success'.tr),
+          content: Text('auth_reset_password_success'.tr()),
           backgroundColor: Colors.green,
         ),
       );
@@ -352,7 +352,7 @@ class _AuthScreenState extends State<AuthScreen> {
                               child: TextButton(
                                 onPressed: _isLoading ? null : _resetPassword,
                                 child: Text(
-                                  'auth_forgot_password'.tr,
+                                  'auth_forgot_password'.tr(),
                                   style: TextStyle(
                                     color: Theme.of(context).primaryColor,
                                     fontWeight: FontWeight.w600,

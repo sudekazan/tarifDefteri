@@ -17,7 +17,7 @@ class AiRecipeService {
       User? user = FirebaseAuth.instance.currentUser;
       
       if (user == null) {
-        throw Exception('auth_required_for_ai'.tr);
+        throw Exception('auth_required_for_ai'.tr());
       }
       
       String idToken = '';

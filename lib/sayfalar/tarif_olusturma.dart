@@ -315,7 +315,7 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('recipe_edit_edit_item'.tr),
+        title: Text('recipe_edit_edit_item'.tr()),
         content: TextField(
           controller: editController,
           autofocus: true,
@@ -329,7 +329,7 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('common_cancel'.tr),
+            child: Text('common_cancel'.tr()),
           ),
           ElevatedButton(
             onPressed: () {
@@ -341,7 +341,7 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
               Navigator.pop(context);
             },
             style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).primaryColor),
-            child: Text('common_save'.tr, style: const TextStyle(color: Colors.white)),
+            child: Text('common_save'.tr(), style: const TextStyle(color: Colors.white)),
           ),
         ],
       ),

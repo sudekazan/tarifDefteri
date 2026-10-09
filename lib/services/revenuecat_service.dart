@@ -44,7 +44,7 @@ class RevenueCatService {
 
   static Future<bool> purchasePackage(Package package) async {
     try {
-      CustomerInfo customerInfo = await Purchases.purchaseStoreProduct(package.storeProduct);
+      CustomerInfo customerInfo = (await Purchases.purchasePackage(package)).customerInfo;
       _isPro = customerInfo.entitlements.all[_entitlementID]?.isActive ?? false;
       return _isPro;
     } catch (e) {

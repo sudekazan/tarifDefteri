@@ -412,14 +412,14 @@ class _KlasorIciState extends State<KlasorIci> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('ai_input_hint'.tr),
+            Text('ai_input_hint'.tr()),
             const SizedBox(height: 16),
             TextField(
               controller: _promptController,
               autofocus: true,
               maxLines: null,
               decoration: InputDecoration(
-                hintText: 'ai_input_placeholder'.tr,
+                hintText: 'ai_input_placeholder'.tr(),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               ),
             ),

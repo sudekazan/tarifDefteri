@@ -74,7 +74,7 @@ class _AlisverisListesiState extends State<AlisverisListesi> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('shopping_list_title'.tr),
+        title: Text('shopping_list_title'.tr()),
         actions: [
           IconButton(
             icon: const Icon(Icons.delete_sweep),
@@ -99,7 +99,7 @@ class _AlisverisListesiState extends State<AlisverisListesi> {
                         child: TextField(
                           controller: _controller,
                           decoration: InputDecoration(
-                            hintText: 'shopping_list_add_hint'.tr,
+                            hintText: 'shopping_list_add_hint'.tr(),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
@@ -124,7 +124,7 @@ class _AlisverisListesiState extends State<AlisverisListesi> {
                         Padding(
                           padding: const EdgeInsets.all(16.0),
                           child: Text(
-                            'shopping_list_todo'.tr,
+                            'shopping_list_todo'.tr(),
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
@@ -148,7 +148,7 @@ class _AlisverisListesiState extends State<AlisverisListesi> {
                         Padding(
                           padding: const EdgeInsets.all(16.0),
                           child: Text(
-                            'shopping_list_done'.tr,
+                            'shopping_list_done'.tr(),
                             style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,

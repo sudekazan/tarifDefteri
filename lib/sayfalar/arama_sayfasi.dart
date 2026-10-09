@@ -75,7 +75,7 @@ class _AramaSayfasiState extends State<AramaSayfasi> {
           controller: _aramaController,
           autofocus: true,
           decoration: InputDecoration(
-            hintText: 'folders_search_hint'.tr,
+            hintText: 'folders_search_hint'.tr(),
             border: InputBorder.none,
           ),
           onChanged: _ara,
@@ -95,14 +95,14 @@ class _AramaSayfasiState extends State<AramaSayfasi> {
           : _aramaController.text.isEmpty
               ? Center(
                   child: Text(
-                    'recipe_search_prompt'.tr,
+                    'recipe_search_prompt'.tr(),
                     style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                   ),
                 )
               : _filtrelenmisTarifler.isEmpty
                   ? Center(
                       child: Text(
-                        'folders_search_no_results'.tr,
+                        'folders_search_no_results'.tr(),
                         style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                       ),
                     )

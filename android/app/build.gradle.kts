@@ -8,7 +8,7 @@ plugins {
 
 android {
     namespace = "com.sudekazan.tarif_defteri_yeni"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -33,8 +33,8 @@ android {
 
     defaultConfig {
         applicationId = "com.sudekazan.tarif_defteri_yeni"
-        minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
+        minSdk = 24
+        targetSdk = 35
         versionCode = flutter.versionCode
         versionName = flutter.versionName
         multiDexEnabled = true

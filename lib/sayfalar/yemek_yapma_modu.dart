@@ -24,7 +24,14 @@ class _YemekYapmaModuState extends State<YemekYapmaModu> {
     super.initState();
     // Ekranın kapanmasını engelle
     WakelockPlus.enable();
-    _preparePages();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_pages.isEmpty) {
+      _preparePages();
+    }
   }
 
   @override
@@ -109,7 +116,7 @@ class _YemekYapmaModuState extends State<YemekYapmaModu> {
 
     // Malzemeler Sayfası
     pages.add(_buildPage(
-      title: 'cooking_mode_ingredients'.tr,
+      title: 'cooking_mode_ingredients'.tr(),
       contentList: malzemeler,
       icon: Icons.kitchen,
       isNumbered: false,
@@ -120,7 +127,7 @@ class _YemekYapmaModuState extends State<YemekYapmaModu> {
     if (adimlar.isNotEmpty) {
       for (int i = 0; i < adimlar.length; i++) {
         pages.add(_buildPage(
-          title: '${'cooking_mode_step'.tr} ${i + 1}',
+          title: '${'cooking_mode_step'.tr()} ${i + 1}',
           contentList: [adimlar[i]],
           icon: Icons.restaurant_menu,
           isNumbered: false,
@@ -128,7 +135,7 @@ class _YemekYapmaModuState extends State<YemekYapmaModu> {
       }
     } else {
        pages.add(_buildPage(
-          title: 'cooking_mode_steps'.tr,
+          title: 'cooking_mode_steps'.tr(),
           contentList: ['Tarifin yapılış adımları bulunamadı.'],
           icon: Icons.error_outline,
           isNumbered: false,

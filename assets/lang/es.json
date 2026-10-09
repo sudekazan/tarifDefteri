@@ -193,5 +193,10 @@
   "premium_feature_ai": "Sınırsız yapay zeka ile tarif oluşturma.",
   "premium_feature_link": "İnternet linklerinden sınırsız tarif çekme.",
   "premium_no_packages": "Şu an paket bulunmamaktadır. Lütfen daha sonra tekrar deneyin.",
-  "ai_limit_reached": "Günlük ücretsiz AI kullanım hakkınız doldu. Lütfen Premium'a geçin."
+  "ai_limit_reached": "Günlük ücretsiz AI kullanım hakkınız doldu. Lütfen Premium'a geçin.",
+  "common_cancel": "Cancelar",
+  "auth_required_for_ai": "Debe iniciar sesión para usar funciones de IA.",
+  "settings_rate_app": "Calificar Aplicación",
+  "settings_rate_app_subtitle": "Apóyenos calificando",
+  "ai_login_required": "Inicio de Sesión Requerido para IA"
 }
