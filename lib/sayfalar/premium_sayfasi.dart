@@ -210,65 +210,83 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
                       if (_offerings.isNotEmpty && _offerings.first.availablePackages.isNotEmpty) ...[
                         ..._offerings.first.availablePackages.map((pkg) {
                           final isSelected = _selectedPackage == pkg;
-                          return _buildPackageCard(pkg, isSelected);
+                          return _buildPackageCard(
+                            title: pkg.storeProduct.title,
+                            description: pkg.storeProduct.description,
+                            priceString: pkg.storeProduct.priceString,
+                            isSelected: isSelected,
+                            onTap: () => setState(() => _selectedPackage = pkg),
+                          );
                         }).toList(),
-                        
-                        const SizedBox(height: 24),
+                      ] else ...[
+                        // Fallback UI when testing or before RevenueCat products are configured in store
+                        _buildPackageCard(
+                          title: 'Tarif Defteri Pro (Aylık)',
+                          description: 'Sınırsız AI Şef & Reklamsız Deneyim',
+                          priceString: '₺29.99 / Ay',
+                          isSelected: true,
+                          badgeText: 'EN POPÜLER',
+                          onTap: () {},
+                        ),
+                      ],
 
-                        // Main Action CTA Button
-                        SizedBox(
-                          width: double.infinity,
-                          height: 56,
-                          child: ElevatedButton(
-                            onPressed: (_isPurchasing || _selectedPackage == null)
-                                ? null
-                                : () => _purchase(_selectedPackage!),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.transparent,
-                              padding: EdgeInsets.zero,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(18),
-                              ),
-                              elevation: 8,
-                              shadowColor: const Color(0xFFFFD700).withOpacity(0.4),
+                      const SizedBox(height: 24),
+
+                      // Main Action CTA Button
+                      SizedBox(
+                        width: double.infinity,
+                        height: 56,
+                        child: ElevatedButton(
+                          onPressed: _isPurchasing
+                              ? null
+                              : () {
+                                  if (_selectedPackage != null) {
+                                    _purchase(_selectedPackage!);
+                                  } else {
+                                    // Fallback test notification
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: const Text('Mağaza bağlantısı canlı anahtarla aktifleşecektir (₺29.99).'),
+                                        backgroundColor: const Color(0xFFFFA000),
+                                        behavior: SnackBarBehavior.floating,
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                      ),
+                                    );
+                                  }
+                                },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.transparent,
+                            padding: EdgeInsets.zero,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(18),
                             ),
-                            child: Ink(
-                              decoration: BoxDecoration(
-                                gradient: const LinearGradient(
-                                  colors: [Color(0xFFFFA000), Color(0xFFFFD700)],
-                                  begin: Alignment.centerLeft,
-                                  end: Alignment.centerRight,
-                                ),
-                                borderRadius: BorderRadius.circular(18),
+                            elevation: 8,
+                            shadowColor: const Color(0xFFFFD700).withOpacity(0.4),
+                          ),
+                          child: Ink(
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFFFFA000), Color(0xFFFFD700)],
+                                begin: Alignment.centerLeft,
+                                end: Alignment.centerRight,
                               ),
-                              child: Container(
-                                alignment: Alignment.center,
-                                child: Text(
-                                  'premium_title'.tr().toUpperCase(),
-                                  style: const TextStyle(
-                                    fontSize: 17,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF0F111A),
-                                    letterSpacing: 0.5,
-                                  ),
+                              borderRadius: BorderRadius.circular(18),
+                            ),
+                            child: Container(
+                              alignment: Alignment.center,
+                              child: Text(
+                                'premium_title'.tr().toUpperCase(),
+                                style: const TextStyle(
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF0F111A),
+                                  letterSpacing: 0.5,
                                 ),
                               ),
                             ),
                           ),
                         ),
-                      ] else
-                        Container(
-                          padding: const EdgeInsets.all(24),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF181B2A),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            'premium_no_packages'.tr(),
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(color: Colors.white54, fontSize: 14),
-                          ),
-                        ),
+                      ),
 
                       const SizedBox(height: 20),
                       Text(
@@ -337,7 +355,14 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
     );
   }
 
-  Widget _buildPackageCard(Package pkg, bool isSelected) {
+  Widget _buildPackageCard({
+    required String title,
+    required String description,
+    required String priceString,
+    required bool isSelected,
+    required VoidCallback onTap,
+    String? badgeText,
+  }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
@@ -360,7 +385,7 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: _isPurchasing ? null : () => setState(() => _selectedPackage = pkg),
+          onTap: _isPurchasing ? null : onTap,
           borderRadius: BorderRadius.circular(20),
           child: Padding(
             padding: const EdgeInsets.all(20.0),
@@ -386,18 +411,42 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        pkg.storeProduct.title,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              title,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                          if (badgeText != null) ...[
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFFD700),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                badgeText,
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.extrabold,
+                                  color: Color(0xFF0F111A),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
-                      if (pkg.storeProduct.description.isNotEmpty) ...[
+                      if (description.isNotEmpty) ...[
                         const SizedBox(height: 4),
                         Text(
-                          pkg.storeProduct.description,
+                          description,
                           style: TextStyle(
                             fontSize: 13,
                             color: Colors.white.withOpacity(0.6),
@@ -409,7 +458,7 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
                 ),
                 const SizedBox(width: 12),
                 Text(
-                  pkg.storeProduct.priceString,
+                  priceString,
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
