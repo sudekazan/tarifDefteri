@@ -466,154 +466,180 @@ class _KlasorlerState extends State<Klasorler> {
           separatorBuilder: (context, index) => const SizedBox(height: 8),
           itemBuilder: (context, index) {
             var klasor = filtrelenmisKlasorler[index]; // filtrelenmisKlasorler'den oku
-            return GestureDetector(
-              onTap: () async {
-                if (klasor.klasor_id == -1) {
-                  // Favoriler klasörüne tıklandı
-                  // Tüm klasörlerdeki favori tarifleri topla
-                  SharedPreferences prefs = await SharedPreferences.getInstance();
-                  List<TarifData> favoriTarifler = [];
-                  List<String> klasorJsonList = prefs.getStringList('klasorler') ?? [];
-                  for (int i = 0; i < klasorJsonList.length; i++) {
-                    final map = json.decode(klasorJsonList[i]);
-                    int kid = map['klasor_id'] ?? (i + 1);
-                    String key = 'tarifler_$kid';
-                    List<String> tariflerJson = prefs.getStringList(key) ?? [];
-                    for (var e in tariflerJson) {
-                      var map = json.decode(e);
-                      if (map['isFavorite'] == true) {
-                        favoriTarifler.add(TarifData.fromMap(map));
-                      }
-                    }
-                  }
-                  // Favori tarifleri gösterecek yeni bir sayfa aç
-                  Navigator.push(context, MaterialPageRoute(
-                    builder: (context) => FavoriTariflerSayfasi(favoriTarifler: favoriTarifler),
-                  ));
-                } else {
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => KlasorIci(klasorData: klasor)))
-                      .then((value){
-                    print("Klasör içeriği açıldı.");
-                  });
-                }
-              },
-              child: Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+            return Container(
+              margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+              decoration: BoxDecoration(
                 color: klasor.klasor_id == -1
-                    ? (isDark ? const Color(0xFF2A1B1B) : const Color(0xFFFFF3E0))
+                    ? (isDark ? const Color(0xFF2A1A1E) : const Color(0xFFFFF4F2))
                     : Theme.of(context).cardColor,
-                child: SizedBox(
-                  height: 84,
-                  child: Row(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                        child: Icon(
-                          klasor.icon,
-                          color: klasor.klasor_id == -1
-                              ? (isDark ? Colors.redAccent : Colors.red)
-                              : Theme.of(context).primaryColor,
-                          size: 36,
-                        ),
-                      ),
-                      Expanded(
-                        child: Builder(
-                          builder: (context) {
-                            // Var olan 1,2,3,4 ID'li klasör eğer ismi değiştirilmiş sıradan bir klasör ise çevrilmesin
-                            String displayName = klasor.klasor_adi;
-                            if (klasor.klasor_id == 1 && (displayName == 'default_folder_desserts'.tr() || displayName == 'Tatlılar' || displayName == 'Desserts')) {
-                              displayName = 'default_folder_desserts'.tr();
-                            } else if (klasor.klasor_id == 2 && (displayName == 'default_folder_soups'.tr() || displayName == 'Çorbalar' || displayName == 'Soups')) {
-                              displayName = 'default_folder_soups'.tr();
-                            } else if (klasor.klasor_id == 3 && (displayName == 'default_folder_main_dishes'.tr() || displayName == 'Ana Yemekler' || displayName == 'Main Dishes')) {
-                              displayName = 'default_folder_main_dishes'.tr();
-                            } else if (klasor.klasor_id == 4 && (displayName == 'default_folder_breakfast'.tr() || displayName == 'Kahvaltılıklar' || displayName == 'Breakfast')) {
-                              displayName = 'default_folder_breakfast'.tr();
-                            }
-
-                            return Text(
-                              klasor.klasor_id == -1 ? 'folders_favorites'.tr() : displayName,
-                              style: TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.w500,
-                                color: klasor.klasor_id == -1
-                                    ? (isDark ? Colors.redAccent : Colors.red)
-                                    : Theme.of(context).textTheme.bodyLarge?.color,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            );
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: klasor.klasor_id == -1
+                      ? (isDark ? Colors.redAccent.withOpacity(0.3) : Colors.red.withOpacity(0.2))
+                      : (isDark ? const Color(0xFF2C3044) : Colors.grey.withOpacity(0.15)),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(isDark ? 0.2 : 0.04),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () async {
+                    if (klasor.klasor_id == -1) {
+                      SharedPreferences prefs = await SharedPreferences.getInstance();
+                      List<TarifData> favoriTarifler = [];
+                      List<String> klasorJsonList = prefs.getStringList('klasorler') ?? [];
+                      for (int i = 0; i < klasorJsonList.length; i++) {
+                        final map = json.decode(klasorJsonList[i]);
+                        int kid = map['klasor_id'] ?? (i + 1);
+                        String key = 'tarifler_$kid';
+                        List<String> tariflerJson = prefs.getStringList(key) ?? [];
+                        for (var e in tariflerJson) {
+                          var map = json.decode(e);
+                          if (map['isFavorite'] == true) {
+                            favoriTarifler.add(TarifData.fromMap(map));
                           }
-                        ),
-                      ),
-
-                      if (klasor.klasor_id != -1)
-                        PopupMenuButton<String>(
-                          icon: Icon(
-                            Icons.more_vert,
-                            color: Theme.of(context).primaryColor,
+                        }
+                      }
+                      Navigator.push(context, MaterialPageRoute(
+                        builder: (context) => FavoriTariflerSayfasi(favoriTarifler: favoriTarifler),
+                      ));
+                    } else {
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => KlasorIci(klasorData: klasor)))
+                          .then((value){
+                        print("Klasör içeriği açıldı.");
+                      });
+                    }
+                  },
+                  borderRadius: BorderRadius.circular(20),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
+                    child: Row(
+                      children: [
+                        // Icon Squircle Container
+                        Container(
+                          width: 52,
+                          height: 52,
+                          decoration: BoxDecoration(
+                            color: klasor.klasor_id == -1
+                                ? (isDark ? Colors.redAccent.withOpacity(0.2) : Colors.red.withOpacity(0.1))
+                                : Theme.of(context).primaryColor.withOpacity(isDark ? 0.2 : 0.1),
+                            borderRadius: BorderRadius.circular(16),
                           ),
-                          onSelected: (value) {
-                            if (value == 'rename') {
-                              _klasorYenidenAdlandirDialog(klasor);
-                            } else if (value == 'delete') {
-                              showDialog(
-                                context: context,
-                                builder: (context) => AlertDialog(
-                                  title: Text('folders_delete_title'.tr()),
-                                  content: Text(
-                                    '${klasor.klasor_adi}${'folders_delete_confirm_suffix'.tr()}',
-                                  ),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () => Navigator.pop(context),
-                                      child: Text('common_no'.tr()),
-                                    ),
-                                    ElevatedButton(
-                                      onPressed: () {
-                                        Navigator.pop(context);
-                                        sil(klasor.klasor_id);
-                                      },
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Theme.of(context).primaryColor,
-                                      ),
-                                      child: Text(
-                                        'common_yes'.tr(),
-                                        style: const TextStyle(color: Colors.white),
-                                      ),
-                                    ),
-                                  ],
+                          child: Icon(
+                            klasor.icon,
+                            color: klasor.klasor_id == -1
+                                ? (isDark ? Colors.redAccent : Colors.red)
+                                : Theme.of(context).primaryColor,
+                            size: 28,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Builder(
+                            builder: (context) {
+                              String displayName = klasor.klasor_adi;
+                              if (klasor.klasor_id == 1 && (displayName == 'default_folder_desserts'.tr() || displayName == 'Tatlılar' || displayName == 'Desserts')) {
+                                displayName = 'default_folder_desserts'.tr();
+                              } else if (klasor.klasor_id == 2 && (displayName == 'default_folder_soups'.tr() || displayName == 'Çorbalar' || displayName == 'Soups')) {
+                                displayName = 'default_folder_soups'.tr();
+                              } else if (klasor.klasor_id == 3 && (displayName == 'default_folder_main_dishes'.tr() || displayName == 'Ana Yemekler' || displayName == 'Main Dishes')) {
+                                displayName = 'default_folder_main_dishes'.tr();
+                              } else if (klasor.klasor_id == 4 && (displayName == 'default_folder_breakfast'.tr() || displayName == 'Kahvaltılıklar' || displayName == 'Breakfast')) {
+                                displayName = 'default_folder_breakfast'.tr();
+                              }
+
+                              return Text(
+                                klasor.klasor_id == -1 ? 'folders_favorites'.tr() : displayName,
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: klasor.klasor_id == -1
+                                      ? (isDark ? Colors.redAccent : Colors.red[700])
+                                      : Theme.of(context).textTheme.bodyLarge?.color,
                                 ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               );
                             }
-                          },
-                          itemBuilder: (context) => [
-                            PopupMenuItem(
-                              value: 'rename',
-                              child: Row(
-                                children: [
-                                  Icon(Icons.edit, size: 20, color: Theme.of(context).primaryColor),
-                                  const SizedBox(width: 8),
-                                  Text('folders_rename'.tr()),
-                                ],
-                              ),
-                            ),
-                            PopupMenuItem(
-                              value: 'delete',
-                              child: Row(
-                                children: [
-                                  const Icon(Icons.delete, size: 20, color: Colors.red),
-                                  const SizedBox(width: 8),
-                                  Text('folders_delete_title'.tr()),
-                                ],
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
-                    ],
+
+                        if (klasor.klasor_id != -1)
+                          PopupMenuButton<String>(
+                            icon: Icon(
+                              Icons.more_vert_rounded,
+                              color: isDark ? Colors.white54 : Colors.grey[600],
+                            ),
+                            onSelected: (value) {
+                              if (value == 'rename') {
+                                _klasorYenidenAdlandirDialog(klasor);
+                              } else if (value == 'delete') {
+                                showDialog(
+                                  context: context,
+                                  builder: (context) => AlertDialog(
+                                    title: Text('folders_delete_title'.tr()),
+                                    content: Text(
+                                      '${klasor.klasor_adi}${'folders_delete_confirm_suffix'.tr()}',
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(context),
+                                        child: Text('common_no'.tr()),
+                                      ),
+                                      ElevatedButton(
+                                        onPressed: () {
+                                          Navigator.pop(context);
+                                          sil(klasor.klasor_id);
+                                        },
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Theme.of(context).primaryColor,
+                                        ),
+                                        child: Text(
+                                          'common_yes'.tr(),
+                                          style: const TextStyle(color: Colors.white),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }
+                            },
+                            itemBuilder: (context) => [
+                              PopupMenuItem(
+                                value: 'rename',
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.edit_rounded, size: 20, color: Theme.of(context).primaryColor),
+                                    const SizedBox(width: 8),
+                                    Text('folders_rename'.tr()),
+                                  ],
+                                ),
+                              ),
+                              PopupMenuItem(
+                                value: 'delete',
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.delete_rounded, size: 20, color: Colors.red),
+                                    const SizedBox(width: 8),
+                                    Text('folders_delete_title'.tr()),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          )
+                        else
+                          Icon(
+                            Icons.chevron_right_rounded,
+                            color: isDark ? Colors.redAccent.withOpacity(0.5) : Colors.red.withOpacity(0.5),
+                          ),
+                      ],
+                    ),
                   ),
                 ),
               ),

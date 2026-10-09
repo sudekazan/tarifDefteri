@@ -200,265 +200,336 @@ class _AuthScreenState extends State<AuthScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primaryColor = Theme.of(context).primaryColor;
+
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Colors.transparent,
-        iconTheme: IconThemeData(color: Theme.of(context).primaryColor),
+        iconTheme: IconThemeData(color: primaryColor),
       ),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Logo/İkon
+                // Top Icon Badge
                 Container(
-                  padding: const EdgeInsets.all(20),
+                  width: 90,
+                  height: 90,
                   decoration: BoxDecoration(
-                    color: Theme.of(context).primaryColor.withOpacity(0.1),
                     shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      colors: [
+                        primaryColor,
+                        primaryColor.withOpacity(0.7),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: primaryColor.withOpacity(0.3),
+                        blurRadius: 20,
+                        spreadRadius: 2,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
                   ),
-                  child: Icon(
-                    Icons.restaurant_menu,
-                    size: 60,
-                    color: Theme.of(context).primaryColor,
+                  child: const Icon(
+                    Icons.restaurant_menu_rounded,
+                    size: 46,
+                    color: Colors.white,
                   ),
                 ),
-                const SizedBox(height: 24),
-                
-                // Başlık
+                const SizedBox(height: 20),
+
+                // App Title & Tagline
+                Text(
+                  'app_title'.tr(),
+                  style: TextStyle(
+                    fontSize: 26,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: -0.5,
+                    color: isDark ? Colors.white : Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 6),
                 Text(
                   _isLogin
-                      ? 'auth_title_login'.tr()
-                      : 'auth_title_register'.tr(),
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).textTheme.headlineMedium?.color,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  _isLogin 
                       ? 'auth_subtitle_login'.tr()
                       : 'auth_subtitle_register'.tr(),
+                  textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.grey[600],
+                    fontSize: 14,
+                    color: isDark ? Colors.white60 : Colors.black54,
                   ),
                 ),
-                const SizedBox(height: 32),
-                
-                // Form Card
-                Card(
-                  elevation: 4,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
+                const SizedBox(height: 28),
+
+                // Form Container
+                Container(
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF1A1D2B) : Colors.white,
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(
+                      color: isDark
+                          ? const Color(0xFF2C3044)
+                          : Colors.grey.withOpacity(0.15),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
+                        blurRadius: 24,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
                   ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(24.0),
-                    child: Form(
-                      key: _formKey,
-                      child: Column(
-                        children: [
-                          // Email TextField
-                          TextFormField(
-                            key: const ValueKey('email'),
-                            controller: _emailController,
-                            keyboardType: TextInputType.emailAddress,
-                            decoration: InputDecoration(
-                              labelText: 'auth_email_label'.tr(),
-                              hintText: 'auth_email_hint'.tr(),
-                              prefixIcon: const Icon(Icons.email_outlined),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: Colors.grey[300]!),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(
-                                  color: Theme.of(context).primaryColor,
-                                  width: 2,
-                                ),
-                              ),
-                            ),
-                            validator: (value) {
-                              if (value == null || value.isEmpty || !value.contains('@')) {
-                                return 'auth_email_validation'.tr();
-                              }
-                              return null;
-                            },
-                            onSaved: (value) {
-                              _email = value!.trim();
-                            },
+                  padding: const EdgeInsets.all(24.0),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // Segmented Pill Switcher (Giriş Yap / Kayıt Ol)
+                        Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? const Color(0xFF121420)
+                                : Colors.grey.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(16),
                           ),
-                          const SizedBox(height: 20),
-                          
-                          // Password TextField
-                          TextFormField(
-                            key: const ValueKey('password'),
-                            controller: _passwordController,
-                            obscureText: _obscurePassword,
-                            decoration: InputDecoration(
-                              labelText: 'auth_password_label'.tr(),
-                              hintText: 'auth_password_hint'.tr(),
-                              prefixIcon: const Icon(Icons.lock_outline),
-                              suffixIcon: IconButton(
-                                icon: Icon(
-                                  _obscurePassword
-                                      ? Icons.visibility_outlined
-                                      : Icons.visibility_off_outlined,
-                                ),
-                                onPressed: () {
-                                  setState(() {
-                                    _obscurePassword = !_obscurePassword;
-                                  });
-                                },
-                              ),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: Colors.grey[300]!),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(
-                                  color: Theme.of(context).primaryColor,
-                                  width: 2,
-                                ),
-                              ),
-                            ),
-                            validator: (value) {
-                              if (value == null || value.isEmpty || value.length < 6) {
-                                return 'auth_password_validation'.tr();
-                              }
-                              return null;
-                            },
-                            onSaved: (value) {
-                              _password = value!;
-                            },
-                          ),
-                          if (_isLogin)
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: TextButton(
-                                onPressed: _isLoading ? null : _resetPassword,
-                                child: Text(
-                                  'auth_forgot_password'.tr(),
-                                  style: TextStyle(
-                                    color: Theme.of(context).primaryColor,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                            )
-                          else
-                            const SizedBox(height: 24),
-                          
-                          // Hata Mesajı
-                          if (_errorMessage != null)
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: Colors.red[50],
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Colors.red[200]!),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(Icons.error_outline, color: Colors.red[700], size: 20),
-                                  const SizedBox(width: 8),
-                                  Expanded(
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: GestureDetector(
+                                  onTap: () {
+                                    if (!_isLogin) {
+                                      setState(() {
+                                        _isLogin = true;
+                                        _errorMessage = null;
+                                      });
+                                    }
+                                  },
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 200),
+                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                    decoration: BoxDecoration(
+                                      color: _isLogin
+                                          ? (isDark ? primaryColor : primaryColor)
+                                          : Colors.transparent,
+                                      borderRadius: BorderRadius.circular(12),
+                                      boxShadow: _isLogin
+                                          ? [
+                                              BoxShadow(
+                                                color: primaryColor.withOpacity(0.3),
+                                                blurRadius: 8,
+                                                offset: const Offset(0, 2),
+                                              )
+                                            ]
+                                          : [],
+                                    ),
                                     child: Text(
-                                      _errorMessage!,
+                                      'auth_button_login'.tr(),
+                                      textAlign: TextAlign.center,
                                       style: TextStyle(
-                                        color: Colors.red[700],
+                                        fontWeight: FontWeight.w600,
                                         fontSize: 14,
+                                        color: _isLogin
+                                            ? Colors.white
+                                            : (isDark ? Colors.white60 : Colors.black60),
                                       ),
                                     ),
                                   ),
-                                ],
+                                ),
+                              ),
+                              Expanded(
+                                child: GestureDetector(
+                                  onTap: () {
+                                    if (_isLogin) {
+                                      setState(() {
+                                        _isLogin = false;
+                                        _errorMessage = null;
+                                      });
+                                    }
+                                  },
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 200),
+                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                    decoration: BoxDecoration(
+                                      color: !_isLogin
+                                          ? primaryColor
+                                          : Colors.transparent,
+                                      borderRadius: BorderRadius.circular(12),
+                                      boxShadow: !_isLogin
+                                          ? [
+                                              BoxShadow(
+                                                color: primaryColor.withOpacity(0.3),
+                                                blurRadius: 8,
+                                                offset: const Offset(0, 2),
+                                              )
+                                            ]
+                                          : [],
+                                    ),
+                                    child: Text(
+                                      'auth_button_register'.tr(),
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 14,
+                                        color: !_isLogin
+                                            ? Colors.white
+                                            : (isDark ? Colors.white60 : Colors.black60),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+
+                        // Email Field
+                        TextFormField(
+                          key: const ValueKey('email'),
+                          controller: _emailController,
+                          keyboardType: TextInputType.emailAddress,
+                          style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+                          decoration: InputDecoration(
+                            labelText: 'auth_email_label'.tr(),
+                            hintText: 'auth_email_hint'.tr(),
+                            prefixIcon: Icon(Icons.email_outlined, color: primaryColor),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty || !value.contains('@')) {
+                              return 'auth_email_validation'.tr();
+                            }
+                            return null;
+                          },
+                          onSaved: (value) => _email = value!.trim(),
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Password Field
+                        TextFormField(
+                          key: const ValueKey('password'),
+                          controller: _passwordController,
+                          obscureText: _obscurePassword,
+                          style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+                          decoration: InputDecoration(
+                            labelText: 'auth_password_label'.tr(),
+                            hintText: 'auth_password_hint'.tr(),
+                            prefixIcon: Icon(Icons.lock_outline_rounded, color: primaryColor),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscurePassword
+                                    ? Icons.visibility_outlined
+                                    : Icons.visibility_off_outlined,
+                                color: isDark ? Colors.white54 : Colors.grey[600],
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  _obscurePassword = !_obscurePassword;
+                                });
+                              },
+                            ),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty || value.length < 6) {
+                              return 'auth_password_validation'.tr();
+                            }
+                            return null;
+                          },
+                          onSaved: (value) => _password = value!,
+                        ),
+
+                        if (_isLogin) ...[
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: TextButton(
+                              onPressed: _isLoading ? null : _resetPassword,
+                              child: Text(
+                                'auth_forgot_password'.tr(),
+                                style: TextStyle(
+                                  color: primaryColor,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 13,
+                                ),
                               ),
                             ),
-                          if (_errorMessage != null) const SizedBox(height: 16),
-                          
-                          // Giriş/Kayıt Butonu
-                          SizedBox(
-                            width: double.infinity,
-                            height: 50,
+                          ),
+                        ] else
+                          const SizedBox(height: 20),
+
+                        // Error Banner
+                        if (_errorMessage != null) ...[
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.redAccent.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(color: Colors.redAccent.withOpacity(0.3)),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.error_outline_rounded, color: Colors.redAccent, size: 20),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    _errorMessage!,
+                                    style: const TextStyle(color: Colors.redAccent, fontSize: 13),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                        ],
+
+                        // Main Auth Submit Button
+                        SizedBox(
+                          height: 54,
+                          child: ElevatedButton(
+                            onPressed: _isLoading ? null : _submitAuthForm,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: primaryColor,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              elevation: 4,
+                              shadowColor: primaryColor.withOpacity(0.4),
+                            ),
                             child: _isLoading
-                                ? Center(
+                                ? const SizedBox(
+                                    width: 24,
+                                    height: 24,
                                     child: CircularProgressIndicator(
-                                      color: Theme.of(context).primaryColor,
+                                      color: Colors.white,
+                                      strokeWidth: 2.5,
                                     ),
                                   )
-                                : ElevatedButton(
-                                    onPressed: _submitAuthForm,
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Theme.of(context).primaryColor,
-                                      foregroundColor: Colors.white,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      elevation: 2,
-                                    ),
-                                    child: Text(
-                                      _isLogin
-                                          ? 'auth_button_login'.tr()
-                                          : 'auth_button_register'.tr(),
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w600,
-                                      ),
+                                : Text(
+                                    _isLogin
+                                        ? 'auth_button_login'.tr()
+                                        : 'auth_button_register'.tr(),
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
                                     ),
                                   ),
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
-                ),
-                
-                const SizedBox(height: 16),
-                
-                // Geçiş Butonu
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      _isLogin 
-                          ? 'auth_toggle_question_login'.tr() 
-                          : 'auth_toggle_question_register'.tr(),
-                      style: TextStyle(color: Colors.grey[600]),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        setState(() {
-                          _isLogin = !_isLogin;
-                          _errorMessage = null;
-                          _emailController.clear();
-                          _passwordController.clear();
-                        });
-                      },
-                      child: Text(
-                        _isLogin
-                            ? 'auth_toggle_button_login'.tr()
-                            : 'auth_toggle_button_register'.tr(),
-                        style: TextStyle(
-                          color: Theme.of(context).primaryColor,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
                 ),
               ],
             ),

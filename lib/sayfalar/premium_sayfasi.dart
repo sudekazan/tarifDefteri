@@ -12,6 +12,7 @@ class PremiumSayfasi extends StatefulWidget {
 
 class _PremiumSayfasiState extends State<PremiumSayfasi> {
   List<Offering> _offerings = [];
+  Package? _selectedPackage;
   bool _isLoading = true;
   bool _isPurchasing = false;
 
@@ -27,6 +28,9 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
       setState(() {
         _offerings = offerings;
         _isLoading = false;
+        if (offerings.isNotEmpty && offerings.first.availablePackages.isNotEmpty) {
+          _selectedPackage = offerings.first.availablePackages.first;
+        }
       });
     }
   }
@@ -38,9 +42,14 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
       setState(() => _isPurchasing = false);
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('premium_success'.tr()), backgroundColor: Colors.green),
+          SnackBar(
+            content: Text('premium_success'.tr()),
+            backgroundColor: const Color(0xFF2ECC71),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
         );
-        Navigator.pop(context, true); // Pro oldu bilgisini döndür
+        Navigator.pop(context, true);
       }
     }
   }
@@ -52,12 +61,22 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
       setState(() => _isPurchasing = false);
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('premium_restored'.tr()), backgroundColor: Colors.green),
+          SnackBar(
+            content: Text('premium_restored'.tr()),
+            backgroundColor: const Color(0xFF2ECC71),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
         );
         Navigator.pop(context, true);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('premium_restore_failed'.tr()), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text('premium_restore_failed'.tr()),
+            backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
         );
       }
     }
@@ -66,112 +85,339 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFF0F111A),
       appBar: AppBar(
-        title: Text('premium_title'.tr()),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.close_rounded, color: Colors.white70),
+          onPressed: () => Navigator.pop(context),
+        ),
         actions: [
           TextButton(
             onPressed: _isPurchasing ? null : _restore,
-            child: Text('premium_restore'.tr(), style: const TextStyle(color: Colors.white)),
-          )
+            child: Text(
+              'premium_restore'.tr(),
+              style: const TextStyle(
+                color: Color(0xFFFFD700),
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
         ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFFD700)),
+              ),
+            )
           : Stack(
               children: [
                 SingleChildScrollView(
-                  padding: const EdgeInsets.all(24.0),
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Icon(Icons.workspace_premium, size: 100, color: Colors.amber[700]),
-                      const SizedBox(height: 24),
+                      // Header Hero Icon
+                      Center(
+                        child: Container(
+                          width: 100,
+                          height: 100,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFFFFA000), Color(0xFFFFD700)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFFFFD700).withOpacity(0.35),
+                                blurRadius: 30,
+                                spreadRadius: 5,
+                              ),
+                            ],
+                          ),
+                          child: const Icon(
+                            Icons.workspace_premium_rounded,
+                            size: 56,
+                            color: Color(0xFF0F111A),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      
+                      // Headline
                       Text(
                         'premium_headline'.tr(),
                         textAlign: TextAlign.center,
-                        style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                        style: const TextStyle(
+                          fontSize: 26,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Sınırsız AI Şef tarifleri ve reklamsız deneyimin tadını çıkarın',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.white.withOpacity(0.6),
+                        ),
                       ),
                       const SizedBox(height: 32),
-                      _buildFeatureRow(Icons.no_cell, 'premium_feature_ads'.tr()),
-                      const SizedBox(height: 16),
-                      _buildFeatureRow(Icons.auto_awesome, 'premium_feature_ai'.tr()),
-                      const SizedBox(height: 16),
-                      _buildFeatureRow(Icons.link, 'premium_feature_link'.tr()),
+
+                      // Features Card Container
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF181B2A),
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(color: Colors.white.withOpacity(0.08)),
+                        ),
+                        child: Column(
+                          children: [
+                            _buildFeatureRow(
+                              Icons.block_rounded,
+                              'premium_feature_ads'.tr(),
+                              'Tüm reklamlar tamamen kaldırılır',
+                            ),
+                            const Divider(color: Colors.white10, height: 28),
+                            _buildFeatureRow(
+                              Icons.auto_awesome_rounded,
+                              'premium_feature_ai'.tr(),
+                              'Sınırsız yapay zeka tarif üretme yeteneği',
+                            ),
+                            const Divider(color: Colors.white10, height: 28),
+                            _buildFeatureRow(
+                              Icons.cloud_sync_rounded,
+                              'premium_feature_link'.tr(),
+                              'Tarifleriniz tüm cihazlarınızda anında senkronize',
+                            ),
+                          ],
+                        ),
+                      ),
                       
-                      const SizedBox(height: 48),
+                      const SizedBox(height: 32),
                       
-                      if (_offerings.isNotEmpty && _offerings.first.availablePackages.isNotEmpty)
-                        ..._offerings.first.availablePackages.map((pkg) => _buildPackageCard(pkg)).toList()
-                      else
-                        Center(
+                      // Packages Section
+                      if (_offerings.isNotEmpty && _offerings.first.availablePackages.isNotEmpty) ...[
+                        ..._offerings.first.availablePackages.map((pkg) {
+                          final isSelected = _selectedPackage == pkg;
+                          return _buildPackageCard(pkg, isSelected);
+                        }).toList(),
+                        
+                        const SizedBox(height: 24),
+
+                        // Main Action CTA Button
+                        SizedBox(
+                          width: double.infinity,
+                          height: 56,
+                          child: ElevatedButton(
+                            onPressed: (_isPurchasing || _selectedPackage == null)
+                                ? null
+                                : () => _purchase(_selectedPackage!),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.transparent,
+                              padding: EdgeInsets.zero,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(18),
+                              ),
+                              elevation: 8,
+                              shadowColor: const Color(0xFFFFD700).withOpacity(0.4),
+                            ),
+                            child: Ink(
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  colors: [Color(0xFFFFA000), Color(0xFFFFD700)],
+                                  begin: Alignment.centerLeft,
+                                  end: Alignment.centerRight,
+                                ),
+                                borderRadius: BorderRadius.circular(18),
+                              ),
+                              child: Container(
+                                alignment: Alignment.center,
+                                child: Text(
+                                  'premium_title'.tr().toUpperCase(),
+                                  style: const TextStyle(
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF0F111A),
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ] else
+                        Container(
+                          padding: const EdgeInsets.all(24),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF181B2A),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
                           child: Text(
                             'premium_no_packages'.tr(),
                             textAlign: TextAlign.center,
-                            style: const TextStyle(color: Colors.grey),
+                            style: const TextStyle(color: Colors.white54, fontSize: 14),
                           ),
                         ),
+
+                      const SizedBox(height: 20),
+                      Text(
+                        'İstediğiniz zaman Google Play / App Store ayarlarından iptal edebilirsiniz.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.4),
+                          fontSize: 12,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
                     ],
                   ),
                 ),
                 if (_isPurchasing)
                   Container(
-                    color: Colors.black54,
-                    child: const Center(child: CircularProgressIndicator()),
-                  )
+                    color: Colors.black70,
+                    child: const Center(
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFFD700)),
+                      ),
+                    ),
+                  ),
               ],
             ),
     );
   }
 
-  Widget _buildFeatureRow(IconData icon, String text) {
+  Widget _buildFeatureRow(IconData icon, String title, String subtitle) {
     return Row(
       children: [
-        Icon(icon, color: Colors.amber[700], size: 28),
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFD700).withOpacity(0.12),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Icon(icon, color: const Color(0xFFFFD700), size: 22),
+        ),
         const SizedBox(width: 16),
         Expanded(
-          child: Text(
-            text,
-            style: const TextStyle(fontSize: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                subtitle,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.white.withOpacity(0.5),
+                ),
+              ),
+            ],
           ),
         ),
+        const Icon(Icons.check_circle_rounded, color: Color(0xFF2ECC71), size: 20),
       ],
     );
   }
 
-  Widget _buildPackageCard(Package pkg) {
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+  Widget _buildPackageCard(Package pkg, bool isSelected) {
+    return Container(
       margin: const EdgeInsets.only(bottom: 16),
-      child: InkWell(
-        onTap: _isPurchasing ? null : () => _purchase(pkg),
-        borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      pkg.storeProduct.title,
-                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+      decoration: BoxDecoration(
+        color: isSelected ? const Color(0xFF222638) : const Color(0xFF181B2A),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isSelected ? const Color(0xFFFFD700) : Colors.white.withOpacity(0.08),
+          width: isSelected ? 2 : 1,
+        ),
+        boxShadow: isSelected
+            ? [
+                BoxShadow(
+                  color: const Color(0xFFFFD700).withOpacity(0.2),
+                  blurRadius: 16,
+                  spreadRadius: 1,
+                )
+              ]
+            : [],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: _isPurchasing ? null : () => setState(() => _selectedPackage = pkg),
+          borderRadius: BorderRadius.circular(20),
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Row(
+              children: [
+                Container(
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isSelected ? const Color(0xFFFFD700) : Colors.white38,
+                      width: 2,
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      pkg.storeProduct.description,
-                      style: TextStyle(color: Colors.grey[600]),
-                    ),
-                  ],
+                    color: isSelected ? const Color(0xFFFFD700) : Colors.transparent,
+                  ),
+                  child: isSelected
+                      ? const Icon(Icons.check_rounded, size: 16, color: Color(0xFF0F111A))
+                      : null,
                 ),
-              ),
-              Text(
-                pkg.storeProduct.priceString,
-                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.green),
-              ),
-            ],
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        pkg.storeProduct.title,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      if (pkg.storeProduct.description.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          pkg.storeProduct.description,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.white.withOpacity(0.6),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  pkg.storeProduct.priceString,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: isSelected ? const Color(0xFFFFD700) : Colors.white,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
