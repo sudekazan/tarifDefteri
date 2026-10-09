@@ -199,10 +199,10 @@
   "settings_rate_app": "Avaliar o Aplicativo",
   "settings_rate_app_subtitle": "Apoie-nos avaliando",
   "ai_login_required": "Login necessário para IA",
-  "add_option_link": "Importar de link da web",
-  "link_dialog_title": "Importar receita de link da web",
+  "add_option_link": "Importar receita por link",
+  "link_dialog_title": "Importar receita por link",
   "link_dialog_hint": "Cole a URL da receita de um site:",
-  "link_dialog_placeholder": "https://www.exemplo.com.br/receita...",
+  "link_dialog_placeholder": "https://www.tudogostoso.com.br/receita/...",
   "link_dialog_paste": "Colar",
   "link_dialog_import": "Importar receita",
   "link_error_invalid": "Por favor, insira uma URL de site válida (https://...)."

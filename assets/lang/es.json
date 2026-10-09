@@ -199,10 +199,10 @@
   "settings_rate_app": "Calificar Aplicación",
   "settings_rate_app_subtitle": "Apóyenos calificando",
   "ai_login_required": "Inicio de Sesión Requerido para IA",
-  "add_option_link": "Importar desde enlace web",
-  "link_dialog_title": "Importar receta desde enlace web",
+  "add_option_link": "Importar receta desde enlace",
+  "link_dialog_title": "Importar receta desde enlace",
   "link_dialog_hint": "Pega la URL de la receta de un sitio web:",
-  "link_dialog_placeholder": "https://www.ejemplo.es/receta...",
+  "link_dialog_placeholder": "https://www.recetasgratis.net/...",
   "link_dialog_paste": "Pegar",
   "link_dialog_import": "Importar receta",
   "link_error_invalid": "Por favor, introduce una URL de sitio web válida (https://...)."

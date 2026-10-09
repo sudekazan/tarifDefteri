@@ -484,7 +484,7 @@ class _KlasorIciState extends State<KlasorIci> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('ai_dialog_cancel'.tr(), style: const TextStyle(color: Colors.grey)),
+            child: Text('common_cancel'.tr(), style: const TextStyle(color: Colors.grey)),
           ),
           ElevatedButton.icon(
             onPressed: () {
