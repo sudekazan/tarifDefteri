@@ -198,5 +198,12 @@
   "auth_required_for_ai": "Vous devez vous connecter pour utiliser les fonctions IA.",
   "settings_rate_app": "Évaluer l'application",
   "settings_rate_app_subtitle": "Soutenez-nous en évaluant",
-  "ai_login_required": "Connexion requise pour l'IA"
+  "ai_login_required": "Connexion requise pour l'IA",
+  "add_option_link": "Importer depuis un lien web",
+  "link_dialog_title": "Importer une recette depuis un lien web",
+  "link_dialog_hint": "Collez l'URL de la recette depuis un site web :",
+  "link_dialog_placeholder": "https://www.exemple.fr/recette...",
+  "link_dialog_paste": "Coller",
+  "link_dialog_import": "Importer la recette",
+  "link_error_invalid": "Veuillez saisir une URL de site web valide (https://...)."
 }

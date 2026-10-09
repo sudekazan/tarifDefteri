@@ -198,5 +198,12 @@
   "premium_no_packages": "Şu an paket bulunmamaktadır. Lütfen daha sonra tekrar deneyin.",
   "ai_limit_reached": "Günlük ücretsiz AI kullanım hakkınız doldu. Lütfen Premium'a geçin.",
   "common_cancel": "Abbrechen",
-  "auth_required_for_ai": "Sie müssen sich anmelden, um KI-Funktionen zu nutzen."
+  "auth_required_for_ai": "Sie müssen sich anmelden, um KI-Funktionen zu nutzen.",
+  "add_option_link": "Aus Web-Link importieren",
+  "link_dialog_title": "Rezept von Web-Link importieren",
+  "link_dialog_hint": "Fügen Sie die Rezept-URL einer Website ein:",
+  "link_dialog_placeholder": "https://www.beispiel.de/rezept...",
+  "link_dialog_paste": "Einfügen",
+  "link_dialog_import": "Rezept importieren",
+  "link_error_invalid": "Bitte geben Sie eine gültige Website-URL (https://...) ein."
 }
