@@ -34,7 +34,7 @@ android {
     defaultConfig {
         applicationId = "com.sudekazan.tarif_defteri_yeni"
         minSdk = 24
-        targetSdk = 35
+        targetSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName
         multiDexEnabled = true
