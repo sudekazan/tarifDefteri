@@ -61,7 +61,7 @@ post_install do |installer|
       end
       
       # iOS deployment target ayarı
-      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
 
       # Bağımlılık döngüsünü çözmek için:
       # abseil, leveldb-library ve GoogleUserMessagingPlatform target'larının
