@@ -338,8 +338,8 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
                             const Divider(color: Colors.white12, height: 24),
                             // Clickable Legal Links required by Apple Review
                             Wrap(
-                              alignment: WrapWrapAlignment.center,
-                              cross: WrapCrossAlignment.center,
+                              alignment: WrapAlignment.center,
+                              crossAxisAlignment: WrapCrossAlignment.center,
                               spacing: 12,
                               runSpacing: 4,
                               children: [
