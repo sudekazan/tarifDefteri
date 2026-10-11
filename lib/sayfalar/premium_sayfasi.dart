@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:tarif_defteri/services/revenuecat_service.dart';
 
 class PremiumSayfasi extends StatefulWidget {
@@ -79,6 +80,17 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
           ),
         );
       }
+    }
+  }
+
+  Future<void> _openUrl(String urlString) async {
+    try {
+      final uri = Uri.parse(urlString);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      }
+    } catch (e) {
+      debugPrint('Error launching url: $e');
     }
   }
 
@@ -288,13 +300,87 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
                         ),
                       ),
 
-                      const SizedBox(height: 20),
-                      Text(
-                        'İstediğiniz zaman Google Play / App Store ayarlarından iptal edebilirsiniz.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.4),
-                          fontSize: 12,
+                      const SizedBox(height: 24),
+
+                      // Apple Guideline 3.1.2 - Auto-Renewable Subscription Terms
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF141724),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.white.withOpacity(0.06)),
+                        ),
+                        child: Column(
+                          children: [
+                            Text(
+                              'Abonelik Bilgileri & Otomatik Yenileme:',
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.85),
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              '• Abonelik Süresi: 1 Ay (Aylık Premium)\n'
+                              '• Ödeme, satın alma onayı ile Apple Kimliği / Google hesabınızdan tahsil edilir.\n'
+                              '• Abonelik, geçerli dönemin bitiminden en az 24 saat önce iptal edilmediği sürece otomatik olarak yenilenir.\n'
+                              '• Yenileme ücreti, dönemin bitimine 24 saat kala hesabınızdan tahsil edilir.\n'
+                              '• Satın alma işleminden sonra Apple / Google Hesap Ayarları\'na giderek aboneliğinizi yönetebilir ve iptal edebilirsiniz.',
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.55),
+                                fontSize: 11,
+                                height: 1.5,
+                              ),
+                              textAlign: TextAlign.left,
+                            ),
+                            const Divider(color: Colors.white12, height: 24),
+                            // Clickable Legal Links required by Apple Review
+                            Wrap(
+                              alignment: WrapWrapAlignment.center,
+                              cross: WrapCrossAlignment.center,
+                              spacing: 12,
+                              runSpacing: 4,
+                              children: [
+                                InkWell(
+                                  onTap: () => _openUrl('https://www.apple.com/legal/internet-services/itunes/dev/mintermsprovider/'),
+                                  child: const Text(
+                                    'Kullanım Koşulları (EULA)',
+                                    style: TextStyle(
+                                      color: Color(0xFFFFD700),
+                                      fontSize: 11,
+                                      decoration: TextDecoration.underline,
+                                    ),
+                                  ),
+                                ),
+                                Text('•', style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 11)),
+                                InkWell(
+                                  onTap: () => _openUrl('https://sudekazan.github.io/tarifDefteri/privacy.html'),
+                                  child: const Text(
+                                    'Gizlilik Politikası',
+                                    style: TextStyle(
+                                      color: Color(0xFFFFD700),
+                                      fontSize: 11,
+                                      decoration: TextDecoration.underline,
+                                    ),
+                                  ),
+                                ),
+                                Text('•', style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 11)),
+                                InkWell(
+                                  onTap: _isPurchasing ? null : _restore,
+                                  child: const Text(
+                                    'Satın Alımları Geri Yükle',
+                                    style: TextStyle(
+                                      color: Color(0xFFFFD700),
+                                      fontSize: 11,
+                                      decoration: TextDecoration.underline,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
                       ),
                       const SizedBox(height: 24),
