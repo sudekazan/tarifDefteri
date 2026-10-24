@@ -110,12 +110,8 @@ class _KlasorlerState extends State<Klasorler> {
     setState(() {
       klasorListesi = mevcutKlasorler.asMap().entries.map((e) {
         final map = json.decode(e.value);
-        final int klasorId = map['klasor_id'] ?? e.key + 1;
-        return KlasorData.fromMap({
-          'klasor_id': klasorId,
-          'klasor_adi': map['klasor_adi'],
-          'iconCode': map['iconCode'] ?? 0xe2c7,
-        });
+        map['klasor_id'] ??= e.key + 1;
+        return KlasorData.fromMap(map);
       }).toList();
     });
 
@@ -130,7 +126,7 @@ class _KlasorlerState extends State<Klasorler> {
         }
       }).catchError((e) {
         _isSyncing = false;
-        print("Otomatik senkronizasyon hatası: $e");
+        debugPrint("Otomatik senkronizasyon hatası: $e");
       });
     }
   }
@@ -143,12 +139,8 @@ class _KlasorlerState extends State<Klasorler> {
       setState(() {
         klasorListesi = mevcutKlasorler.asMap().entries.map((e) {
           final map = json.decode(e.value);
-          final int klasorId = map['klasor_id'] ?? e.key + 1;
-          return KlasorData.fromMap({
-            'klasor_id': klasorId,
-            'klasor_adi': map['klasor_adi'],
-            'iconCode': map['iconCode'] ?? 0xe2c7,
-          });
+          map['klasor_id'] ??= e.key + 1;
+          return KlasorData.fromMap(map);
         }).toList();
       });
       _filtreleKlasorler(aramaController.text);
@@ -187,20 +179,17 @@ class _KlasorlerState extends State<Klasorler> {
     // Silme sonrası eski klasör ID'leri ile (özellikle 1,2,3,4 gibi varsayılanlarla) 
     // veya silinmiş farklı klasörlerle çakışmayı önlemek için zaman damgası kullanarak eşsiz ID oluşturuyoruz.
     int yeniKlasorId = DateTime.now().millisecondsSinceEpoch;
-    
-    klasorJsonList.add(json.encode({
-      'klasor_id': yeniKlasorId,
-      'klasor_adi': klasorAdi,
-      'iconCode': iconCode,
-    }));
-    await prefs.setStringList('klasorler', klasorJsonList);
-    
+
     // Firebase'e de kaydet
     KlasorData yeniKlasor = KlasorData(
       klasor_id: yeniKlasorId,
       klasor_adi: klasorAdi,
       iconCode: iconCode,
     );
+
+    klasorJsonList.add(json.encode(yeniKlasor.toMap()));
+    await prefs.setStringList('klasorler', klasorJsonList);
+
     await _firebaseService.saveKlasorToFirebase(yeniKlasor);
     
     _klasorleriYukle().then((_) {
@@ -222,8 +211,16 @@ class _KlasorlerState extends State<Klasorler> {
       }
     }
     if (indexToRemove != -1) {
-      // Klasörün içindeki tarifleri de sil
+      // Klasörün içindeki tariflerin görsellerini (yerel + bulut) de sil
       String tarifKey = 'tarifler_$klasor_id';
+      final tariflerJson = prefs.getStringList(tarifKey) ?? [];
+      for (final tarifStr in tariflerJson) {
+        try {
+          await _firebaseService.deleteImagesForTarif(TarifData.fromMap(json.decode(tarifStr)));
+        } catch (e) {
+          debugPrint('Klasör silinirken tarif görseli temizleme hatası: $e');
+        }
+      }
       await prefs.remove(tarifKey);
       klasorJsonList.removeAt(indexToRemove);
       await prefs.setStringList('klasorler', klasorJsonList);
@@ -302,6 +299,22 @@ class _KlasorlerState extends State<Klasorler> {
   }
 
   void _yeniKlasorEkle() async {
+    if (!RevenueCatService.isProUser && klasorListesi.length >= RevenueCatService.freeKlasorLimit) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('klasor_limit_reached'.tr(args: ['${RevenueCatService.freeKlasorLimit}'])),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const PremiumSayfasi()),
+      ).then((_) {
+        if (mounted) setState(() {});
+      });
+      return;
+    }
+
     final result = await Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const KlasorKayit()),
@@ -315,6 +328,8 @@ class _KlasorlerState extends State<Klasorler> {
 
 
   void _loadBannerAd() {
+    if (RevenueCatService.isProUser) return; // Pro kullanıcılara reklam gösterilmez
+
     _bannerAd = BannerAd(
       adUnitId: AdService.bannerAdUnitId,
       size: AdSize.banner,
@@ -531,7 +546,7 @@ class _KlasorlerState extends State<Klasorler> {
                     } else {
                       Navigator.push(context, MaterialPageRoute(builder: (context) => KlasorIci(klasorData: klasor)))
                           .then((value){
-                        print("Klasör içeriği açıldı.");
+                        debugPrint("Klasör içeriği açıldı.");
                       });
                     }
                   },
@@ -666,7 +681,7 @@ class _KlasorlerState extends State<Klasorler> {
           },
         ),
       ),
-      bottomNavigationBar: _isBannerAdReady
+      bottomNavigationBar: (_isBannerAdReady && !RevenueCatService.isProUser)
           ? SafeArea(
               child: Container(
                 color: Theme.of(context).scaffoldBackgroundColor,
@@ -864,7 +879,7 @@ class _FavoriTariflerSayfasiState extends State<FavoriTariflerSayfasi> {
       // Firebase'de de güncelle
       await _firebaseService.updateTarifInFirebase(tarif);
     } catch (e) {
-      print('Favori güncelleme hatası: $e');
+      debugPrint('Favori güncelleme hatası: $e');
     }
   }
 
@@ -887,8 +902,11 @@ class _FavoriTariflerSayfasiState extends State<FavoriTariflerSayfasi> {
       // Firebase'den de sil
       await _firebaseService.deleteTarifFromFirebase(
           tarif.klasor_id, tarif.tarif_id);
+
+      // Görselleri (yerel + bulut) de sil, yetim dosya kalmasın
+      await _firebaseService.deleteImagesForTarif(tarif);
     } catch (e) {
-      print('Tarif silme hatası: $e');
+      debugPrint('Tarif silme hatası: $e');
     }
   }
 

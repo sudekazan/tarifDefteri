@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -10,6 +11,11 @@ class RevenueCatService {
 
   // Entitlement ID (RevenueCat panelindeki kimlik)
   static const _entitlementID = 'recipe_keeper_custom_cookbook_pro';
+
+  /// Ücretsiz kullanıcılar için klasör ve klasör başına tarif sınırları.
+  /// Premium sayfasındaki "Sınırsız Klasör & Tarif" vaadinin karşılığı.
+  static const int freeKlasorLimit = 3;
+  static const int freeTarifPerKlasorLimit = 20;
 
   static bool _isPro = false;
 
@@ -36,7 +42,32 @@ class RevenueCatService {
       }
     } catch (e) {
       initError = e.toString();
-      print('RevenueCat init error: $e');
+      debugPrint('RevenueCat init error: $e');
+    }
+  }
+
+  /// RevenueCat kimliğini Firebase UID'ye bağlar.
+  /// Bu bağlantı yapılmazsa backend, bir isteğin hangi kullanıcıya ait
+  /// aboneliğe karşılık geldiğini bilemez (bkz. backend/server.js
+  /// isProUserViaRevenueCat). Firebase girişi/kayıt başarılı olduğunda ve
+  /// uygulama açılışında zaten giriş yapılmışsa çağrılmalıdır.
+  static Future<void> loginWithFirebaseUid(String firebaseUid) async {
+    try {
+      final result = await Purchases.logIn(firebaseUid);
+      _isPro = _isEntitlementActive(result.customerInfo);
+    } catch (e) {
+      debugPrint('RevenueCat logIn error: $e');
+    }
+  }
+
+  /// Kullanıcı çıkış yaptığında RevenueCat kimliğini anonim hale döndürür
+  /// (aynı cihazda başka bir kullanıcı giriş yaparsa abonelikler karışmasın).
+  static Future<void> logoutFromRevenueCat() async {
+    try {
+      await Purchases.logOut();
+      _isPro = false;
+    } catch (e) {
+      debugPrint('RevenueCat logOut error: $e');
     }
   }
 
@@ -52,7 +83,7 @@ class RevenueCatService {
       _isPro = _isEntitlementActive(customerInfo);
       return _isPro;
     } catch (e) {
-      print('Check subscription error: $e');
+      debugPrint('Check subscription error: $e');
       return false;
     }
   }
@@ -63,7 +94,7 @@ class RevenueCatService {
       _isPro = _isEntitlementActive(customerInfo);
       return _isPro;
     } catch (e) {
-      print('Purchase error: $e');
+      debugPrint('Purchase error: $e');
       return false;
     }
   }
@@ -74,7 +105,7 @@ class RevenueCatService {
       _isPro = _isEntitlementActive(customerInfo);
       return _isPro;
     } catch (e) {
-      print('Restore error: $e');
+      debugPrint('Restore error: $e');
       return false;
     }
   }
@@ -86,9 +117,9 @@ class RevenueCatService {
     }
     try {
       lastOfferingsError = null;
-      print('RevenueCat: paketler sorgulanıyor...');
+      debugPrint('RevenueCat: paketler sorgulanıyor...');
       Offerings offerings = await Purchases.getOfferings();
-      print('RevenueCat offerings: all=${offerings.all.keys.toList()}, current=${offerings.current?.identifier}');
+      debugPrint('RevenueCat offerings: all=${offerings.all.keys.toList()}, current=${offerings.current?.identifier}');
       
       if (offerings.all.isEmpty) {
         lastOfferingsError = 'RevenueCat: Hiç offering bulunamadı.\n(RevenueCat panelinde Offering tanımlanmamış veya mağaza [App Store / Play Store] ürünleri eşleşmedi).';
@@ -108,7 +139,7 @@ class RevenueCatService {
         return [offerings.all.values.first];
       }
     } catch (e) {
-      print('Get offerings error: $e');
+      debugPrint('Get offerings error: $e');
       lastOfferingsError = 'RevenueCat İstek Hatası:\n$e';
     }
     return [];
@@ -125,16 +156,20 @@ class RevenueCatService {
     return usageCount < 3; // Günde maksimum 3 ücretsiz hak
   }
 
-  static Future<void> incrementAiUsage() async {
-    if (_isPro) return; // Pro ise saymaya gerek yok
+  /// Backend'in döndürdüğü gerçek "kalan hak" sayısıyla yerel sayacı eşitler.
+  /// Yerel sayaç sadece hızlı bir ön kontrol için var (saat dilimi farkı veya
+  /// uygulamanın yeniden kurulması gibi nedenlerle backend'deki Firestore
+  /// sayacından sapabilir); backend her zaman otoritedir, bu metot her AI
+  /// isteğinden sonra yerel değeri ona göre düzeltir.
+  static Future<void> syncRemainingFromServer(int? remaining) async {
+    if (remaining == null) return; // Pro kullanıcı / sınırsız, senkronize etmeye gerek yok
 
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String today = DateTime.now().toIso8601String().substring(0, 10);
-    int usageCount = prefs.getInt('ai_usage_$today') ?? 0;
-    
-    await prefs.setInt('ai_usage_$today', usageCount + 1);
+    final clampedRemaining = remaining.clamp(0, 3);
+    await prefs.setInt('ai_usage_$today', 3 - clampedRemaining);
   }
-  
+
   static Future<int> getRemainingAiUses() async {
     if (_isPro) return 999;
     

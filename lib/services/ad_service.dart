@@ -74,7 +74,7 @@ class AdService {
           await AppTrackingTransparency.requestTrackingAuthorization();
         }
       } catch (e) {
-        print('Error requesting tracking authorization: $e');
+        debugPrint('Error requesting tracking authorization: $e');
       }
     }
   }
@@ -83,12 +83,12 @@ class AdService {
   static void loadAppOpenAd() {
     if (RevenueCatService.isProUser) return;
     if (_isLoadingAd || _appOpenAd != null) {
-      print('### AD_DEBUG: loadAppOpenAd called but skipped. isLoading: $_isLoadingAd, hasAd: ${_appOpenAd != null}');
+      debugPrint('### AD_DEBUG: loadAppOpenAd called but skipped. isLoading: $_isLoadingAd, hasAd: ${_appOpenAd != null}');
       return;
     }
     
     _isLoadingAd = true;
-    print('### AD_DEBUG: Loading AppOpenAd ($appOpenAdUnitId)...');
+    debugPrint('### AD_DEBUG: Loading AppOpenAd ($appOpenAdUnitId)...');
     
     AppOpenAd.load(
       adUnitId: appOpenAdUnitId,
@@ -97,15 +97,15 @@ class AdService {
         onAdLoaded: (ad) {
           _appOpenAd = ad;
           _isLoadingAd = false;
-          print('### AD_DEBUG: AppOpenAd loaded successfully.');
+          debugPrint('### AD_DEBUG: AppOpenAd loaded successfully.');
           if (_showAfterLoad) {
             _showAfterLoad = false;
-            print('### AD_DEBUG: showing ad because _showAfterLoad was true');
+            debugPrint('### AD_DEBUG: showing ad because _showAfterLoad was true');
             showAdIfAvailable();
           }
         },
         onAdFailedToLoad: (error) {
-          print('### AD_DEBUG: AppOpenAd failed to load: ${error.message} (Code: ${error.code})');
+          debugPrint('### AD_DEBUG: AppOpenAd failed to load: ${error.message} (Code: ${error.code})');
           _isLoadingAd = false;
           _showAfterLoad = false;
         },
@@ -117,31 +117,31 @@ class AdService {
   static void showAdIfAvailable() {
     if (RevenueCatService.isProUser) return;
     if (_appOpenAd == null) {
-      print('Ad not ready yet, set to show after load.');
+      debugPrint('Ad not ready yet, set to show after load.');
       _showAfterLoad = true;
       loadAppOpenAd();
       return;
     }
     if (_isShowingAd) {
-      print('Tried to show ad while already showing an ad.');
+      debugPrint('Tried to show ad while already showing an ad.');
       return;
     }
 
-    print('Showing AppOpenAd...');
+    debugPrint('Showing AppOpenAd...');
     _appOpenAd!.fullScreenContentCallback = FullScreenContentCallback(
       onAdShowedFullScreenContent: (ad) {
         _isShowingAd = true;
-        print('Ad showed full screen content.');
+        debugPrint('Ad showed full screen content.');
       },
       onAdFailedToShowFullScreenContent: (ad, error) {
-        print('Ad failed to show full screen content: $error');
+        debugPrint('Ad failed to show full screen content: $error');
         _isShowingAd = false;
         ad.dispose();
         _appOpenAd = null;
         loadAppOpenAd();
       },
       onAdDismissedFullScreenContent: (ad) {
-        print('Ad dismissed full screen content.');
+        debugPrint('Ad dismissed full screen content.');
         _isShowingAd = false;
         ad.dispose();
         _appOpenAd = null;
@@ -157,7 +157,7 @@ class AdService {
     if (_isLoadingInterstitial || _interstitialAd != null) return;
 
     _isLoadingInterstitial = true;
-    print('Loading InterstitialAd ($interstitialAdUnitId)...');
+    debugPrint('Loading InterstitialAd ($interstitialAdUnitId)...');
 
     InterstitialAd.load(
       adUnitId: interstitialAdUnitId,
@@ -166,10 +166,10 @@ class AdService {
         onAdLoaded: (ad) {
           _interstitialAd = ad;
           _isLoadingInterstitial = false;
-          print('InterstitialAd loaded successfully.');
+          debugPrint('InterstitialAd loaded successfully.');
         },
         onAdFailedToLoad: (error) {
-          print('InterstitialAd failed to load: $error');
+          debugPrint('InterstitialAd failed to load: $error');
           _isLoadingInterstitial = false;
         },
       ),
@@ -183,20 +183,20 @@ class AdService {
       return;
     }
     if (_interstitialAd == null) {
-      print('InterstitialAd not ready yet (null). Attempting to load...');
+      debugPrint('InterstitialAd not ready yet (null). Attempting to load...');
       loadInterstitialAd();
       onAdClosed?.call();
       return;
     }
 
-    print('Attempting to show InterstitialAd...');
+    debugPrint('Attempting to show InterstitialAd...');
     _interstitialAd!.fullScreenContentCallback = FullScreenContentCallback(
       onAdShowedFullScreenContent: (ad) {
         _isShowingAd = true;
-        print('InterstitialAd showed full screen content.');
+        debugPrint('InterstitialAd showed full screen content.');
       },
       onAdDismissedFullScreenContent: (ad) {
-        print('InterstitialAd dismissed.');
+        debugPrint('InterstitialAd dismissed.');
         _isShowingAd = false;
         ad.dispose();
         _interstitialAd = null;
@@ -204,7 +204,7 @@ class AdService {
         onAdClosed?.call();
       },
       onAdFailedToShowFullScreenContent: (ad, error) {
-        print('InterstitialAd failed to show: $error');
+        debugPrint('InterstitialAd failed to show: $error');
         _isShowingAd = false;
         ad.dispose();
         _interstitialAd = null;
@@ -222,7 +222,7 @@ class AdService {
     if (_isLoadingRewarded || _rewardedAd != null) return;
 
     _isLoadingRewarded = true;
-    print('Loading RewardedAd ($rewardedAdUnitId)...');
+    debugPrint('Loading RewardedAd ($rewardedAdUnitId)...');
 
     RewardedAd.load(
       adUnitId: rewardedAdUnitId,
@@ -231,10 +231,10 @@ class AdService {
         onAdLoaded: (ad) {
           _rewardedAd = ad;
           _isLoadingRewarded = false;
-          print('RewardedAd loaded successfully.');
+          debugPrint('RewardedAd loaded successfully.');
         },
         onAdFailedToLoad: (error) {
-          print('RewardedAd failed to load: $error');
+          debugPrint('RewardedAd failed to load: $error');
           _isLoadingRewarded = false;
         },
       ),
@@ -249,7 +249,7 @@ class AdService {
       return;
     }
     if (_rewardedAd == null) {
-      print('RewardedAd not ready yet (null). Attempting to load...');
+      debugPrint('RewardedAd not ready yet (null). Attempting to load...');
       loadRewardedAd();
       // If ad is not ready, we proceed as if they watched it so the flow doesn't break
       onUserEarnedReward?.call(RewardItem(0, 'fallback'));
@@ -257,14 +257,14 @@ class AdService {
       return;
     }
 
-    print('Attempting to show RewardedAd...');
+    debugPrint('Attempting to show RewardedAd...');
     _rewardedAd!.fullScreenContentCallback = FullScreenContentCallback(
       onAdShowedFullScreenContent: (ad) {
         _isShowingAd = true;
-        print('RewardedAd showed full screen content.');
+        debugPrint('RewardedAd showed full screen content.');
       },
       onAdDismissedFullScreenContent: (ad) {
-        print('RewardedAd dismissed.');
+        debugPrint('RewardedAd dismissed.');
         _isShowingAd = false;
         ad.dispose();
         _rewardedAd = null;
@@ -272,7 +272,7 @@ class AdService {
         onAdClosed?.call();
       },
       onAdFailedToShowFullScreenContent: (ad, error) {
-        print('RewardedAd failed to show: $error');
+        debugPrint('RewardedAd failed to show: $error');
         _isShowingAd = false;
         ad.dispose();
         _rewardedAd = null;
@@ -284,7 +284,7 @@ class AdService {
     );
 
     _rewardedAd!.show(onUserEarnedReward: (AdWithoutView ad, RewardItem rewardItem) {
-      print('User earned reward: ${rewardItem.amount} ${rewardItem.type}');
+      debugPrint('User earned reward: ${rewardItem.amount} ${rewardItem.type}');
       onUserEarnedReward?.call(rewardItem);
     });
   }

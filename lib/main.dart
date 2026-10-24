@@ -3,6 +3,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:provider/provider.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'firebase_options.dart';
 import 'managers/app_state_manager.dart';
 import 'builders/app_theme_builder.dart';
@@ -32,6 +33,12 @@ void main() async {
 
   try {
     await RevenueCatService.init();
+    // Uygulama açılışında zaten giriş yapılmışsa RevenueCat kimliğini
+    // Firebase UID'ye bağla (backend'in Pro durumunu kontrol edebilmesi için).
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser != null) {
+      await RevenueCatService.loginWithFirebaseUid(currentUser.uid);
+    }
   } catch (e) {
     debugPrint('RevenueCat init error: $e');
   }

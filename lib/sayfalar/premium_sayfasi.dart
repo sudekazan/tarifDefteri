@@ -100,14 +100,14 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.info_outline, color: Color(0xFFE65100), size: 28),
-            SizedBox(width: 8),
+            const Icon(Icons.info_outline, color: Color(0xFFE65100), size: 28),
+            const SizedBox(width: 8),
             Expanded(
               child: Text(
-                'Paket Yükleme Hatası',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                'premium_package_error_title'.tr(),
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
             ),
           ],
@@ -117,9 +117,9 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Mağazadan satın alma paketi çekilemediği için işlem başlatılamıyor.\n\nSistemden dönen teşhis mesajı:',
-                style: TextStyle(fontSize: 13, height: 1.4),
+              Text(
+                'premium_package_error_body'.tr(),
+                style: const TextStyle(fontSize: 13, height: 1.4),
               ),
               const SizedBox(height: 12),
               Container(
@@ -143,14 +143,8 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
               const SizedBox(height: 14),
               Text(
                 Platform.isIOS
-                    ? 'Olası Nedenler (iOS):\n'
-                        '• App Store Connect > Agreements, Tax & Banking kısmında "Paid Applications" sözleşmesi onaylanmamış olabilir.\n'
-                        '• RevenueCat panelinde Offering varsayılan (Default / Current) olarak işaretlenmemiş olabilir.\n'
-                        '• RevenueCat ile App Store ürün kimliği (Product ID) uyuşmuyor olabilir.'
-                    : 'Olası Nedenler (Android):\n'
-                        '• Google Play Console > Para Kazanma altında Abonelik tanımlanmamış veya etkinleştirilmemiş olabilir.\n'
-                        '• RevenueCat panelinde Google Play Service Account (JSON) kimlik doğrulaması veya ürün eşleşmesi eksik olabilir.\n'
-                        '• Test için Google Play Console > Lisans Testi listesinde e-postanız kayıtlı olmayabilir.',
+                    ? 'premium_package_error_reasons_ios'.tr()
+                    : 'premium_package_error_reasons_android'.tr(),
                 style: const TextStyle(fontSize: 11, color: Colors.black54, height: 1.5),
               ),
             ],
@@ -159,7 +153,7 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Tamam', style: TextStyle(fontWeight: FontWeight.bold)),
+            child: Text('common_ok'.tr(), style: const TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -228,12 +222,12 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
-                            children: const [
-                              Icon(Icons.workspace_premium_rounded, size: 16, color: Color(0xFF3E2723)),
-                              SizedBox(width: 6),
+                            children: [
+                              const Icon(Icons.workspace_premium_rounded, size: 16, color: Color(0xFF3E2723)),
+                              const SizedBox(width: 6),
                               Text(
-                                'TARİF DEFTERİ PRO',
-                                style: TextStyle(
+                                'premium_badge_pro'.tr(),
+                                style: const TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w900,
                                   color: Color(0xFF3E2723),
@@ -275,7 +269,7 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
 
                       // Headline
                       Text(
-                        'Mutfakta Sınırları Kaldırın',
+                        'premium_headline'.tr(),
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 25,
@@ -288,7 +282,7 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: Text(
-                          'Dolabındaki malzemelerle sınırsız tarif üretin, tüm internet tariflerini tek tıkla kaydedin ve reklamsız yemek pişirin.',
+                          'premium_subtitle'.tr(),
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 13.5,
@@ -365,18 +359,18 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
                             priceString: pkg.storeProduct.priceString,
                             isSelected: isSelected,
                             onTap: () => setState(() => _selectedPackage = pkg),
-                            badgeText: 'EN POPÜLER',
+                            badgeText: 'premium_badge_most_popular'.tr(),
                             isDark: isDark,
                           );
                         }),
                       ] else ...[
-                        // Fallback UI (App Store Connect: ₺29.99 / Ay)
+                        // Fallback UI (mağazadan fiyat çekilemediğinde gösterilir)
                         _buildPackageCard(
-                          title: 'Tarif Defteri Pro (Aylık)',
-                          description: 'Sınırsız AI Şef & Reklamsız Deneyim',
-                          priceString: '₺29.99 / Ay',
+                          title: 'premium_fallback_package_title'.tr(),
+                          description: 'premium_fallback_package_desc'.tr(),
+                          priceString: 'premium_price_unavailable'.tr(),
                           isSelected: true,
-                          badgeText: 'EN POPÜLER',
+                          badgeText: 'premium_badge_most_popular'.tr(),
                           onTap: () {
                             if (RevenueCatService.lastOfferingsError != null) {
                               _showErrorDialog(RevenueCatService.lastOfferingsError!);
@@ -402,7 +396,7 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
                                   const SizedBox(width: 8),
                                   Expanded(
                                     child: Text(
-                                      'Hata detayı için dokunun: ${RevenueCatService.lastOfferingsError!}',
+                                      '${'premium_error_detail_tap_prefix'.tr()}${RevenueCatService.lastOfferingsError!}',
                                       maxLines: 2,
                                       overflow: TextOverflow.ellipsis,
                                       style: const TextStyle(fontSize: 11, color: Color(0xFFD84315), fontWeight: FontWeight.w500),
@@ -440,7 +434,7 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
                                     }
 
                                     final errorDetail = RevenueCatService.lastOfferingsError ??
-                                        'Paket bilgisi mağazadan çekilemedi (RevenueCat veya StoreKit yanıt vermedi).';
+                                        'premium_offerings_unreachable'.tr();
                                     _showErrorDialog(errorDetail);
                                   }
                                 },
@@ -462,14 +456,14 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
                             ),
                             child: Container(
                               alignment: Alignment.center,
-                              child: const Row(
+                              child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Icon(Icons.stars_rounded, color: Colors.white, size: 22),
-                                  SizedBox(width: 8),
+                                  const Icon(Icons.stars_rounded, color: Colors.white, size: 22),
+                                  const SizedBox(width: 8),
                                   Text(
-                                    'PRO\'YA GEÇ VE SINIRLARI KALDIR',
-                                    style: TextStyle(
+                                    'premium_cta_button'.tr(),
+                                    style: const TextStyle(
                                       fontSize: 15,
                                       fontWeight: FontWeight.w900,
                                       color: Colors.white,
@@ -545,7 +539,7 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
                                         : 'https://sudekazan.github.io/tarifDefteri/terms.html',
                                   ),
                                   child: Text(
-                                    Platform.isIOS ? 'Kullanım Koşulları (EULA)' : 'Kullanım Koşulları',
+                                    'premium_terms_of_use'.tr(),
                                     style: const TextStyle(
                                       color: Color(0xFFE65100),
                                       fontSize: 11,
@@ -556,9 +550,9 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
                                 Text('•', style: TextStyle(color: isDark ? Colors.white38 : const Color(0xFFBCAAA4), fontSize: 11)),
                                 InkWell(
                                   onTap: () => _openUrl('https://sudekazan.github.io/tarifDefteri/privacy.html'),
-                                  child: const Text(
-                                    'Gizlilik Politikası',
-                                    style: TextStyle(
+                                  child: Text(
+                                    'premium_privacy_policy'.tr(),
+                                    style: const TextStyle(
                                       color: Color(0xFFE65100),
                                       fontSize: 11,
                                       decoration: TextDecoration.underline,
@@ -568,9 +562,9 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
                                 Text('•', style: TextStyle(color: isDark ? Colors.white38 : const Color(0xFFBCAAA4), fontSize: 11)),
                                 InkWell(
                                   onTap: _isPurchasing ? null : _restore,
-                                  child: const Text(
-                                    'Satın Alımları Geri Yükle',
-                                    style: TextStyle(
+                                  child: Text(
+                                    'premium_restore_purchases'.tr(),
+                                    style: const TextStyle(
                                       color: Color(0xFFE65100),
                                       fontSize: 11,
                                       decoration: TextDecoration.underline,

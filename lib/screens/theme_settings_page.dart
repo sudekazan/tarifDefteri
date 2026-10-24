@@ -19,7 +19,7 @@ class ThemeSettingsPage extends StatelessWidget {
       body: ListView(
         children: AppTheme.values.map((theme) {
           return RadioListTile<AppTheme>(
-            title: Text(theme.toString().split('.').last),
+            title: Text(appThemeNameKey(theme).tr()),
             value: theme,
             groupValue: currentTheme,
             onChanged: (AppTheme? value) {

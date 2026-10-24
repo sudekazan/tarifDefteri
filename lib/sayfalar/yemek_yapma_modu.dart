@@ -81,7 +81,7 @@ class _YemekYapmaModuState extends State<YemekYapmaModu> {
           }
         }
       } catch (e) {
-        print('JSON parsing error in YemekYapmaModu: $e');
+        debugPrint('JSON parsing error in YemekYapmaModu: $e');
       }
     }
 
@@ -175,7 +175,7 @@ class _YemekYapmaModuState extends State<YemekYapmaModu> {
                   const Divider(height: 1),
                   Expanded(
                     child: _malzemeler.isEmpty
-                        ? Center(child: Text('Malzeme bulunamadı', style: TextStyle(color: isDark ? Colors.white54 : Colors.grey)))
+                        ? Center(child: Text('cooking_mode_no_ingredients_short'.tr(), style: TextStyle(color: isDark ? Colors.white54 : Colors.grey)))
                         : ListView.separated(
                             padding: const EdgeInsets.all(20),
                             itemCount: _malzemeler.length,
@@ -304,7 +304,7 @@ class _YemekYapmaModuState extends State<YemekYapmaModu> {
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
-                        '$checkedCount / $totalCount ${'hazır'.tr()}',
+                        '$checkedCount / $totalCount ${'cooking_mode_ready'.tr()}',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           color: checkedCount == totalCount && totalCount > 0
@@ -337,7 +337,7 @@ class _YemekYapmaModuState extends State<YemekYapmaModu> {
             child: _malzemeler.isEmpty
                 ? Center(
                     child: Text(
-                      'Malzeme listesi bulunamadı.',
+                      'cooking_mode_no_ingredients_list'.tr(),
                       style: TextStyle(color: isDark ? Colors.white54 : Colors.grey),
                     ),
                   )
@@ -591,7 +591,7 @@ class _YemekYapmaModuState extends State<YemekYapmaModu> {
                     if (_adimlar.isEmpty) {
                       return Center(
                         child: Text(
-                          'Tarifin yapılış adımları bulunamadı.',
+                          'cooking_mode_no_steps'.tr(),
                           style: TextStyle(color: isDark ? Colors.white54 : Colors.grey),
                         ),
                       );
@@ -619,7 +619,7 @@ class _YemekYapmaModuState extends State<YemekYapmaModu> {
                           );
                         },
                         icon: const Icon(Icons.arrow_back_ios_rounded, size: 18),
-                        label: Text('Önceki'.tr()),
+                        label: Text('cooking_mode_previous'.tr()),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: isDark ? const Color(0xFF1A1D2B) : Colors.grey[200],
                           foregroundColor: isDark ? Colors.white : Colors.black87,
@@ -651,7 +651,7 @@ class _YemekYapmaModuState extends State<YemekYapmaModu> {
                           color: Colors.white,
                         ),
                         label: Text(
-                          _currentIndex < totalPages - 1 ? 'Sonraki Adım'.tr() : 'Tamamla'.tr(),
+                          _currentIndex < totalPages - 1 ? 'cooking_mode_next_step'.tr() : 'cooking_mode_finish'.tr(),
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,

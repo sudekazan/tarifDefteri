@@ -10,6 +10,7 @@ import '../auth_screen.dart';
 import '../services/firebase_service.dart';
 import '../services/review_service.dart';
 import '../widgets/banner_ad_widget.dart';
+import '../utils/error_helper.dart';
 
 class SettingsPage extends StatefulWidget {
   final Function(AppTheme) onThemeChanged;
@@ -205,6 +206,144 @@ class _SettingsPageState extends State<SettingsPage> {
           SnackBar(content: Text('${'common_error'.tr()}: $e')),
         );
       }
+    }
+  }
+
+  /// Hesap silme işlemini başlatır. "requires-recent-login" hatası alınırsa
+  /// (veriler zaten silinmiş olur) kullanıcıdan şifresiyle yeniden giriş
+  /// doğrulaması istenip işlem otomatik olarak tamamlanır.
+  Future<void> _performAccountDeletion() async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      await _firebaseService.deleteUserAccount();
+      if (mounted) Navigator.pop(context); // Loading kapat
+      _showAccountDeletedSnackBar();
+    } on ReauthRequiredException {
+      if (mounted) Navigator.pop(context); // Loading kapat
+      if (mounted) await _promptPasswordAndFinishDeletion();
+    } catch (e) {
+      if (mounted) Navigator.pop(context); // Loading kapat
+      _showAccountDeletionErrorSnackBar(e);
+    }
+  }
+
+  void _showAccountDeletedSnackBar() {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.check_circle, color: Colors.white),
+            const SizedBox(width: 12),
+            Text('settings_delete_account_success'.tr()),
+          ],
+        ),
+        backgroundColor: Colors.green,
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
+  void _showAccountDeletionErrorSnackBar(Object e) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.error, color: Colors.white),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text('${'settings_delete_account_error_prefix'.tr()}${ErrorHelper.getFriendlyErrorMessage(e)}'),
+            ),
+          ],
+        ),
+        backgroundColor: Colors.red,
+        duration: const Duration(seconds: 5),
+      ),
+    );
+  }
+
+  /// Kullanıcıdan şifresini isteyip yeniden kimlik doğrulaması yapar,
+  /// ardından hesap silme işlemini (yalnızca Authentication adımını) tamamlar.
+  Future<void> _promptPasswordAndFinishDeletion() async {
+    final passwordController = TextEditingController();
+    bool isSubmitting = false;
+    String? errorText;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) {
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: Text('settings_reauth_dialog_title'.tr()),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('settings_reauth_dialog_message'.tr()),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: passwordController,
+                  obscureText: true,
+                  autofocus: true,
+                  decoration: InputDecoration(
+                    labelText: 'auth_password_label'.tr(),
+                    border: const OutlineInputBorder(),
+                    errorText: errorText,
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: isSubmitting ? null : () => Navigator.pop(dialogContext, false),
+                child: Text('settings_logout_cancel'.tr()),
+              ),
+              ElevatedButton(
+                onPressed: isSubmitting
+                    ? null
+                    : () async {
+                        if (passwordController.text.isEmpty) return;
+                        setDialogState(() {
+                          isSubmitting = true;
+                          errorText = null;
+                        });
+                        try {
+                          await _firebaseService.reauthenticateWithPassword(passwordController.text);
+                          await _firebaseService.finishAccountDeletionAfterReauth();
+                          if (dialogContext.mounted) Navigator.pop(dialogContext, true);
+                        } catch (e) {
+                          setDialogState(() {
+                            isSubmitting = false;
+                            errorText = ErrorHelper.getFriendlyErrorMessage(e);
+                          });
+                        }
+                      },
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                child: isSubmitting
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      )
+                    : Text('settings_reauth_confirm_button'.tr(), style: const TextStyle(color: Colors.white)),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+    passwordController.dispose();
+
+    if (confirmed == true) {
+      _showAccountDeletedSnackBar();
     }
   }
 
@@ -457,63 +596,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 );
 
                 if (shouldDelete == true) {
-                  try {
-                    // Loading göster
-                    if (mounted) {
-                      showDialog(
-                        context: context,
-                        barrierDismissible: false,
-                        builder: (context) => const Center(
-                          child: CircularProgressIndicator(),
-                        ),
-                      );
-                    }
-
-                    // Hesabı sil
-                    await _firebaseService.deleteUserAccount();
-
-                    // Loading kapat
-                    if (mounted) Navigator.pop(context);
-
-                    // Başarı mesajı
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Row(
-                            children: [
-                              const Icon(Icons.check_circle, color: Colors.white),
-                              const SizedBox(width: 12),
-                              Text('settings_delete_account_success'.tr()),
-                            ],
-                          ),
-                          backgroundColor: Colors.green,
-                          duration: const Duration(seconds: 3),
-                        ),
-                      );
-                    }
-                  } catch (e) {
-                    // Loading kapat
-                    if (mounted) Navigator.pop(context);
-
-                    // Hata mesajı
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Row(
-                            children: [
-                              const Icon(Icons.error, color: Colors.white),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Text('${'settings_delete_account_error_prefix'.tr()}${e.toString()}'),
-                              ),
-                            ],
-                          ),
-                          backgroundColor: Colors.red,
-                          duration: const Duration(seconds: 5),
-                        ),
-                      );
-                    }
-                  }
+                  await _performAccountDeletion();
                 }
               },
             ),

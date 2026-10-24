@@ -13,6 +13,32 @@ enum AppTheme {
   pastelSari,
 }
 
+/// Çeviri dosyalarındaki ilgili anahtarı döndürür; ekranda `.tr()` ile kullanılır.
+String appThemeNameKey(AppTheme theme) {
+  switch (theme) {
+    case AppTheme.pastelYesil:
+      return 'theme_name_pastel_green';
+    case AppTheme.pastelMavi:
+      return 'theme_name_pastel_blue';
+    case AppTheme.pastelLila:
+      return 'theme_name_pastel_lilac';
+    case AppTheme.pastelPembe:
+      return 'theme_name_pastel_pink';
+    case AppTheme.pastelTuruncu:
+      return 'theme_name_pastel_orange';
+    case AppTheme.pastelGri:
+      return 'theme_name_pastel_gray';
+    case AppTheme.pastelTurkuaz:
+      return 'theme_name_pastel_turquoise';
+    case AppTheme.pastelKirmizi:
+      return 'theme_name_pastel_red';
+    case AppTheme.pastelMor:
+      return 'theme_name_pastel_purple';
+    case AppTheme.pastelSari:
+      return 'theme_name_pastel_yellow';
+  }
+}
+
 Map<AppTheme, MaterialColor> appThemeColors = {
   AppTheme.pastelYesil: MaterialColor(0xFFA5D6A7, <int, Color>{
     50: Color(0xFFE8F5E9),
@@ -62,17 +88,17 @@ Map<AppTheme, MaterialColor> appThemeColors = {
     800: Color(0xFFAD1457),
     900: Color(0xFF880E4F),
   }),
-  AppTheme.pastelTuruncu: MaterialColor(0xFFFFF59D, <int, Color>{
-    50: Color(0xFFFFFDE7),
-    100: Color(0xFFFFF9C4),
-    200: Color(0xFFFFF59D),
-    300: Color(0xFFFFF176),
-    400: Color(0xFFFFEE58),
-    500: Color(0xFFFFEB3B),
-    600: Color(0xFFFDD835),
-    700: Color(0xFFFBC02D),
-    800: Color(0xFFF9A825),
-    900: Color(0xFFF57C00),
+  AppTheme.pastelTuruncu: MaterialColor(0xFFFFCC80, <int, Color>{
+    50: Color(0xFFFFF3E0),
+    100: Color(0xFFFFE0B2),
+    200: Color(0xFFFFCC80),
+    300: Color(0xFFFFB74D),
+    400: Color(0xFFFFA726),
+    500: Color(0xFFFF9800),
+    600: Color(0xFFFB8C00),
+    700: Color(0xFFF57C00),
+    800: Color(0xFFEF6C00),
+    900: Color(0xFFE65100),
   }),
   AppTheme.pastelGri: MaterialColor(0xFFCFD8DC, <int, Color>{
     50: Color(0xFFECEFF1),

@@ -1,4 +1,4 @@
-require('dotenv').config();
+require('dotenv').config({ quiet: true });
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -27,6 +27,76 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+const REVENUECAT_SECRET_KEY = process.env.REVENUECAT_SECRET_KEY;
+
+// Ücretsiz kullanıcılar için günlük AI Şef hakkı (Flutter tarafındaki
+// RevenueCatService.canUseAi() ile aynı değer olmalı).
+const FREE_DAILY_AI_LIMIT = 3;
+
+// Flutter tarafındaki RevenueCatService._entitlementID ile aynı kimlikler.
+const PRO_ENTITLEMENT_IDS = ['recipe_keeper_custom_cookbook_pro', 'pro', 'premium'];
+
+/**
+ * RevenueCat'e göre bu Firebase kullanıcısının Pro aboneliği var mı?
+ * Flutter tarafında Purchases.logIn(firebaseUid) çağrıldığı için
+ * RevenueCat'teki app_user_id, Firebase UID ile aynıdır.
+ */
+async function isProUserViaRevenueCat(firebaseUid) {
+    if (!REVENUECAT_SECRET_KEY) {
+        console.warn('REVENUECAT_SECRET_KEY tanımlı değil; Pro kontrolü atlanıp kullanıcı ücretsiz sayılıyor.');
+        return false;
+    }
+
+    try {
+        const response = await fetch(`https://api.revenuecat.com/v1/subscribers/${encodeURIComponent(firebaseUid)}`, {
+            headers: { 'Authorization': `Bearer ${REVENUECAT_SECRET_KEY}` },
+            signal: AbortSignal.timeout(5000),
+        });
+
+        if (!response.ok) {
+            console.warn(`RevenueCat API ${response.status} döndürdü (uid: ${firebaseUid}); kullanıcı ücretsiz sayılıyor.`);
+            return false;
+        }
+
+        const data = await response.json();
+        const entitlements = data?.subscriber?.entitlements || {};
+        const now = Date.now();
+
+        return PRO_ENTITLEMENT_IDS.some((id) => {
+            const ent = entitlements[id];
+            if (!ent) return false;
+            if (!ent.expires_date) return true; // süresiz/ömür boyu yetki
+            return new Date(ent.expires_date).getTime() > now;
+        });
+    } catch (error) {
+        console.error('RevenueCat Pro kontrolü hatası:', error.message);
+        return false; // Belirsizlik durumunda ücretsiz limiti uygula (maliyet güvenliği)
+    }
+}
+
+/**
+ * Ücretsiz kullanıcının günlük AI Şef hakkını Firestore'da (transaction ile) kontrol eder ve artırır.
+ */
+async function checkAndIncrementDailyUsage(firebaseUid) {
+    const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD (UTC)
+    const docRef = admin.firestore().collection('aiUsage').doc(`${firebaseUid}_${today}`);
+
+    return admin.firestore().runTransaction(async (tx) => {
+        const snap = await tx.get(docRef);
+        const currentCount = snap.exists ? (snap.data().count || 0) : 0;
+
+        if (currentCount >= FREE_DAILY_AI_LIMIT) {
+            return { allowed: false, remaining: 0 };
+        }
+
+        tx.set(docRef, {
+            count: currentCount + 1,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        }, { merge: true });
+
+        return { allowed: true, remaining: FREE_DAILY_AI_LIMIT - (currentCount + 1) };
+    });
+}
 
 const openai = new OpenAI({
     apiKey: OPENROUTER_API_KEY,
@@ -89,7 +159,28 @@ app.post('/api/generate-recipe', recipeLimiter, authenticate, async (req, res) =
         return res.status(400).json({ success: false, message: 'Please enter a valid food name.' });
     }
 
-    console.log(`Recipe requested: "${userPrompt}" | Language: ${languageCode}`);
+    // Ücretsiz kullanıcı günlük limiti: Pro abonelerin RevenueCat kaydı
+    // Firebase UID'ye bağlıysa (Purchases.logIn) burada tespit edilip
+    // limit tamamen atlanır; değilse Firestore'daki günlük sayaç kontrol edilir.
+    const firebaseUid = req.user.uid;
+    const isPro = await isProUserViaRevenueCat(firebaseUid);
+
+    // null => Pro/sınırsız. Değilse Flutter tarafı yerel "kalan hak" sayacını
+    // bu değerle senkronize eder (bkz. RevenueCatService.syncRemainingFromServer).
+    let remaining = null;
+    if (!isPro) {
+        const usage = await checkAndIncrementDailyUsage(firebaseUid);
+        if (!usage.allowed) {
+            return res.status(429).json({
+                success: false,
+                message: 'Daily free AI Chef limit reached. Upgrade to Pro for unlimited recipes.',
+                remaining: 0,
+            });
+        }
+        remaining = usage.remaining;
+    }
+
+    console.log(`Recipe requested: "${userPrompt}" | Language: ${languageCode} | Pro: ${isPro}`);
 
     const measurementRule = languageCode === 'en'
         ? 'Use US Imperial measurements (cups, oz, tbsp, tsp, °F) for all quantities and temperatures.'
@@ -143,6 +234,8 @@ Error:
                 }
             ],
             temperature: 0.7,
+        }, {
+            timeout: 30000, // OpenRouter yanıt vermezse isteği 30sn sonra düşür
         });
 
         const rawContent = response.choices[0].message.content;
@@ -151,10 +244,10 @@ Error:
         const recipeData = JSON.parse(jsonContent);
 
         if (recipeData.success === false) {
-            return res.json({ success: false, message: recipeData.message || "This does not appear to be a valid food name." });
+            return res.json({ success: false, message: recipeData.message || "This does not appear to be a valid food name.", remaining });
         }
 
-        return res.json({ success: true, data: recipeData });
+        return res.json({ success: true, data: recipeData, remaining });
 
     } catch (error) {
         console.error("API Error:", error);

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../services/ad_service.dart';
+import '../services/revenuecat_service.dart';
 
 class BannerAdWidget extends StatefulWidget {
   const BannerAdWidget({super.key});
@@ -20,6 +21,8 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
   }
 
   void _loadBannerAd() {
+    if (RevenueCatService.isProUser) return; // Pro kullanıcılara reklam gösterilmez
+
     _bannerAd = BannerAd(
       adUnitId: AdService.bannerAdUnitId,
       size: AdSize.banner,
@@ -49,7 +52,7 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
 
   @override
   Widget build(BuildContext context) {
-    if (!_isBannerAdReady || _bannerAd == null) {
+    if (RevenueCatService.isProUser || !_isBannerAdReady || _bannerAd == null) {
       return const SizedBox.shrink();
     }
 

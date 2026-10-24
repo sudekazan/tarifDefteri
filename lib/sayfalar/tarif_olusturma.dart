@@ -8,9 +8,9 @@ import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
 import '../widgets/banner_ad_widget.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../services/firebase_service.dart';
+import '../utils/recipe_link_helper.dart';
 
 class TarifOlusturma extends StatefulWidget {
   @override
@@ -44,7 +44,7 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
       
       // Eğer dosya zaten kalıcı klasördeyse, tekrar kopyalama
       if (sourcePath.contains('tarif_images')) {
-        print('Görsel zaten kalıcı klasörde: $sourcePath');
+        debugPrint('Görsel zaten kalıcı klasörde: $sourcePath');
         // Dosyanın hala var olduğunu kontrol et
         if (await File(sourcePath).exists()) {
           return sourcePath;
@@ -64,22 +64,19 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
       await File(sourcePath).copy(destinationPath);
       // Kopyalanan dosyanın var olduğunu doğrula
       if (await destinationFile.exists()) {
-        print('Görsel başarıyla kopyalandı: $destinationPath');
+        debugPrint('Görsel başarıyla kopyalandı: $destinationPath');
         return destinationFile.path;
       } else {
         throw Exception('Dosya kopyalanamadı');
       }
     } catch (e) {
-      print('HATA - Görsel kopyalama hatası: $e');
-      print('HATA - Kaynak yol: $sourcePath');
+      debugPrint('HATA - Görsel kopyalama hatası: $e');
+      debugPrint('HATA - Kaynak yol: $sourcePath');
       // Hata durumunda boş string döndür (çarpı işareti yerine görsel gösterme)
       return '';
     }
   }
 
-  Future<void> tarifiKaydet(String tarif_adi, String tarif_aciklama) async {
-    print("Tarif Kayıt Edildi: ${tarif_adi} - ${tarif_aciklama}");
-  }
   @override
   void initState() {
     super.initState();
@@ -161,7 +158,7 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
       var puf = aiData['puf_noktasi'];
       if (puf != null && puf.toString().isNotEmpty) {
          sections.add({
-           'title': 'Püf Noktası',
+           'title': 'recipe_section_tips'.tr(),
            'type': 'puf_noktasi',
            'items': [puf.toString()],
            'isExpanded': true,
@@ -209,7 +206,7 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
         }).toList();
         return;
       } catch (e) {
-        print('JSON parsing error in tarif_olusturma: $e');
+        debugPrint('JSON parsing error in tarif_olusturma: $e');
       }
     }
 
@@ -373,12 +370,13 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
-        // Geri tuşuna basıldığında uyarı göster
-        if (tfTaridAdi.text.isNotEmpty || sections.isNotEmpty || photos.isNotEmpty) {
-          
-          final result = await showDialog<bool>(
+    final hasUnsavedChanges = tfTaridAdi.text.isNotEmpty || sections.isNotEmpty || photos.isNotEmpty;
+    return PopScope(
+      canPop: !hasUnsavedChanges,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        // Geri tuşuna basıldığında uyarı göster (yalnızca kaydedilmemiş veri varken buraya düşer)
+        final confirmDiscard = await showDialog<bool>(
             context: context,
             builder: (context) => AlertDialog(
               shape: RoundedRectangleBorder(
@@ -478,9 +476,9 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
               ),
             ),
           );
-          return result ?? false;
+        if (confirmDiscard == true && context.mounted) {
+          Navigator.of(context).pop();
         }
-        return true; // Hiçbir veri yoksa direkt çık
       },
       child: Scaffold(
         appBar: AppBar(
@@ -489,7 +487,7 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
             IconButton(
               icon: Icon(Icons.photo_camera, color: Theme.of(context).iconTheme.color),
               onPressed: () async {
-                final picked = await _picker.pickMultiImage();
+                final picked = await _picker.pickMultiImage(imageQuality: 70, maxWidth: 1600);
                 if (picked.isNotEmpty) {
                   setState(() {
                     photos.addAll(picked);
@@ -522,7 +520,7 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
                           // Fotoğraf Ekle Butonu (Kart şeklinde)
                           GestureDetector(
                             onTap: () async {
-                              final picked = await _picker.pickMultiImage();
+                              final picked = await _picker.pickMultiImage(imageQuality: 70, maxWidth: 1600);
                               if (picked.isNotEmpty) {
                                 setState(() {
                                   photos.addAll(picked);
@@ -811,9 +809,9 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
                                         const SizedBox(width: 16),
                                         // Madde metni
                                         Expanded(
-                                          child: section['type'] == 'linkler' && _isValidUrl(section['items'][i])
+                                          child: section['type'] == 'linkler' && isValidRecipeUrl(section['items'][i])
                                               ? InkWell(
-                                                  onTap: () => _launchUrl(section['items'][i]),
+                                                  onTap: () => launchRecipeUrl(context, section['items'][i]),
                                                   onLongPress: () => _editSectionItem(secIndex, i),
                                                   borderRadius: BorderRadius.circular(4),
                                                   child: Padding(
@@ -896,20 +894,9 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
                                             setState(() {
                                               section['items'].add(val.trim());
                                             });
-                                            // TextField'ı temizle
-                                            final controller = sectionControllers[secIndex];
-                                            if (controller != null) {
-                                              controller.clear();
-                                              // Focus'u koru
-                                              Future.delayed(const Duration(milliseconds: 50), () {
-                                                if (mounted) {
-                                                  // TextField'a tekrar focus ver
-                                                  FocusScope.of(context).requestFocus(
-                                                    FocusNode()..requestFocus()
-                                                  );
-                                                }
-                                              });
-                                            }
+                                            // TextField'ı temizle (klavye/focus zaten alanda kalır,
+                                            // böylece art arda madde eklenebilir)
+                                            sectionControllers[secIndex]?.clear();
                                           }
                                         },
                                       ),
@@ -1054,21 +1041,21 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
                                 }
                               }
                             } catch (e) {
-                              print('Görsel işleme hatası: $e');
+                              debugPrint('Görsel işleme hatası: $e');
                             } finally {
                               // Loading kapat
                               if (mounted) Navigator.pop(context);
                             }
                           }
                           
-                          print('Kaydedilecek görsel sayısı: ${resimYollari.length}');
-                          print('Görsel yolları: $resimYollari');
+                          debugPrint('Kaydedilecek görsel sayısı: ${resimYollari.length}');
+                          debugPrint('Görsel yolları: $resimYollari');
                           
                           String tarifAciklamaJson = '';
                           try {
                             tarifAciklamaJson = json.encode(sections);
                           } catch (e) {
-                            print('Error encoding JSON: $e');
+                            debugPrint('Error encoding JSON: $e');
                           }
                           
                           if (mounted) {
@@ -1154,8 +1141,8 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
       {'type': 'yapilis', 'title': 'recipe_section_instructions'.tr()},
       {'type': 'hamur', 'title': 'recipe_section_dough'.tr()},
       {'type': 'serbet', 'title': 'recipe_section_syrup'.tr()},
-      {'type': 'sos', 'title': 'Sosu'},
-      {'type': 'puf_noktasi', 'title': 'Püf Noktası'},
+      {'type': 'sos', 'title': 'recipe_section_sauce'.tr()},
+      {'type': 'puf_noktasi', 'title': 'recipe_section_tips'.tr()},
       {'type': 'linkler', 'title': 'recipe_section_links'.tr()},
     ];
 
@@ -1206,9 +1193,9 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
       case 'linkler':
         return 'recipe_section_links'.tr();
       case 'sos':
-        return 'Sosu';
+        return 'recipe_section_sauce'.tr();
       case 'puf_noktasi':
-        return 'Püf Noktası';
+        return 'recipe_section_tips'.tr();
       default:
         return '';
     }
@@ -1237,45 +1224,4 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
     }
   }
 
-  // Link mi kontrol eder
-  bool _isValidUrl(String text) {
-    // URL veya domain içeriyorsa link olarak kabul et
-    final urlPattern = RegExp(
-      r'^(https?:\/\/)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&\/=]*)$',
-      caseSensitive: false,
-    );
-    // Daha basit kontrol: nokta içeriyor ve boşluk yok
-    bool hasValidFormat = text.contains('.') && !text.contains(' ') && text.length > 3;
-    return urlPattern.hasMatch(text) || (hasValidFormat && (text.startsWith('http') || text.startsWith('www') || text.contains('.com') || text.contains('.net') || text.contains('.org') || text.contains('.tr')));
-  }
-
-  // Linki açar
-  Future<void> _launchUrl(String url) async {
-    try {
-      // Eğer URL http/https ile başlamıyorsa ekle
-      if (!url.startsWith('http://') && !url.startsWith('https://')) {
-        url = 'https://$url';
-      }
-
-      final Uri uri = Uri.parse(url);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      } else {
-        // Eğer açılmazsa kullanıcıya bilgi ver
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${'link_cannot_open_prefix'.tr()}$url'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('${'link_invalid_prefix'.tr()}$url'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
 }

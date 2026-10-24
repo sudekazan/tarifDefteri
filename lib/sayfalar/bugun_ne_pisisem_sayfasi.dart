@@ -12,6 +12,7 @@ import '../tarifler_data/klasor_data.dart';
 import 'tarif_olusturma.dart';
 import 'premium_sayfasi.dart';
 import '../auth_screen.dart';
+import '../utils/error_helper.dart';
 
 class BugunNePisisemSayfasi extends StatefulWidget {
   const BugunNePisisemSayfasi({super.key});
@@ -27,45 +28,14 @@ class _BugunNePisisemSayfasiState extends State<BugunNePisisemSayfasi> {
 
   final List<String> _secilenMalzemeler = [];
 
-  // Popüler Malzemeler
-  final List<Map<String, String>> _populerMalzemeler = [
-    {'name': 'Yumurta', 'emoji': '🥚'},
-    {'name': 'Patates', 'emoji': '🥔'},
-    {'name': 'Tavuk', 'emoji': '🍗'},
-    {'name': 'Kıyma', 'emoji': '🥩'},
-    {'name': 'Peynir', 'emoji': '🧀'},
-    {'name': 'Soğan', 'emoji': '🧅'},
-    {'name': 'Domates', 'emoji': '🍅'},
-    {'name': 'Makarna', 'emoji': '🍝'},
-    {'name': 'Pirinç', 'emoji': '🍚'},
-    {'name': 'Mantar', 'emoji': '🍄'},
-    {'name': 'Süt / Yoğurt', 'emoji': '🥛'},
-    {'name': 'Ekmek', 'emoji': '🥖'},
-    {'name': 'Sarımsak', 'emoji': '🧄'},
-    {'name': 'Biber', 'emoji': '🫑'},
-    {'name': 'Havuç', 'emoji': '🥕'},
-    {'name': 'Salça', 'emoji': '🥫'},
-    {'name': 'Ton Balığı', 'emoji': '🐟'},
-    {'name': 'Tereyağı', 'emoji': '🧈'},
-  ];
+  // Popüler Malzemeler (başlangıç değerleri initState'te çevrilir)
+  List<Map<String, String>> _populerMalzemeler = [];
 
-  String _secilenOgun = 'Fark Etmez';
-  final List<String> _ogunSecenekleri = [
-    'Fark Etmez',
-    'Kahvaltı',
-    'Öğle / Akşam',
-    'Hafif / Pratik',
-    'Tatlı',
-    'Çorba'
-  ];
+  String? _secilenOgun;
+  List<String> _ogunSecenekleri = [];
 
-  String _secilenSure = 'Fark Etmez';
-  final List<String> _sureSecenekleri = [
-    'Fark Etmez',
-    'Pratik (< 20 dk)',
-    'Fırın Yemeği',
-    'Tencere Yemeği'
-  ];
+  String? _secilenSure;
+  List<String> _sureSecenekleri = [];
 
   List<KlasorData> _klasorListesi = [];
   KlasorData? _hedefKlasor;
@@ -75,7 +45,49 @@ class _BugunNePisisemSayfasiState extends State<BugunNePisisemSayfasi> {
   @override
   void initState() {
     super.initState();
+    _initLocalizedOptions();
     _verileriYukle();
+  }
+
+  void _initLocalizedOptions() {
+    _populerMalzemeler = [
+      {'name': 'ingredient_egg'.tr(), 'emoji': '🥚'},
+      {'name': 'ingredient_potato'.tr(), 'emoji': '🥔'},
+      {'name': 'ingredient_chicken'.tr(), 'emoji': '🍗'},
+      {'name': 'ingredient_ground_meat'.tr(), 'emoji': '🥩'},
+      {'name': 'ingredient_cheese'.tr(), 'emoji': '🧀'},
+      {'name': 'ingredient_onion'.tr(), 'emoji': '🧅'},
+      {'name': 'ingredient_tomato'.tr(), 'emoji': '🍅'},
+      {'name': 'ingredient_pasta'.tr(), 'emoji': '🍝'},
+      {'name': 'ingredient_rice'.tr(), 'emoji': '🍚'},
+      {'name': 'ingredient_mushroom'.tr(), 'emoji': '🍄'},
+      {'name': 'ingredient_milk_yogurt'.tr(), 'emoji': '🥛'},
+      {'name': 'ingredient_bread'.tr(), 'emoji': '🥖'},
+      {'name': 'ingredient_garlic'.tr(), 'emoji': '🧄'},
+      {'name': 'ingredient_pepper'.tr(), 'emoji': '🫑'},
+      {'name': 'ingredient_carrot'.tr(), 'emoji': '🥕'},
+      {'name': 'ingredient_tomato_paste'.tr(), 'emoji': '🥫'},
+      {'name': 'ingredient_tuna'.tr(), 'emoji': '🐟'},
+      {'name': 'ingredient_butter'.tr(), 'emoji': '🧈'},
+    ];
+
+    _ogunSecenekleri = [
+      'what_to_cook_meal_any'.tr(),
+      'what_to_cook_meal_breakfast'.tr(),
+      'what_to_cook_meal_lunch_dinner'.tr(),
+      'what_to_cook_meal_light'.tr(),
+      'what_to_cook_meal_dessert'.tr(),
+      'what_to_cook_meal_soup'.tr(),
+    ];
+    _secilenOgun = _ogunSecenekleri.first;
+
+    _sureSecenekleri = [
+      'what_to_cook_time_any'.tr(),
+      'what_to_cook_time_quick'.tr(),
+      'what_to_cook_time_oven'.tr(),
+      'what_to_cook_time_pot'.tr(),
+    ];
+    _secilenSure = _sureSecenekleri.first;
   }
 
   @override
@@ -172,15 +184,14 @@ class _BugunNePisisemSayfasiState extends State<BugunNePisisemSayfasi> {
     setState(() => _isLoading = true);
 
     // Prompt Oluştur
-    String prompt = 'Evdeki malzemelerim: ${_secilenMalzemeler.join(', ')}. ';
-    if (_secilenOgun != 'Fark Etmez') {
-      prompt += 'Öğün tercihi: $_secilenOgun. ';
+    String prompt = '${'what_to_cook_prompt_ingredients_prefix'.tr()}${_secilenMalzemeler.join(', ')}. ';
+    if (_secilenOgun != _ogunSecenekleri.first) {
+      prompt += '${'what_to_cook_prompt_meal_prefix'.tr()}$_secilenOgun. ';
     }
-    if (_secilenSure != 'Fark Etmez') {
-      prompt += 'Süre / pişirme tarzı tercihi: $_secilenSure. ';
+    if (_secilenSure != _sureSecenekleri.first) {
+      prompt += '${'what_to_cook_prompt_time_prefix'.tr()}$_secilenSure. ';
     }
-    prompt +=
-        'Lütfen bu malzemeleri öncelikli kullanarak, evde yapılabilecek son derece lezzetli, pratik ve adım adım bir yemek tarifi oluştur. Malzemeleri tam ölçüleriyle ve yapılış adımlarını eksiksiz belirt.';
+    prompt += 'what_to_cook_prompt_instruction'.tr();
 
     final languageCode = context.locale.languageCode;
 
@@ -209,10 +220,11 @@ class _BugunNePisisemSayfasiState extends State<BugunNePisisemSayfasi> {
     }
   }
 
-  Future<void> _handleRecipeResult(Future<Map<String, dynamic>> recipeFuture) async {
+  Future<void> _handleRecipeResult(Future<AiRecipeResult> recipeFuture) async {
     try {
-      final recipeData = await recipeFuture;
-      await RevenueCatService.incrementAiUsage();
+      final aiResult = await recipeFuture;
+      final recipeData = aiResult.recipeData;
+      await RevenueCatService.syncRemainingFromServer(aiResult.remaining);
       _verileriYukle();
 
       if (!mounted) return;
@@ -222,7 +234,7 @@ class _BugunNePisisemSayfasiState extends State<BugunNePisisemSayfasi> {
 
       final yeniTarif = TarifData(
         tarif_id: 0,
-        tarif_adi: recipeData['baslik'] ?? 'Şefin Özel Tarifi',
+        tarif_adi: recipeData['baslik'] ?? 'what_to_cook_fallback_title'.tr(),
         tarif_aciklama: '',
         tarif_resimler: [],
         klasor_id: hedefKlasorId,
@@ -244,7 +256,7 @@ class _BugunNePisisemSayfasiState extends State<BugunNePisisemSayfasi> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: const Text('Tarif defterinize başarıyla kaydedildi! 🎉'),
+              content: Text('what_to_cook_saved_success'.tr()),
               backgroundColor: const Color(0xFF2ECC71),
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -256,7 +268,12 @@ class _BugunNePisisemSayfasiState extends State<BugunNePisisemSayfasi> {
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        _showErrorDialog(e.toString());
+        if (e is AiLimitExceededException) {
+          await RevenueCatService.syncRemainingFromServer(0);
+          _showLimitExceededDialog();
+        } else {
+          _showErrorDialog(e.toString());
+        }
       }
     }
   }
@@ -270,14 +287,10 @@ class _BugunNePisisemSayfasiState extends State<BugunNePisisemSayfasi> {
 
     final cloudResimler = await _firebaseService.saveTarifToFirebase(yeniTarif);
 
-    tariflerJson.add(json.encode({
-      'tarif_id': yeniTarif.tarif_id,
-      'tarif_adi': yeniTarif.tarif_adi,
-      'tarif_aciklama': yeniTarif.tarif_aciklama,
-      'tarif_resimler': cloudResimler,
-      'klasor_id': klasorId,
-      'isFavorite': yeniTarif.isFavorite,
-    }));
+    yeniTarif.klasor_id = klasorId;
+    yeniTarif.tarif_resimler = cloudResimler;
+    yeniTarif.updatedAt = DateTime.now().millisecondsSinceEpoch;
+    tariflerJson.add(json.encode(yeniTarif.toMap()));
     await prefs.setStringList(key, tariflerJson);
   }
 
@@ -287,20 +300,20 @@ class _BugunNePisisemSayfasiState extends State<BugunNePisisemSayfasi> {
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
-          children: const [
-            Icon(Icons.stars_rounded, color: Color(0xFFFFA000), size: 28),
-            SizedBox(width: 10),
-            Text('Günlük Limit Doldu', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+          children: [
+            const Icon(Icons.stars_rounded, color: Color(0xFFFFA000), size: 28),
+            const SizedBox(width: 10),
+            Text('what_to_cook_limit_dialog_title'.tr(), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
           ],
         ),
-        content: const Text(
-          'Bugünkü 3 ücretsiz AI Şef kullanım hakkınız doldu.\n\nEvdeki malzemelerle sınırsız tarif üretmek ve reklamsız deneyim için Tarif Defteri Pro\'ya geçin!',
-          style: TextStyle(fontSize: 14, height: 1.4),
+        content: Text(
+          'what_to_cook_limit_dialog_body'.tr(),
+          style: const TextStyle(fontSize: 14, height: 1.4),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Daha Sonra', style: TextStyle(color: Colors.grey)),
+            child: Text('common_later'.tr(), style: const TextStyle(color: Colors.grey)),
           ),
           ElevatedButton(
             onPressed: () {
@@ -314,7 +327,7 @@ class _BugunNePisisemSayfasiState extends State<BugunNePisisemSayfasi> {
               backgroundColor: const Color(0xFFE65100),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
-            child: const Text('Premium\'a Geç', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            child: Text('premium_upgrade_button'.tr(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -326,12 +339,12 @@ class _BugunNePisisemSayfasiState extends State<BugunNePisisemSayfasi> {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        title: const Text('Bir Sorun Oluştu'),
-        content: Text(error),
+        title: Text('ai_error_title'.tr()),
+        content: Text(ErrorHelper.getFriendlyErrorMessage(error)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Tamam'),
+            child: Text('common_ok'.tr()),
           )
         ],
       ),
@@ -503,9 +516,9 @@ class _BugunNePisisemSayfasiState extends State<BugunNePisisemSayfasi> {
                               MaterialPageRoute(builder: (context) => const PremiumSayfasi()),
                             ).then((_) => _verileriYukle());
                           },
-                          child: const Text(
-                            'Sınırsız Yap 👑',
-                            style: TextStyle(
+                          child: Text(
+                            'what_to_cook_make_unlimited'.tr(),
+                            style: const TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
                               color: Color(0xFFE65100),
@@ -523,7 +536,7 @@ class _BugunNePisisemSayfasiState extends State<BugunNePisisemSayfasi> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'Seçilen Malzemeler (${_secilenMalzemeler.length})',
+                      'what_to_cook_selected_ingredients_count'.tr(args: ['${_secilenMalzemeler.length}']),
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -533,7 +546,7 @@ class _BugunNePisisemSayfasiState extends State<BugunNePisisemSayfasi> {
                     if (_secilenMalzemeler.isNotEmpty)
                       TextButton(
                         onPressed: () => setState(() => _secilenMalzemeler.clear()),
-                        child: const Text('Temizle', style: TextStyle(color: Colors.redAccent, fontSize: 13)),
+                        child: Text('common_clear'.tr(), style: const TextStyle(color: Colors.redAccent, fontSize: 13)),
                       ),
                   ],
                 ),
@@ -884,13 +897,13 @@ class _BugunNePisisemSayfasiState extends State<BugunNePisisemSayfasi> {
                         ),
                       ),
                       const SizedBox(height: 20),
-                      const Text(
-                        'Şef Dolabı İnceliyor...',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      Text(
+                        'what_to_cook_loading_title'.tr(),
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Malzemeler harmanlanıyor ve sana özel tarif yazılıyor...',
+                        'what_to_cook_loading_message'.tr(),
                         textAlign: TextAlign.center,
                         style: TextStyle(fontSize: 13, color: Colors.grey[600]),
                       ),

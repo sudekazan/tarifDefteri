@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'services/firebase_service.dart';
+import 'services/revenuecat_service.dart';
+import 'utils/error_helper.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({Key? key}) : super(key: key);
@@ -47,10 +49,14 @@ class _AuthScreenState extends State<AuthScreen> {
     try {
       if (_isLogin) {
         // Giriş yap
-        await _auth.signInWithEmailAndPassword(
+        final userCredential = await _auth.signInWithEmailAndPassword(
           email: _email,
           password: _password,
         );
+        // RevenueCat kimliğini Firebase UID'ye bağla (backend Pro kontrolü için gerekli)
+        if (userCredential.user != null) {
+          await RevenueCatService.loginWithFirebaseUid(userCredential.user!.uid);
+        }
         // Yerel verileri Firebase verileriyle akıllıca birleştir
         // Bu sayede giriş yapmadan eklenen tarifler kaybolmaz
         await _firebaseService.mergeLocalAndCloudData();
@@ -85,6 +91,11 @@ class _AuthScreenState extends State<AuthScreen> {
         // E-posta doğrulama gönder
         if (userCredential.user != null && !userCredential.user!.emailVerified) {
           await userCredential.user!.sendEmailVerification();
+        }
+
+        // RevenueCat kimliğini Firebase UID'ye bağla (backend Pro kontrolü için gerekli)
+        if (userCredential.user != null) {
+          await RevenueCatService.loginWithFirebaseUid(userCredential.user!.uid);
         }
 
         // Yeni hesap oluşturulduğunda yerel verileri Firebase'e yedekle
@@ -140,15 +151,15 @@ class _AuthScreenState extends State<AuthScreen> {
         _errorMessage = message;
         _isLoading = false;
       });
-      print('FirebaseAuthException: ${e.code} - ${e.message}');
+      debugPrint('FirebaseAuthException: ${e.code} - ${e.message}');
     } catch (e) {
       if (!mounted) return;
       
       setState(() {
-        _errorMessage = '${'auth_error_unexpected_prefix'.tr()}${e.toString()}';
+        _errorMessage = '${'auth_error_unexpected_prefix'.tr()}${ErrorHelper.getFriendlyErrorMessage(e)}';
         _isLoading = false;
       });
-      print('General Exception: $e');
+      debugPrint('General Exception: $e');
     }
   }
 

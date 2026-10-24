@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -6,6 +7,17 @@ import 'dart:convert';
 import 'dart:io';
 import '../tarifler_data/tarif_data.dart';
 import '../tarifler_data/klasor_data.dart';
+import 'revenuecat_service.dart';
+
+/// deleteUserAccount() sırasında Firebase Auth hesabını silmek için
+/// yeniden (güncel) kimlik doğrulaması gerektiğinde fırlatılır.
+/// Veriler (Firestore + Storage) bu noktada zaten silinmiş olur;
+/// sadece Authentication kaydının kaldırılması yeniden girişe bağlıdır.
+class ReauthRequiredException implements Exception {
+  @override
+  String toString() =>
+      'Bu işlemi tamamlamak için yeniden giriş doğrulaması gerekiyor.';
+}
 
 class FirebaseService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -36,7 +48,7 @@ class FirebaseService {
         'updatedAt': klasor.updatedAt,
       }, SetOptions(merge: true));
     } catch (e) {
-      print('Klasör kaydetme hatası: $e');
+      debugPrint('Klasör kaydetme hatası: $e');
     }
   }
 
@@ -69,7 +81,7 @@ class FirebaseService {
         );
       }).toList();
     } catch (e) {
-      print('Klasör yükleme hatası: $e');
+      debugPrint('Klasör yükleme hatası: $e');
       return [];
     }
   }
@@ -99,7 +111,7 @@ class FirebaseService {
         await doc.reference.delete();
       }
     } catch (e) {
-      print('Klasör silme hatası: $e');
+      debugPrint('Klasör silme hatası: $e');
     }
   }
 
@@ -130,7 +142,7 @@ class FirebaseService {
 
       return guncelResimler; // Upload sonrası URL'leri döndür
     } catch (e) {
-      print('Tarif kaydetme hatası: $e');
+      debugPrint('Tarif kaydetme hatası: $e');
       return tarif.tarif_resimler;
     }
   }
@@ -155,7 +167,7 @@ class FirebaseService {
         return TarifData.fromMap(data);
       }).toList();
     } catch (e) {
-      print('Tarif yükleme hatası: $e');
+      debugPrint('Tarif yükleme hatası: $e');
       return [];
     }
   }
@@ -172,7 +184,27 @@ class FirebaseService {
           .doc('${klasorId}_$tarifId')
           .delete();
     } catch (e) {
-      print('Tarif silme hatası: $e');
+      debugPrint('Tarif silme hatası: $e');
+    }
+  }
+
+  // Bir tarife ait tüm görselleri (hem yerel dosya hem Firebase Storage) kalıcı olarak sil.
+  // Tarif tamamen silindiğinde yetim dosya/görsel kalmaması için çağrılmalı.
+  Future<void> deleteImagesForTarif(TarifData tarif) async {
+    for (final path in tarif.tarif_resimler) {
+      if (path.isEmpty) continue;
+      try {
+        if (path.startsWith('http')) {
+          await _storage.refFromURL(path).delete();
+        } else {
+          final file = File(path);
+          if (await file.exists()) {
+            await file.delete();
+          }
+        }
+      } catch (e) {
+        debugPrint('Görsel silinirken hata (yok sayılabilir): $e');
+      }
     }
   }
 
@@ -198,7 +230,7 @@ class FirebaseService {
         'updatedAt': tarif.updatedAt,
       });
     } catch (e) {
-      print('Tarif güncelleme hatası: $e');
+      debugPrint('Tarif güncelleme hatası: $e');
     }
   }
 
@@ -235,7 +267,7 @@ class FirebaseService {
 
       await backupToFirebase(klasorler, tariflerMap);
     } catch (e) {
-      print('Local verileri Firebase\'e yedekleme hatası: $e');
+      debugPrint('Local verileri Firebase\'e yedekleme hatası: $e');
     }
   }
 
@@ -276,7 +308,7 @@ class FirebaseService {
         await prefs.setStringList(key, tariflerJson);
       }
     } catch (e) {
-      print('Firebase\'den local\'e veri çekme hatası: $e');
+      debugPrint('Firebase\'den local\'e veri çekme hatası: $e');
     }
   }
 
@@ -390,9 +422,9 @@ class FirebaseService {
         await prefs.setStringList(key, tariflerJson);
       }
       
-      print('Yerel ve cloud verileri başarıyla birleştirildi!');
+      debugPrint('Yerel ve cloud verileri başarıyla birleştirildi!');
     } catch (e) {
-      print('Veri birleştirme hatası: $e');
+      debugPrint('Veri birleştirme hatası: $e');
       rethrow;
     }
   }
@@ -415,14 +447,15 @@ class FirebaseService {
         }
       }
     } catch (e) {
-      print('Yedekleme hatası: $e');
+      debugPrint('Yedekleme hatası: $e');
     }
   }
 
   // Çıkış yap
   Future<void> signOut() async {
     await _auth.signOut();
-    
+    await RevenueCatService.logoutFromRevenueCat();
+
     try {
       final prefs = await SharedPreferences.getInstance();
       // Yalnızca klasör ve tarif verilerini sil, ayarları (tema vb.) koru
@@ -432,9 +465,33 @@ class FirebaseService {
           await prefs.remove(key);
         }
       }
-      print('Çıkış yapıldı ve yerel kullanıcı verileri temizlendi.');
+      debugPrint('Çıkış yapıldı ve yerel kullanıcı verileri temizlendi.');
     } catch (e) {
-      print('Çıkış yaparken yerel veri temizleme hatası: $e');
+      debugPrint('Çıkış yaparken yerel veri temizleme hatası: $e');
+    }
+  }
+
+  // Kullanıcıya ait Storage'daki tüm dosyaları (klasör + alt klasörler) sil
+  Future<void> _deleteAllUserStorageFiles(String userId) async {
+    Future<void> deleteFolderRecursive(Reference ref) async {
+      final listResult = await ref.listAll();
+      for (var item in listResult.items) {
+        try {
+          await item.delete();
+        } catch (e) {
+          debugPrint('Storage dosyası silinemedi (${item.fullPath}): $e');
+        }
+      }
+      for (var prefix in listResult.prefixes) {
+        await deleteFolderRecursive(prefix);
+      }
+    }
+
+    try {
+      await deleteFolderRecursive(_storage.ref().child('users').child(userId));
+    } catch (e) {
+      // Klasör yoksa (hiç görsel yüklenmemişse) listAll hata verebilir, görmezden gel.
+      debugPrint('Kullanıcı storage klasörü silinirken hata (yok sayılabilir): $e');
     }
   }
 
@@ -442,41 +499,75 @@ class FirebaseService {
   Future<void> deleteUserAccount() async {
     if (!isUserLoggedIn) throw Exception('Kullanıcı giriş yapmamış');
 
-    try {
-      final currentUserId = userId;
-      
-      // 1. Kullanıcının tüm tariflerini sil
-      final tariflerSnapshot = await _firestore
-          .collection('users')
-          .doc(currentUserId)
-          .collection('tarifler')
-          .get();
-      
-      for (var doc in tariflerSnapshot.docs) {
-        await doc.reference.delete();
-      }
+    final currentUserId = userId!;
 
-      // 2. Kullanıcının tüm klasörlerini sil
-      final klasorlerSnapshot = await _firestore
-          .collection('users')
-          .doc(currentUserId)
-          .collection('klasorler')
-          .get();
-      
-      for (var doc in klasorlerSnapshot.docs) {
-        await doc.reference.delete();
-      }
+    // 1. Kullanıcının tüm tariflerini sil
+    final tariflerSnapshot = await _firestore
+        .collection('users')
+        .doc(currentUserId)
+        .collection('tarifler')
+        .get();
 
-      // 3. Kullanıcı belgesini sil
-      await _firestore.collection('users').doc(currentUserId).delete();
-
-      // 4. Firebase Authentication'dan hesabı sil
-      await _auth.currentUser?.delete();
-      
-    } catch (e) {
-      print('Hesap silme hatası: $e');
-      rethrow; // Hatayı yukarı fırlat ki UI'da gösterebillelim
+    for (var doc in tariflerSnapshot.docs) {
+      await doc.reference.delete();
     }
+
+    // 2. Kullanıcının tüm klasörlerini sil
+    final klasorlerSnapshot = await _firestore
+        .collection('users')
+        .doc(currentUserId)
+        .collection('klasorler')
+        .get();
+
+    for (var doc in klasorlerSnapshot.docs) {
+      await doc.reference.delete();
+    }
+
+    // 3. Kullanıcı belgesini sil
+    await _firestore.collection('users').doc(currentUserId).delete();
+
+    // 4. Storage'a yüklenmiş tüm görselleri sil (yetim dosya kalmasın)
+    await _deleteAllUserStorageFiles(currentUserId);
+
+    // 5. Firebase Authentication'dan hesabı sil.
+    // Veriler (Firestore + Storage) zaten silindi; bu adım sadece kimlik
+    // doğrulama kaydını kaldırır. "requires-recent-login" hatası alınırsa
+    // ReauthRequiredException fırlatılır; UI katmanı kullanıcıdan şifresini
+    // isteyip reauthenticateWithPassword() ile doğruladıktan sonra
+    // finishAccountDeletionAfterReauth() ile bu adımı tekrar deneyebilir.
+    try {
+      await _auth.currentUser?.delete();
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'requires-recent-login') {
+        throw ReauthRequiredException();
+      }
+      rethrow;
+    }
+
+    // Hesap silindi; RevenueCat kimliğini de bu cihazda sıfırla ki aynı
+    // cihazda açılacak yeni bir hesap, silinen hesabın abonelik kimliğini
+    // miras almasın.
+    await RevenueCatService.logoutFromRevenueCat();
+  }
+
+  /// Kullanıcının şifresiyle yeniden kimlik doğrulaması yapar.
+  /// deleteUserAccount() ReauthRequiredException fırlattığında UI'dan çağrılır.
+  Future<void> reauthenticateWithPassword(String password) async {
+    final user = _auth.currentUser;
+    if (user == null || user.email == null) {
+      throw Exception('Yeniden kimlik doğrulama için aktif bir oturum bulunamadı.');
+    }
+    final credential = EmailAuthProvider.credential(email: user.email!, password: password);
+    await user.reauthenticateWithCredential(credential);
+  }
+
+  /// deleteUserAccount() sırasında yalnızca Authentication hesabı silme adımı
+  /// "requires-recent-login" ile başarısız olduysa, reauthenticateWithPassword()
+  /// başarılı olduktan sonra bu metot çağrılarak hesap silme tamamlanır.
+  /// (Firestore/Storage verileri deleteUserAccount() içinde zaten silinmiş olur.)
+  Future<void> finishAccountDeletionAfterReauth() async {
+    await _auth.currentUser?.delete();
+    await RevenueCatService.logoutFromRevenueCat();
   }
 
   // ADIM 4: AI Tarafından Üretilen Tarifi Veritabanına Kaydetme
@@ -572,7 +663,7 @@ class FirebaseService {
       try {
         tarifAciklamaJson = json.encode(sections);
       } catch (e) {
-        print('JSON encoding error in AI save: $e');
+        debugPrint('JSON encoding error in AI save: $e');
       }
 
       final tarifMap = {
@@ -595,9 +686,9 @@ class FirebaseService {
           .doc('${klasorId}_${newTarifId}')
           .set(tarifMap);
           
-      print('AI tarifi başarıyla kaydedildi.');
+      debugPrint('AI tarifi başarıyla kaydedildi.');
     } catch (e) {
-      print('AI tarifi kaydetme hatası: $e');
+      debugPrint('AI tarifi kaydetme hatası: $e');
       throw e;
     }
   }
@@ -624,7 +715,7 @@ class FirebaseService {
       }
       return null;
     } catch (e) {
-      print('Görsel yükleme hatası: $e');
+      debugPrint('Görsel yükleme hatası: $e');
       return null;
     }
   }

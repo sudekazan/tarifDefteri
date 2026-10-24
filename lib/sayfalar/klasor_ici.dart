@@ -48,19 +48,7 @@ class _KlasorIciState extends State<KlasorIci> {
 
     // 1. Önce SharedPreferences'tan hızlıca göster
     final localList = tariflerJson.map((e) {
-      var map = json.decode(e);
-      return TarifData(
-        tarif_id: map['tarif_id'],
-        tarif_adi: map['tarif_adi'],
-        tarif_aciklama: map['tarif_aciklama'],
-        tarif_resimler: map['tarif_resimler'] != null
-            ? List<String>.from(map['tarif_resimler'])
-            : map['tarif_resim'] != null && map['tarif_resim'].isNotEmpty
-                ? [map['tarif_resim']]
-                : [],
-        klasor_id: map['klasor_id'],
-        isFavorite: map['isFavorite'] ?? false,
-      );
+      return TarifData.fromMap(json.decode(e));
     }).toList();
 
     if (mounted) {
@@ -108,14 +96,7 @@ class _KlasorIciState extends State<KlasorIci> {
         final localIds = localList.map((t) => t.tarif_id).toSet();
         for (var ct in cloudTarifler) {
           if (!localIds.contains(ct.tarif_id)) {
-            yeniJson.add(json.encode({
-              'tarif_id': ct.tarif_id,
-              'tarif_adi': ct.tarif_adi,
-              'tarif_aciklama': ct.tarif_aciklama,
-              'tarif_resimler': ct.tarif_resimler,
-              'klasor_id': ct.klasor_id,
-              'isFavorite': ct.isFavorite,
-            }));
+            yeniJson.add(json.encode(ct.toMap()));
             herhangiGuncellendi = true;
           }
         }
@@ -124,17 +105,7 @@ class _KlasorIciState extends State<KlasorIci> {
           await prefs.setStringList(key, yeniJson);
           // Güncel listeyi tekrar yükle
           final guncelList = yeniJson.map((e) {
-            var map = json.decode(e);
-            return TarifData(
-              tarif_id: map['tarif_id'],
-              tarif_adi: map['tarif_adi'],
-              tarif_aciklama: map['tarif_aciklama'],
-              tarif_resimler: map['tarif_resimler'] != null
-                  ? List<String>.from(map['tarif_resimler'])
-                  : [],
-              klasor_id: map['klasor_id'],
-              isFavorite: map['isFavorite'] ?? false,
-            );
+            return TarifData.fromMap(json.decode(e));
           }).toList();
           if (mounted) {
             setState(() {
@@ -144,7 +115,7 @@ class _KlasorIciState extends State<KlasorIci> {
           }
         }
       } catch (e) {
-        print('Firebase\'den görsel güncelleme hatası: $e');
+        debugPrint('Firebase\'den görsel güncelleme hatası: $e');
       }
     }
   }
@@ -202,15 +173,10 @@ class _KlasorIciState extends State<KlasorIci> {
     // Firebase'e kaydet ve cloud URL'lerini al
     final cloudResimler = await _firebaseService.saveTarifToFirebase(yeniTarif);
 
-    // Cloud URL'leri ile SharedPreferences'a kaydet
-    tariflerJson.add(json.encode({
-      'tarif_id': yeniTarif.tarif_id,
-      'tarif_adi': yeniTarif.tarif_adi,
-      'tarif_aciklama': yeniTarif.tarif_aciklama,
-      'tarif_resimler': cloudResimler,
-      'klasor_id': yeniTarif.klasor_id,
-      'isFavorite': yeniTarif.isFavorite,
-    }));
+    // Cloud URL'leri ve tüm alanları (tarif_aciklama_json, updatedAt dahil) SharedPreferences'a kaydet
+    yeniTarif.tarif_resimler = cloudResimler;
+    yeniTarif.updatedAt = DateTime.now().millisecondsSinceEpoch;
+    tariflerJson.add(json.encode(yeniTarif.toMap()));
     await prefs.setStringList(key, tariflerJson);
 
     _tarifleriYukle();
@@ -222,6 +188,23 @@ class _KlasorIciState extends State<KlasorIci> {
     List<String> tariflerJson = prefs.getStringList(key) ?? [];
     int index = tariflerJson.indexWhere((e) => json.decode(e)['tarif_id'] == guncelTarif.tarif_id);
     if (index != -1) {
+      // Güncellemeden önce artık kullanılmayan (silinmiş) eski fotoğrafları temizle
+      final eskiTarif = TarifData.fromMap(json.decode(tariflerJson[index]));
+      final kaldirilanResimler = eskiTarif.tarif_resimler
+          .where((p) => !guncelTarif.tarif_resimler.contains(p))
+          .toList();
+      if (kaldirilanResimler.isNotEmpty) {
+        await _firebaseService.deleteImagesForTarif(
+          TarifData(
+            tarif_id: eskiTarif.tarif_id,
+            tarif_adi: eskiTarif.tarif_adi,
+            tarif_aciklama: '',
+            tarif_resimler: kaldirilanResimler,
+            klasor_id: eskiTarif.klasor_id,
+          ),
+        );
+      }
+
       // Yerel görselleri buluta yükle ve cloud URL'lerini al
       List<String> cloudResimler = guncelTarif.tarif_resimler;
       if (_firebaseService.isUserLoggedIn) {
@@ -240,14 +223,8 @@ class _KlasorIciState extends State<KlasorIci> {
         guncelTarif.tarif_resimler = cloudResimler;
       }
 
-      tariflerJson[index] = json.encode({
-        'tarif_id': guncelTarif.tarif_id,
-        'tarif_adi': guncelTarif.tarif_adi,
-        'tarif_aciklama': guncelTarif.tarif_aciklama,
-        'tarif_resimler': cloudResimler,
-        'klasor_id': guncelTarif.klasor_id,
-        'isFavorite': guncelTarif.isFavorite,
-      });
+      guncelTarif.updatedAt = DateTime.now().millisecondsSinceEpoch;
+      tariflerJson[index] = json.encode(guncelTarif.toMap());
       await prefs.setStringList(key, tariflerJson);
       
       // Firebase'de de güncelle (artık cloud URL'ler ile)
@@ -257,16 +234,20 @@ class _KlasorIciState extends State<KlasorIci> {
     }
   }
 
-  Future<void> _tarifSil(int tarif_id) async {
+  Future<void> _tarifSil(TarifData tarif) async {
+    final tarif_id = tarif.tarif_id;
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String key = 'tarifler_${widget.klasorData.klasor_id}';
     List<String> tariflerJson = prefs.getStringList(key) ?? [];
     tariflerJson.removeWhere((e) => json.decode(e)['tarif_id'] == tarif_id);
     await prefs.setStringList(key, tariflerJson);
-    
+
     // Firebase'den de sil
     await _firebaseService.deleteTarifFromFirebase(widget.klasorData.klasor_id, tarif_id);
-    
+
+    // Görselleri (yerel + bulut) de sil, yetim dosya kalmasın
+    await _firebaseService.deleteImagesForTarif(tarif);
+
     _tarifleriYukle();
   }
 
@@ -572,6 +553,35 @@ class _KlasorIciState extends State<KlasorIci> {
   }
 
   Future<void> _generateAndNavigate(String input, [bool isUrl = false]) async {
+    if (!RevenueCatService.isProUser && tarifListesi.length >= RevenueCatService.freeTarifPerKlasorLimit) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('tarif_limit_reached'.tr(args: ['${RevenueCatService.freeTarifPerKlasorLimit}'])),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const PremiumSayfasi()),
+      ).then((_) {
+        if (mounted) setState(() {});
+      });
+      return;
+    }
+
+    if (isUrl && !RevenueCatService.isProUser) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('link_recipe_pro_only'.tr()), backgroundColor: Colors.orange),
+      );
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const PremiumSayfasi()),
+      ).then((_) {
+        if (mounted) setState(() {});
+      });
+      return;
+    }
+
     bool canUseAi = await RevenueCatService.canUseAi();
     if (!canUseAi) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -580,7 +590,9 @@ class _KlasorIciState extends State<KlasorIci> {
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => const PremiumSayfasi()),
-      );
+      ).then((_) {
+        if (mounted) setState(() {});
+      });
       return;
     }
 
@@ -630,7 +642,7 @@ class _KlasorIciState extends State<KlasorIci> {
             finalPrompt = "Lütfen şu metin içerisindeki yemek tarifini çıkar ve belirtilen formata göre döndür. Metin: " + plainText;
           }
         } catch (e) {
-          print("Link okuma hatası: $e");
+          debugPrint("Link okuma hatası: $e");
           // Eğer okuyamazsa linkin kendisini göndeririz, belki backend/AI anlar.
         }
       }
@@ -646,13 +658,14 @@ class _KlasorIciState extends State<KlasorIci> {
       AdService.showRewardedAd(
         onUserEarnedReward: (reward) {
           // Kullanıcı ödülü kazandı (reklamı tam izledi)
-          print('Kullanıcı reklamı başarıyla izledi: ${reward.amount} ${reward.type}');
+          debugPrint('Kullanıcı reklamı başarıyla izledi: ${reward.amount} ${reward.type}');
         },
         onAdClosed: () async {
         try {
           // Reklam kapandığında AI sonucunu bekle (muhtemelen zaten hazır!)
-          final recipeData = await recipeFuture;
-          
+          final aiResult = await recipeFuture;
+          final recipeData = aiResult.recipeData;
+
           if (!mounted) return;
           Navigator.pop(context); // Close Loading
 
@@ -666,7 +679,7 @@ class _KlasorIciState extends State<KlasorIci> {
             isFavorite: false,
           );
 
-          await RevenueCatService.incrementAiUsage();
+          await RevenueCatService.syncRemainingFromServer(aiResult.remaining);
 
           // Navigate to Edit Page with Pre-filled Data
           final result = await Navigator.push(
@@ -693,16 +706,30 @@ class _KlasorIciState extends State<KlasorIci> {
   }
 
   void _handleAiError(dynamic e) {
-    print('Handling AI Error in UI: $e');
+    debugPrint('Handling AI Error in UI: $e');
     if (!mounted) return;
     
     // Eğer yükleniyor dialogu hala açıksa kapat (üst üste binmemesi için try-catch içinde güvenli pop)
     try {
       if (Navigator.canPop(context)) {
-        Navigator.pop(context); 
+        Navigator.pop(context);
       }
     } catch (_) {}
-    
+
+    if (e is AiLimitExceededException) {
+      RevenueCatService.syncRemainingFromServer(0);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('ai_limit_reached'.tr()), backgroundColor: Colors.orange),
+      );
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const PremiumSayfasi()),
+      ).then((_) {
+        if (mounted) setState(() {});
+      });
+      return;
+    }
+
     // Show Error (Validation or Server Error)
     String message = ErrorHelper.getFriendlyErrorMessage(e);
     
@@ -732,6 +759,22 @@ class _KlasorIciState extends State<KlasorIci> {
   }
 
   void _yeniTarifEkle() async {
+    if (!RevenueCatService.isProUser && tarifListesi.length >= RevenueCatService.freeTarifPerKlasorLimit) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('tarif_limit_reached'.tr(args: ['${RevenueCatService.freeTarifPerKlasorLimit}'])),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const PremiumSayfasi()),
+      ).then((_) {
+        if (mounted) setState(() {});
+      });
+      return;
+    }
+
     final yeniTarif = await Navigator.push(
       context,
       MaterialPageRoute(
@@ -1057,7 +1100,7 @@ class _KlasorIciState extends State<KlasorIci> {
                                               ElevatedButton(
                                                 onPressed: () {
                                                   Navigator.pop(context);
-                                                  _tarifSil(tarif.tarif_id);
+                                                  _tarifSil(tarif);
                                                 },
                                                 style: ElevatedButton.styleFrom(
                                                   backgroundColor: Colors.red,

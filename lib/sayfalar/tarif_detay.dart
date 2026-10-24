@@ -8,8 +8,8 @@ import 'package:tarif_defteri/tarifler_data/tarif_data.dart';
 import 'package:tarif_defteri/sayfalar/tarif_olusturma.dart';
 import 'package:tarif_defteri/sayfalar/yemek_yapma_modu.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../widgets/banner_ad_widget.dart';
+import '../utils/recipe_link_helper.dart';
 
 class TarifDetay extends StatefulWidget {
   final TarifData tarif;
@@ -90,7 +90,7 @@ class _TarifDetayState extends State<TarifDetay> {
         }).toList();
         return;
       } catch (e) {
-        print('JSON parsing error in tarif_detay: $e');
+        debugPrint('JSON parsing error in tarif_detay: $e');
       }
     }
 
@@ -241,46 +241,6 @@ class _TarifDetayState extends State<TarifDetay> {
     }
   }
 
-  // Link mi kontrol eder
-  bool _isValidUrl(String text) {
-    // URL veya domain içeriyorsa link olarak kabul et
-    final urlPattern = RegExp(
-      r'^(https?:\/\/)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&\/=]*)$',
-      caseSensitive: false,
-    );
-    // Daha basit kontrol: nokta içeriyor ve boşluk yok
-    bool hasValidFormat = text.contains('.') && !text.contains(' ') && text.length > 3;
-    return urlPattern.hasMatch(text) || (hasValidFormat && (text.startsWith('http') || text.startsWith('www') || text.contains('.com') || text.contains('.net') || text.contains('.org') || text.contains('.tr')));
-  }
-
-  // Linki açar
-  Future<void> _launchUrl(String url) async {
-    try {
-      // Eğer URL http/https ile başlamıyorsa ekle
-      if (!url.startsWith('http://') && !url.startsWith('https://')) {
-        url = 'https://$url';
-      }
-
-      final Uri uri = Uri.parse(url);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${'link_cannot_open_prefix'.tr()}$url'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('${'link_invalid_prefix'.tr()}$url'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
 
   void _showBigPhoto(String imagePath) {
     showDialog(
@@ -361,7 +321,8 @@ class _TarifDetayState extends State<TarifDetay> {
                     
                     // iOS için butonun konumunu al
                     final box = context.findRenderObject() as RenderBox?;
-                    final sharePositionOrigin = box!.localToGlobal(Offset.zero) & box.size;
+                    final sharePositionOrigin =
+                        box != null ? box.localToGlobal(Offset.zero) & box.size : null;
                     
                     await Share.share(
                       shareText,
@@ -670,9 +631,9 @@ class _TarifDetayState extends State<TarifDetay> {
                                   const SizedBox(width: 16),
                                   // Madde metni
                                   Expanded(
-                                    child: section['type'] == 'linkler' && _isValidUrl(section['items'][i])
+                                    child: section['type'] == 'linkler' && isValidRecipeUrl(section['items'][i])
                                         ? InkWell(
-                                            onTap: () => _launchUrl(section['items'][i]),
+                                            onTap: () => launchRecipeUrl(context, section['items'][i]),
                                             borderRadius: BorderRadius.circular(4),
                                             child: Padding(
                                               padding: const EdgeInsets.symmetric(vertical: 4),

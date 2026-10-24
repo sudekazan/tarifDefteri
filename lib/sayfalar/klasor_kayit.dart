@@ -33,10 +33,11 @@ class _KlasorKayitState extends State<KlasorKayit> {
     Icons.rice_bowl,
   ];
 
-  Future<void> klasorKaydet(String klasor_adi) async {
-    print("Klasör Kayıt Edildi: ${klasor_adi}");
+  @override
+  void dispose() {
+    tfklasorAdi.dispose();
+    super.dispose();
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -99,9 +100,10 @@ class _KlasorKayitState extends State<KlasorKayit> {
               Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: ElevatedButton(onPressed: (){
-                  if (tfklasorAdi.text.isNotEmpty) {
+                  final name = tfklasorAdi.text.trim();
+                  if (name.isNotEmpty) {
                     Navigator.pop(context, {
-                      'klasorAdi': tfklasorAdi.text,
+                      'klasorAdi': name,
                       'iconCode': selectedIconCode,
                     });
                   }
