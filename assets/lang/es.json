@@ -337,5 +337,6 @@
   "ai_limit_choice_title": "Se acabaron tus usos gratis de hoy",
   "ai_limit_choice_body": "Has usado tus solicitudes gratuitas de Chef IA de hoy. Mira un breve anuncio para obtener +1 uso extra hoy, o pasa a Pro para acceso ilimitado.",
   "ai_limit_choice_go_pro": "Pasar a Pro",
-  "ai_limit_choice_watch_ad": "Ver anuncio, obtener +1"
+  "ai_limit_choice_watch_ad": "Ver anuncio, obtener +1",
+  "share_download_cta": "Guardé esta receta con Tarif Defteri →"
 }

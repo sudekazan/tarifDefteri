@@ -337,5 +337,6 @@
   "ai_limit_choice_title": "Günlük hakkınız doldu",
   "ai_limit_choice_body": "Bugünkü ücretsiz AI Şef haklarınızı kullandınız. Kısa bir reklam izleyerek bugüne özel +1 hak kazanabilir, ya da Pro'ya geçerek sınırsız kullanabilirsiniz.",
   "ai_limit_choice_go_pro": "Pro'ya Geç",
-  "ai_limit_choice_watch_ad": "Reklam İzle, +1 Hak Kazan"
+  "ai_limit_choice_watch_ad": "Reklam İzle, +1 Hak Kazan",
+  "share_download_cta": "Bu tarifi Tarif Defteri ile kaydettim →"
 }

@@ -25,6 +25,11 @@ class _TarifDetayState extends State<TarifDetay> {
   List<Map<String, dynamic>> sections = [];
   double _portionMultiplier = 1.0;
 
+  /// Paylaşım metnine eklenen indirme linki; platforma göre doğru mağazaya gider.
+  String get _appStoreLink => Platform.isIOS
+      ? 'https://apps.apple.com/tr/app/dijital-tarif-defteri/id6759447259'
+      : 'https://play.google.com/store/apps/details?id=com.sudekazan.tarif_defteri_yeni';
+
   String _scaleIngredient(String ingredient, double multiplier) {
     if (multiplier == 1.0) return ingredient;
     
@@ -319,7 +324,8 @@ class _TarifDetayState extends State<TarifDetay> {
                     
                     shareText += '\n━━━━━━━━━━━━━━━━━━\n';
                     shareText += 'share_from_app'.tr();
-                    
+                    shareText += '\n${'share_download_cta'.tr()} $_appStoreLink';
+
                     // iOS için butonun konumunu al
                     final box = context.findRenderObject() as RenderBox?;
                     final sharePositionOrigin =

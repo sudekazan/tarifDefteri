@@ -337,5 +337,6 @@
   "ai_limit_choice_title": "Ihr tägliches Kontingent ist aufgebraucht",
   "ai_limit_choice_body": "Sie haben Ihre heutigen kostenlosen AI-Koch-Anfragen aufgebraucht. Schauen Sie sich eine kurze Werbung an, um heute +1 zusätzliche Nutzung zu erhalten, oder wechseln Sie zu Pro für unbegrenzten Zugriff.",
   "ai_limit_choice_go_pro": "Zu Pro wechseln",
-  "ai_limit_choice_watch_ad": "Werbung ansehen, +1 erhalten"
+  "ai_limit_choice_watch_ad": "Werbung ansehen, +1 erhalten",
+  "share_download_cta": "Ich habe dieses Rezept mit Tarif Defteri gespeichert →"
 }
