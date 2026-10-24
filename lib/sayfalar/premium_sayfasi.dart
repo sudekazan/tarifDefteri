@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -93,6 +94,18 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
     } catch (e) {
       debugPrint('Error launching url: $e');
     }
+  }
+
+  /// RevenueCat'in ham teşhis mesajını (ör. "App Store Connect > Agreements...",
+  /// "Service Account (JSON)...") yalnızca debug build'de gösterir; gerçek
+  /// kullanıcılara bu geliştirici mesajları yerine genel, güven veren bir
+  /// metin gösterilir. Hata yine de debugPrint ile konsola düşer.
+  String _userFacingOfferingsError() {
+    final raw = RevenueCatService.lastOfferingsError;
+    if (raw == null) return 'premium_connection_error_generic'.tr();
+    debugPrint('RevenueCat offerings error: $raw');
+    if (kDebugMode) return raw;
+    return 'premium_connection_error_generic'.tr();
   }
 
   void _showErrorDialog(String errorDetail) {
@@ -373,7 +386,7 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
                           badgeText: 'premium_badge_most_popular'.tr(),
                           onTap: () {
                             if (RevenueCatService.lastOfferingsError != null) {
-                              _showErrorDialog(RevenueCatService.lastOfferingsError!);
+                              _showErrorDialog(_userFacingOfferingsError());
                             }
                           },
                           isDark: isDark,
@@ -381,7 +394,7 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
                         if (RevenueCatService.lastOfferingsError != null) ...[
                           const SizedBox(height: 8),
                           InkWell(
-                            onTap: () => _showErrorDialog(RevenueCatService.lastOfferingsError!),
+                            onTap: () => _showErrorDialog(_userFacingOfferingsError()),
                             borderRadius: BorderRadius.circular(10),
                             child: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -396,7 +409,7 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
                                   const SizedBox(width: 8),
                                   Expanded(
                                     child: Text(
-                                      '${'premium_error_detail_tap_prefix'.tr()}${RevenueCatService.lastOfferingsError!}',
+                                      '${'premium_error_detail_tap_prefix'.tr()}${_userFacingOfferingsError()}',
                                       maxLines: 2,
                                       overflow: TextOverflow.ellipsis,
                                       style: const TextStyle(fontSize: 11, color: Color(0xFFD84315), fontWeight: FontWeight.w500),
@@ -433,9 +446,7 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
                                       return;
                                     }
 
-                                    final errorDetail = RevenueCatService.lastOfferingsError ??
-                                        'premium_offerings_unreachable'.tr();
-                                    _showErrorDialog(errorDetail);
+                                    _showErrorDialog(_userFacingOfferingsError());
                                   }
                                 },
                           style: ElevatedButton.styleFrom(

@@ -52,7 +52,6 @@ void main() async {
   // Reklamları hazırla ve izin iste (UI bloklanmadan)
   AdService.requestTrackingAuthorization();
   AdService.loadAppOpenAd();
-  AdService.loadInterstitialAd();
   AdService.loadRewardedAd();
   
   runApp(

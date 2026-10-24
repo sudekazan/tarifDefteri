@@ -325,5 +325,6 @@
   "settings_reauth_confirm_button": "Verificar y Eliminar",
   "klasor_limit_reached": "Con una cuenta gratuita puedes crear hasta {} carpetas. Pasa a Premium para carpetas ilimitadas.",
   "tarif_limit_reached": "Con una cuenta gratuita puedes guardar hasta {} recetas por carpeta. Pasa a Premium para recetas ilimitadas.",
-  "link_recipe_pro_only": "Extraer recetas desde enlaces es una función exclusiva de Premium. Pasa a Premium."
+  "link_recipe_pro_only": "Extraer recetas desde enlaces es una función exclusiva de Premium. Pasa a Premium.",
+  "premium_connection_error_generic": "No se puede conectar en este momento. Comprueba tu conexión a internet e inténtalo de nuevo."
 }

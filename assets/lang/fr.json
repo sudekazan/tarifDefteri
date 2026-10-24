@@ -325,5 +325,6 @@
   "settings_reauth_confirm_button": "Vérifier et Supprimer",
   "klasor_limit_reached": "Avec un compte gratuit, vous pouvez créer jusqu'à {} dossiers. Passez à Premium pour des dossiers illimités.",
   "tarif_limit_reached": "Avec un compte gratuit, vous pouvez enregistrer jusqu'à {} recettes par dossier. Passez à Premium pour des recettes illimitées.",
-  "link_recipe_pro_only": "L'extraction de recettes à partir de liens est une fonctionnalité réservée à Premium. Passez à Premium."
+  "link_recipe_pro_only": "L'extraction de recettes à partir de liens est une fonctionnalité réservée à Premium. Passez à Premium.",
+  "premium_connection_error_generic": "Connexion impossible pour le moment. Vérifiez votre connexion internet et réessayez."
 }

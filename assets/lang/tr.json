@@ -325,5 +325,6 @@
   "settings_reauth_confirm_button": "Doğrula ve Sil",
   "klasor_limit_reached": "Ücretsiz üyelikte en fazla {} klasör oluşturabilirsiniz. Premium'a geçerek sınırsız klasör oluşturun.",
   "tarif_limit_reached": "Bu klasörde ücretsiz üyelikte en fazla {} tarif saklayabilirsiniz. Premium'a geçerek sınırsız tarif ekleyin.",
-  "link_recipe_pro_only": "Linkten tarif çekme özelliği Premium üyelere özeldir. Premium'a geçin."
+  "link_recipe_pro_only": "Linkten tarif çekme özelliği Premium üyelere özeldir. Premium'a geçin.",
+  "premium_connection_error_generic": "Şu an bağlanılamıyor. Lütfen internet bağlantınızı kontrol edip tekrar deneyin."
 }

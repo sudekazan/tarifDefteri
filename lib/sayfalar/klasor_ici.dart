@@ -37,7 +37,6 @@ class _KlasorIciState extends State<KlasorIci> {
   void initState() {
     super.initState();
     _tarifleriYukle();
-    AdService.loadInterstitialAd();
     AdService.loadRewardedAd();
   }
 

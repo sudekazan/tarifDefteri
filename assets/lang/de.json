@@ -325,5 +325,6 @@
   "settings_reauth_confirm_button": "Bestätigen & Löschen",
   "klasor_limit_reached": "Mit einem kostenlosen Konto können Sie bis zu {} Ordner erstellen. Wechseln Sie zu Premium für unbegrenzte Ordner.",
   "tarif_limit_reached": "Mit einem kostenlosen Konto können Sie bis zu {} Rezepte pro Ordner speichern. Wechseln Sie zu Premium für unbegrenzte Rezepte.",
-  "link_recipe_pro_only": "Das Extrahieren von Rezepten aus Links ist eine Premium-Funktion. Wechseln Sie zu Premium."
+  "link_recipe_pro_only": "Das Extrahieren von Rezepten aus Links ist eine Premium-Funktion. Wechseln Sie zu Premium.",
+  "premium_connection_error_generic": "Momentan keine Verbindung möglich. Bitte überprüfen Sie Ihre Internetverbindung und versuchen Sie es erneut."
 }
