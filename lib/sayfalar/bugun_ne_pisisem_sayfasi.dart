@@ -13,6 +13,8 @@ import 'tarif_olusturma.dart';
 import 'premium_sayfasi.dart';
 import '../auth_screen.dart';
 import '../utils/error_helper.dart';
+import '../services/review_service.dart';
+import '../services/analytics_service.dart';
 
 class BugunNePisisemSayfasi extends StatefulWidget {
   const BugunNePisisemSayfasi({super.key});
@@ -224,6 +226,7 @@ class _BugunNePisisemSayfasiState extends State<BugunNePisisemSayfasi> {
     try {
       final aiResult = await recipeFuture;
       final recipeData = aiResult.recipeData;
+      AnalyticsService.aiKullanildi(isPro: RevenueCatService.isProUser);
       await RevenueCatService.syncRemainingFromServer(aiResult.remaining);
       _verileriYukle();
 
@@ -253,6 +256,10 @@ class _BugunNePisisemSayfasiState extends State<BugunNePisisemSayfasi> {
 
       if (result != null && result is TarifData) {
         await _tarifKaydet(result, hedefKlasorId);
+        AnalyticsService.tarifKaydedildi(isAiGenerated: true);
+        if (mounted) {
+          await ReviewService.onRecipeSaved(context, isAiGenerated: true);
+        }
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -270,6 +277,7 @@ class _BugunNePisisemSayfasiState extends State<BugunNePisisemSayfasi> {
         setState(() => _isLoading = false);
         if (e is AiLimitExceededException) {
           await RevenueCatService.syncRemainingFromServer(0);
+          AnalyticsService.aiLimitDoldu();
           _showLimitExceededDialog();
         } else {
           _showErrorDialog(e.toString());
@@ -320,7 +328,7 @@ class _BugunNePisisemSayfasiState extends State<BugunNePisisemSayfasi> {
               Navigator.pop(ctx);
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const PremiumSayfasi()),
+                MaterialPageRoute(builder: (context) => const PremiumSayfasi(source: 'ai_limit')),
               ).then((_) => _verileriYukle());
             },
             style: ElevatedButton.styleFrom(
@@ -379,7 +387,7 @@ class _BugunNePisisemSayfasiState extends State<BugunNePisisemSayfasi> {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const PremiumSayfasi()),
+                  MaterialPageRoute(builder: (context) => const PremiumSayfasi(source: 'ne_pisirsem_ekrani')),
                 ).then((_) => _verileriYukle());
               },
               icon: const Icon(Icons.workspace_premium_rounded, color: Color(0xFFFFA000), size: 18),
@@ -513,7 +521,7 @@ class _BugunNePisisemSayfasiState extends State<BugunNePisisemSayfasi> {
                           onTap: () {
                             Navigator.push(
                               context,
-                              MaterialPageRoute(builder: (context) => const PremiumSayfasi()),
+                              MaterialPageRoute(builder: (context) => const PremiumSayfasi(source: 'ne_pisirsem_badge')),
                             ).then((_) => _verileriYukle());
                           },
                           child: Text(

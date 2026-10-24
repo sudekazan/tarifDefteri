@@ -20,7 +20,6 @@ import 'package:share_plus/share_plus.dart';
 import 'klasor_kayit.dart';
 import '../services/firebase_service.dart';
 import '../services/ad_service.dart';
-import '../services/review_service.dart';
 
 class Klasorler extends StatefulWidget {
   @override
@@ -63,10 +62,9 @@ class _KlasorlerState extends State<Klasorler> {
       _filtreleKlasorler('');
     });
 
-    // Uygulama açıldığında review kontrolü yap (3 saniye gecikme ile - reklamdan sonra)
-    Future.delayed(const Duration(seconds: 3), () {
-      if (mounted) ReviewService.checkAndRequestReview(context);
-    });
+    // Değerlendirme isteği artık açılışta değil, kullanıcının memnun olduğu
+    // anlarda soruluyor (bkz. ReviewService.onRecipeSaved ve
+    // yemek_yapma_modu.dart'ta tarif tamamlandığında).
   }
 
   @override
@@ -308,7 +306,7 @@ class _KlasorlerState extends State<Klasorler> {
       );
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => const PremiumSayfasi()),
+        MaterialPageRoute(builder: (context) => const PremiumSayfasi(source: 'klasor_limit')),
       ).then((_) {
         if (mounted) setState(() {});
       });
@@ -419,7 +417,7 @@ class _KlasorlerState extends State<Klasorler> {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const PremiumSayfasi()),
+                  MaterialPageRoute(builder: (context) => const PremiumSayfasi(source: 'ana_ekran')),
                 ).then((_) => setState(() {}));
               },
             ),

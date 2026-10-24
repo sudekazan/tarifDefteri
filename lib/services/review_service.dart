@@ -10,6 +10,7 @@ class ReviewService {
   static const String _firstLaunchKey = 'review_first_launch_date';
   static const String _lastPromptKey = 'review_last_prompt_date';
   static const String _hasRatedKey = 'review_has_rated';
+  static const String _recipeSaveCountKey = 'review_recipe_save_count';
 
   static const int _daysBeforeFirstPrompt = 7;   // İlk soru: 7 gün sonra
   static const int _daysBetweenPrompts = 30;      // Tekrar soru: 30 günde bir
@@ -48,6 +49,20 @@ class ReviewService {
     await _showReviewPrompt();
   }
 
+  /// Bir tarif kaydedildiğinde çağrılır (manuel veya AI ile). Toplam
+  /// kaydedilen tarif sayısını artırır; AI ile üretilmiş bir tarifi
+  /// kaydetmek veya tam 5. tarife ulaşmak, kullanıcının üründen memnun
+  /// olduğu "mutlu an"lar olduğu için bu noktalarda değerlendirme istenir.
+  static Future<void> onRecipeSaved(BuildContext context, {bool isAiGenerated = false}) async {
+    final prefs = await SharedPreferences.getInstance();
+    final count = (prefs.getInt(_recipeSaveCountKey) ?? 0) + 1;
+    await prefs.setInt(_recipeSaveCountKey, count);
+
+    if (isAiGenerated || count == 5) {
+      await checkAndRequestReview(context);
+    }
+  }
+
   /// Kullanıcı ayarlardan "Değerlendir" butonuna bastığında çağrılır.
   /// Bu durumda bir daha otomatik sormaz.
   static Future<void> markAsRated() async {
@@ -70,5 +85,6 @@ class ReviewService {
     await prefs.remove(_firstLaunchKey);
     await prefs.remove(_lastPromptKey);
     await prefs.remove(_hasRatedKey);
+    await prefs.remove(_recipeSaveCountKey);
   }
 }

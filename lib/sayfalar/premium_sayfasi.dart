@@ -5,9 +5,15 @@ import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:tarif_defteri/services/revenuecat_service.dart';
+import '../services/analytics_service.dart';
 
 class PremiumSayfasi extends StatefulWidget {
-  const PremiumSayfasi({super.key});
+  /// Bu ekranın hangi noktadan açıldığı (ör. "ai_limit", "klasor_limit",
+  /// "tarif_limit", "link_pro_only", "ayarlar", "ana_ekran"). Analytics'te
+  /// paywall_goruldu olayının "source" parametresi olarak kullanılır.
+  final String source;
+
+  const PremiumSayfasi({super.key, this.source = 'unknown'});
 
   @override
   State<PremiumSayfasi> createState() => _PremiumSayfasiState();
@@ -22,6 +28,7 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
   @override
   void initState() {
     super.initState();
+    AnalyticsService.paywallGoruldu(widget.source);
     _fetchOfferings();
   }
 
@@ -44,6 +51,10 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
     if (mounted) {
       setState(() => _isPurchasing = false);
       if (success) {
+        AnalyticsService.satinAlma(
+          packageId: package.identifier,
+          priceString: package.storeProduct.priceString,
+        );
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('premium_success'.tr()),

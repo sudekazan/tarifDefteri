@@ -17,6 +17,8 @@ import '../services/revenuecat_service.dart';
 import '../widgets/banner_ad_widget.dart';
 import 'package:tarif_defteri/sayfalar/premium_sayfasi.dart';
 import '../utils/error_helper.dart';
+import '../services/review_service.dart';
+import '../services/analytics_service.dart';
 
 class KlasorIci extends StatefulWidget {
   final KlasorData klasorData;
@@ -561,7 +563,7 @@ class _KlasorIciState extends State<KlasorIci> {
       );
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => const PremiumSayfasi()),
+        MaterialPageRoute(builder: (context) => const PremiumSayfasi(source: 'tarif_limit')),
       ).then((_) {
         if (mounted) setState(() {});
       });
@@ -574,7 +576,7 @@ class _KlasorIciState extends State<KlasorIci> {
       );
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => const PremiumSayfasi()),
+        MaterialPageRoute(builder: (context) => const PremiumSayfasi(source: 'link_pro_only')),
       ).then((_) {
         if (mounted) setState(() {});
       });
@@ -588,7 +590,7 @@ class _KlasorIciState extends State<KlasorIci> {
       );
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => const PremiumSayfasi()),
+        MaterialPageRoute(builder: (context) => const PremiumSayfasi(source: 'ai_limit')),
       ).then((_) {
         if (mounted) setState(() {});
       });
@@ -664,6 +666,7 @@ class _KlasorIciState extends State<KlasorIci> {
           // Reklam kapandığında AI sonucunu bekle (muhtemelen zaten hazır!)
           final aiResult = await recipeFuture;
           final recipeData = aiResult.recipeData;
+          AnalyticsService.aiKullanildi(isPro: RevenueCatService.isProUser);
 
           if (!mounted) return;
           Navigator.pop(context); // Close Loading
@@ -692,7 +695,11 @@ class _KlasorIciState extends State<KlasorIci> {
           );
 
           if (result != null && result is TarifData) {
-            _tarifEkle(result);
+            await _tarifEkle(result);
+            AnalyticsService.tarifKaydedildi(isAiGenerated: true);
+            if (mounted) {
+              await ReviewService.onRecipeSaved(context, isAiGenerated: true);
+            }
           }
         } catch (e) {
           _handleAiError(e);
@@ -717,12 +724,13 @@ class _KlasorIciState extends State<KlasorIci> {
 
     if (e is AiLimitExceededException) {
       RevenueCatService.syncRemainingFromServer(0);
+      AnalyticsService.aiLimitDoldu();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('ai_limit_reached'.tr()), backgroundColor: Colors.orange),
       );
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => const PremiumSayfasi()),
+        MaterialPageRoute(builder: (context) => const PremiumSayfasi(source: 'ai_limit')),
       ).then((_) {
         if (mounted) setState(() {});
       });
@@ -767,7 +775,7 @@ class _KlasorIciState extends State<KlasorIci> {
       );
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => const PremiumSayfasi()),
+        MaterialPageRoute(builder: (context) => const PremiumSayfasi(source: 'tarif_limit')),
       ).then((_) {
         if (mounted) setState(() {});
       });
@@ -791,7 +799,11 @@ class _KlasorIciState extends State<KlasorIci> {
       ),
     );
     if (yeniTarif != null && yeniTarif is TarifData && yeniTarif.tarif_adi.isNotEmpty) {
-      _tarifEkle(yeniTarif);
+      await _tarifEkle(yeniTarif);
+      AnalyticsService.tarifKaydedildi(isAiGenerated: false);
+      if (mounted) {
+        await ReviewService.onRecipeSaved(context);
+      }
     }
   }
 

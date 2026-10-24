@@ -10,6 +10,7 @@ import 'package:tarif_defteri/sayfalar/yemek_yapma_modu.dart';
 import 'package:share_plus/share_plus.dart';
 import '../widgets/banner_ad_widget.dart';
 import '../utils/recipe_link_helper.dart';
+import '../services/analytics_service.dart';
 
 class TarifDetay extends StatefulWidget {
   final TarifData tarif;
@@ -329,6 +330,7 @@ class _TarifDetayState extends State<TarifDetay> {
                       subject: widget.tarif.tarif_adi,
                       sharePositionOrigin: sharePositionOrigin,
                     );
+                    AnalyticsService.tarifPaylasildi();
                   } catch (e) {
                     if (mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
