@@ -585,15 +585,7 @@ class _KlasorIciState extends State<KlasorIci> {
 
     bool canUseAi = await RevenueCatService.canUseAi();
     if (!canUseAi) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('ai_limit_reached'.tr()), backgroundColor: Colors.orange),
-      );
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const PremiumSayfasi(source: 'ai_limit')),
-      ).then((_) {
-        if (mounted) setState(() {});
-      });
+      _showAiLimitChoiceDialog(input, isUrl);
       return;
     }
 
@@ -648,73 +640,138 @@ class _KlasorIciState extends State<KlasorIci> {
         }
       }
 
-      // AI isteğini HEMEN başlat (reklam gösterilirken arka planda hazırlansın)
+      // AI Şef'in ücretsiz günlük hakları artık reklamsız kullanılır;
+      // reklam yalnızca hak bittiğinde isteğe bağlı "+1 hak" olarak sunulur
+      // (bkz. _showAiLimitChoiceDialog).
       final languageCode = context.locale.languageCode;
-      final recipeFuture = _aiRecipeService.generateRecipe(
+      final aiResult = await _aiRecipeService.generateRecipe(
         finalPrompt,
         languageCode: languageCode,
       );
+      final recipeData = aiResult.recipeData;
+      AnalyticsService.aiKullanildi(isPro: RevenueCatService.isProUser);
 
-      // Aynı anda reklamı göster
-      AdService.showRewardedAd(
-        onUserEarnedReward: (reward) {
-          // Kullanıcı ödülü kazandı (reklamı tam izledi)
-          debugPrint('Kullanıcı reklamı başarıyla izledi: ${reward.amount} ${reward.type}');
-        },
-        onAdClosed: () async {
-        try {
-          // Reklam kapandığında AI sonucunu bekle (muhtemelen zaten hazır!)
-          final aiResult = await recipeFuture;
-          final recipeData = aiResult.recipeData;
-          AnalyticsService.aiKullanildi(isPro: RevenueCatService.isProUser);
+      if (!mounted) return;
+      Navigator.pop(context); // Close Loading
 
-          if (!mounted) return;
-          Navigator.pop(context); // Close Loading
+      // Create TarifData from JSON
+      final yeniTarif = TarifData(
+        tarif_id: 0,
+        tarif_adi: recipeData['baslik'] ?? (isUrl ? 'Linkten Tarif' : input),
+        tarif_aciklama: '',
+        tarif_resimler: [],
+        klasor_id: widget.klasorData.klasor_id,
+        isFavorite: false,
+      );
 
-          // Create TarifData from JSON
-          final yeniTarif = TarifData(
-            tarif_id: 0,
-            tarif_adi: recipeData['baslik'] ?? (isUrl ? 'Linkten Tarif' : input),
-            tarif_aciklama: '',
-            tarif_resimler: [],
-            klasor_id: widget.klasorData.klasor_id,
-            isFavorite: false,
-          );
+      await RevenueCatService.syncRemainingFromServer(aiResult.remaining);
 
-          await RevenueCatService.syncRemainingFromServer(aiResult.remaining);
+      // Navigate to Edit Page with Pre-filled Data
+      final result = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => TarifOlusturma(
+             tarifData: yeniTarif,
+             aiResultMap: recipeData
+          ),
+        ),
+      );
 
-          // Navigate to Edit Page with Pre-filled Data
-          final result = await Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => TarifOlusturma(
-                 tarifData: yeniTarif, 
-                 aiResultMap: recipeData 
-              ),
-            ),
-          );
-
-          if (result != null && result is TarifData) {
-            await _tarifEkle(result);
-            AnalyticsService.tarifKaydedildi(isAiGenerated: true);
-            if (mounted) {
-              await ReviewService.onRecipeSaved(context, isAiGenerated: true);
-            }
-          }
-        } catch (e) {
-          _handleAiError(e);
+      if (result != null && result is TarifData) {
+        await _tarifEkle(result);
+        AnalyticsService.tarifKaydedildi(isAiGenerated: true);
+        if (mounted) {
+          await ReviewService.onRecipeSaved(context, isAiGenerated: true);
         }
-      });
-
+      }
     } catch (e) {
-      _handleAiError(e);
+      _handleAiError(e, input: input, isUrl: isUrl);
     }
   }
 
-  void _handleAiError(dynamic e) {
+  /// Günlük ücretsiz AI hakkı bittiğinde gösterilir: kullanıcı ya reklam
+  /// izleyip o güne +1 hak kazanır ya da Pro'ya geçip sınırsız kullanır.
+  void _showAiLimitChoiceDialog(String input, bool isUrl) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            const Icon(Icons.stars_rounded, color: Color(0xFFFFA000), size: 28),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'ai_limit_choice_title'.tr(),
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          'ai_limit_choice_body'.tr(),
+          style: const TextStyle(fontSize: 14, height: 1.4),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const PremiumSayfasi(source: 'ai_limit_choice')),
+              ).then((_) {
+                if (mounted) setState(() {});
+              });
+            },
+            child: Text(
+              'ai_limit_choice_go_pro'.tr(),
+              style: const TextStyle(color: Color(0xFFE65100), fontWeight: FontWeight.bold),
+            ),
+          ),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _watchAdForBonusUse(input, isUrl);
+            },
+            icon: const Icon(Icons.ondemand_video_rounded, size: 18, color: Colors.white),
+            label: Text(
+              'ai_limit_choice_watch_ad'.tr(),
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).primaryColor,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Kullanıcı "+1 hak" için reklam izlemeyi seçtiğinde çağrılır. Reklam
+  /// tam izlenirse backend'den bonus hak istenir ve istek otomatik tekrar
+  /// denenir.
+  void _watchAdForBonusUse(String input, bool isUrl) {
+    bool rewardEarned = false;
+    AdService.showRewardedAd(
+      onUserEarnedReward: (reward) {
+        rewardEarned = true;
+      },
+      onAdClosed: () async {
+        if (!rewardEarned) return; // Reklam tam izlenmeden kapatıldı
+        final newRemaining = await _aiRecipeService.grantBonusUse();
+        await RevenueCatService.syncRemainingFromServer(newRemaining);
+        if (mounted) {
+          _generateAndNavigate(input, isUrl);
+        }
+      },
+    );
+  }
+
+  void _handleAiError(dynamic e, {String? input, bool isUrl = false}) {
     debugPrint('Handling AI Error in UI: $e');
     if (!mounted) return;
-    
+
     // Eğer yükleniyor dialogu hala açıksa kapat (üst üste binmemesi için try-catch içinde güvenli pop)
     try {
       if (Navigator.canPop(context)) {
@@ -725,15 +782,16 @@ class _KlasorIciState extends State<KlasorIci> {
     if (e is AiLimitExceededException) {
       RevenueCatService.syncRemainingFromServer(0);
       AnalyticsService.aiLimitDoldu();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('ai_limit_reached'.tr()), backgroundColor: Colors.orange),
-      );
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const PremiumSayfasi(source: 'ai_limit')),
-      ).then((_) {
-        if (mounted) setState(() {});
-      });
+      if (input != null) {
+        _showAiLimitChoiceDialog(input, isUrl);
+      } else {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const PremiumSayfasi(source: 'ai_limit')),
+        ).then((_) {
+          if (mounted) setState(() {});
+        });
+      }
       return;
     }
 

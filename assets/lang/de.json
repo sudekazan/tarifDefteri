@@ -333,5 +333,9 @@
   "premium_plan_annual_desc": "Bestes Angebot, einmal im Jahr zahlen",
   "premium_plan_annual_desc_with_savings": "Sparen Sie {}% im Vergleich zum Monatsplan",
   "premium_plan_lifetime_title": "Lebenslanges Premium",
-  "premium_plan_lifetime_desc": "Einmalige Zahlung, für immer Pro"
+  "premium_plan_lifetime_desc": "Einmalige Zahlung, für immer Pro",
+  "ai_limit_choice_title": "Ihr tägliches Kontingent ist aufgebraucht",
+  "ai_limit_choice_body": "Sie haben Ihre heutigen kostenlosen AI-Koch-Anfragen aufgebraucht. Schauen Sie sich eine kurze Werbung an, um heute +1 zusätzliche Nutzung zu erhalten, oder wechseln Sie zu Pro für unbegrenzten Zugriff.",
+  "ai_limit_choice_go_pro": "Zu Pro wechseln",
+  "ai_limit_choice_watch_ad": "Werbung ansehen, +1 erhalten"
 }

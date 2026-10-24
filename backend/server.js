@@ -33,6 +33,10 @@ const REVENUECAT_SECRET_KEY = process.env.REVENUECAT_SECRET_KEY;
 // RevenueCatService.canUseAi() ile aynı değer olmalı).
 const FREE_DAILY_AI_LIMIT = 3;
 
+// Ücretsiz kullanıcının ödüllü reklam izleyerek günde kazanabileceği
+// azami ekstra hak sayısı (reklam "vergi" değil, isteğe bağlı ödül olsun diye).
+const MAX_BONUS_USES_PER_DAY = 3;
+
 // Flutter tarafındaki RevenueCatService._entitlementID ile aynı kimlikler.
 const PRO_ENTITLEMENT_IDS = ['recipe_keeper_custom_cookbook_pro', 'pro', 'premium'];
 
@@ -76,6 +80,7 @@ async function isProUserViaRevenueCat(firebaseUid) {
 
 /**
  * Ücretsiz kullanıcının günlük AI Şef hakkını Firestore'da (transaction ile) kontrol eder ve artırır.
+ * Günlük limit, reklamla kazanılmış bonusUses kadar artırılmış olabilir.
  */
 async function checkAndIncrementDailyUsage(firebaseUid) {
     const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD (UTC)
@@ -84,8 +89,10 @@ async function checkAndIncrementDailyUsage(firebaseUid) {
     return admin.firestore().runTransaction(async (tx) => {
         const snap = await tx.get(docRef);
         const currentCount = snap.exists ? (snap.data().count || 0) : 0;
+        const bonusUses = snap.exists ? (snap.data().bonusUses || 0) : 0;
+        const effectiveLimit = FREE_DAILY_AI_LIMIT + bonusUses;
 
-        if (currentCount >= FREE_DAILY_AI_LIMIT) {
+        if (currentCount >= effectiveLimit) {
             return { allowed: false, remaining: 0 };
         }
 
@@ -94,7 +101,35 @@ async function checkAndIncrementDailyUsage(firebaseUid) {
             updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         }, { merge: true });
 
-        return { allowed: true, remaining: FREE_DAILY_AI_LIMIT - (currentCount + 1) };
+        return { allowed: true, remaining: effectiveLimit - (currentCount + 1) };
+    });
+}
+
+/**
+ * Kullanıcı ödüllü reklam izlediğinde o güne +1 ekstra AI Şef hakkı tanır.
+ * Günde en fazla MAX_BONUS_USES_PER_DAY kez kullanılabilir.
+ */
+async function grantBonusUse(firebaseUid) {
+    const today = new Date().toISOString().slice(0, 10);
+    const docRef = admin.firestore().collection('aiUsage').doc(`${firebaseUid}_${today}`);
+
+    return admin.firestore().runTransaction(async (tx) => {
+        const snap = await tx.get(docRef);
+        const currentCount = snap.exists ? (snap.data().count || 0) : 0;
+        const bonusUses = snap.exists ? (snap.data().bonusUses || 0) : 0;
+
+        if (bonusUses >= MAX_BONUS_USES_PER_DAY) {
+            return { granted: false, remaining: 0 };
+        }
+
+        const newBonusUses = bonusUses + 1;
+        tx.set(docRef, {
+            bonusUses: newBonusUses,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        }, { merge: true });
+
+        const effectiveLimit = FREE_DAILY_AI_LIMIT + newBonusUses;
+        return { granted: true, remaining: Math.max(0, effectiveLimit - currentCount) };
     });
 }
 
@@ -148,6 +183,27 @@ app.get('/api/status', (req, res) => {
 // Health check endpoint
 app.get('/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// Ödüllü reklam izlendikten sonra o güne +1 ekstra AI Şef hakkı tanır.
+app.post('/api/grant-bonus-ai-use', recipeLimiter, authenticate, async (req, res) => {
+    const firebaseUid = req.user.uid;
+    const isPro = await isProUserViaRevenueCat(firebaseUid);
+
+    if (isPro) {
+        // Pro kullanıcı zaten sınırsız; bonus kavramı onun için anlamsız.
+        return res.json({ success: true, remaining: null });
+    }
+
+    const result = await grantBonusUse(firebaseUid);
+    if (!result.granted) {
+        return res.status(429).json({
+            success: false,
+            message: 'Daily bonus ad limit reached.',
+        });
+    }
+
+    return res.json({ success: true, remaining: result.remaining });
 });
 
 // Recipe API Endpoint

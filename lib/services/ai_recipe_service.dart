@@ -31,27 +31,27 @@ class AiRecipeService {
     return 'https://tarif-defteri-api.onrender.com/api';
   }
 
+  Future<String> _getIdToken() async {
+    User? user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      throw Exception('auth_required_for_ai'.tr());
+    }
+    try {
+      final idToken = await user.getIdToken() ?? '';
+      if (idToken.isEmpty) {
+        throw Exception('Token boş döndü.');
+      }
+      return idToken;
+    } catch (e) {
+      debugPrint('Token error: $e');
+      throw Exception('Oturum doğrulanamadı. Lütfen tekrar giriş yapın.');
+    }
+  }
+
   /// Kullanıcının girdiği yemek ismine göre yapay zekadan tarif oluşturur.
   Future<AiRecipeResult> generateRecipe(String dishName, {String languageCode = 'en'}) async {
     try {
-      // Firebase giriş yapmış olan kullanıcının kimlik token'ını alıyoruz
-      User? user = FirebaseAuth.instance.currentUser;
-      
-      if (user == null) {
-        throw Exception('auth_required_for_ai'.tr());
-      }
-      
-      String idToken = '';
-      try {
-        idToken = await user.getIdToken() ?? '';
-        if (idToken.isEmpty) {
-          throw Exception('Token boş döndü.');
-        }
-      } catch (e) {
-        debugPrint('Token error: $e');
-        throw Exception('Oturum doğrulanamadı. Lütfen tekrar giriş yapın.');
-      }
-
+      final idToken = await _getIdToken();
       final url = Uri.parse('$_baseUrl/generate-recipe');
       
       final response = await http.post(
@@ -90,6 +90,35 @@ class AiRecipeService {
     } catch (e) {
       debugPrint('AI Recipe Error: $e');
       rethrow;
+    }
+  }
+
+  /// Kullanıcı ödüllü reklamı tam izlediğinde çağrılır; o güne +1 ekstra
+  /// ücretsiz AI Şef hakkı tanır ve yeni "kalan hak" sayısını döndürür.
+  /// Günlük bonus hakkı da dolmuşsa (nadir), null döner.
+  Future<int?> grantBonusUse() async {
+    try {
+      final idToken = await _getIdToken();
+      final url = Uri.parse('$_baseUrl/grant-bonus-ai-use');
+
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $idToken',
+        },
+      ).timeout(const Duration(seconds: 15));
+
+      if (response.statusCode != 200) {
+        debugPrint('grantBonusUse failed: ${response.statusCode} ${response.body}');
+        return null;
+      }
+
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      return data['remaining'] is int ? data['remaining'] as int : null;
+    } catch (e) {
+      debugPrint('grantBonusUse error: $e');
+      return null;
     }
   }
 }

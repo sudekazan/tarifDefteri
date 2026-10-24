@@ -333,5 +333,9 @@
   "premium_plan_annual_desc": "La meilleure offre, payez une fois par an",
   "premium_plan_annual_desc_with_savings": "Économisez {}% par rapport au plan mensuel",
   "premium_plan_lifetime_title": "Premium à vie",
-  "premium_plan_lifetime_desc": "Paiement unique, Pro pour toujours"
+  "premium_plan_lifetime_desc": "Paiement unique, Pro pour toujours",
+  "ai_limit_choice_title": "Vous avez atteint votre limite du jour",
+  "ai_limit_choice_body": "Vous avez utilisé vos demandes gratuites du Chef IA aujourd'hui. Regardez une courte publicité pour obtenir +1 utilisation aujourd'hui, ou passez à Pro pour un accès illimité.",
+  "ai_limit_choice_go_pro": "Passer à Pro",
+  "ai_limit_choice_watch_ad": "Regarder une pub, +1 utilisation"
 }

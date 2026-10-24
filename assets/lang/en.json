@@ -333,5 +333,9 @@
   "premium_plan_annual_desc": "Best value, pay once a year",
   "premium_plan_annual_desc_with_savings": "Save {}% compared to the monthly plan",
   "premium_plan_lifetime_title": "Lifetime Premium",
-  "premium_plan_lifetime_desc": "One-time payment, Pro forever"
+  "premium_plan_lifetime_desc": "One-time payment, Pro forever",
+  "ai_limit_choice_title": "You're out of free uses today",
+  "ai_limit_choice_body": "You've used today's free AI Chef requests. Watch a short ad for +1 extra use today, or go Pro for unlimited access.",
+  "ai_limit_choice_go_pro": "Go Pro",
+  "ai_limit_choice_watch_ad": "Watch Ad for +1 Use"
 }

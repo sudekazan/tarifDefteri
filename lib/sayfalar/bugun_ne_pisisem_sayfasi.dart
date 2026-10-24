@@ -179,7 +179,7 @@ class _BugunNePisisemSayfasiState extends State<BugunNePisisemSayfasi> {
     bool canUseAi = await RevenueCatService.canUseAi();
     if (!mounted) return;
     if (!canUseAi) {
-      _showLimitExceededDialog();
+      _showAiLimitChoiceDialog();
       return;
     }
 
@@ -198,22 +198,14 @@ class _BugunNePisisemSayfasiState extends State<BugunNePisisemSayfasi> {
     final languageCode = context.locale.languageCode;
 
     try {
+      // AI Şef'in ücretsiz günlük hakları artık reklamsız kullanılır;
+      // reklam yalnızca hak bittiğinde isteğe bağlı "+1 hak" olarak sunulur
+      // (bkz. _showAiLimitChoiceDialog, _watchAdForBonusUse).
       final recipeFuture = _aiRecipeService.generateRecipe(
         prompt,
         languageCode: languageCode,
       );
-
-      // Reklam göster (ücretsiz kullanıcılar için)
-      if (!RevenueCatService.isProUser) {
-        AdService.showRewardedAd(
-          onUserEarnedReward: (_) {},
-          onAdClosed: () async {
-            await _handleRecipeResult(recipeFuture);
-          },
-        );
-      } else {
-        await _handleRecipeResult(recipeFuture);
-      }
+      await _handleRecipeResult(recipeFuture);
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -278,7 +270,7 @@ class _BugunNePisisemSayfasiState extends State<BugunNePisisemSayfasi> {
         if (e is AiLimitExceededException) {
           await RevenueCatService.syncRemainingFromServer(0);
           AnalyticsService.aiLimitDoldu();
-          _showLimitExceededDialog();
+          _showAiLimitChoiceDialog();
         } else {
           _showErrorDialog(e.toString());
         }
@@ -302,7 +294,9 @@ class _BugunNePisisemSayfasiState extends State<BugunNePisisemSayfasi> {
     await prefs.setStringList(key, tariflerJson);
   }
 
-  void _showLimitExceededDialog() {
+  /// Günlük ücretsiz AI hakkı bittiğinde gösterilir: kullanıcı ya reklam
+  /// izleyip o güne +1 hak kazanır ya da Pro'ya geçip sınırsız kullanır.
+  void _showAiLimitChoiceDialog() {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -311,34 +305,60 @@ class _BugunNePisisemSayfasiState extends State<BugunNePisisemSayfasi> {
           children: [
             const Icon(Icons.stars_rounded, color: Color(0xFFFFA000), size: 28),
             const SizedBox(width: 10),
-            Text('what_to_cook_limit_dialog_title'.tr(), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+            Expanded(
+              child: Text('ai_limit_choice_title'.tr(), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+            ),
           ],
         ),
         content: Text(
-          'what_to_cook_limit_dialog_body'.tr(),
+          'ai_limit_choice_body'.tr(),
           style: const TextStyle(fontSize: 14, height: 1.4),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text('common_later'.tr(), style: const TextStyle(color: Colors.grey)),
-          ),
-          ElevatedButton(
             onPressed: () {
               Navigator.pop(ctx);
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const PremiumSayfasi(source: 'ai_limit')),
+                MaterialPageRoute(builder: (context) => const PremiumSayfasi(source: 'ai_limit_choice')),
               ).then((_) => _verileriYukle());
             },
+            child: Text('ai_limit_choice_go_pro'.tr(), style: const TextStyle(color: Color(0xFFE65100), fontWeight: FontWeight.bold)),
+          ),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _watchAdForBonusUse();
+            },
+            icon: const Icon(Icons.ondemand_video_rounded, size: 18, color: Colors.white),
+            label: Text('ai_limit_choice_watch_ad'.tr(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFE65100),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
-            child: Text('premium_upgrade_button'.tr(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
+    );
+  }
+
+  /// Kullanıcı "+1 hak" için reklam izlemeyi seçtiğinde çağrılır. Reklam
+  /// tam izlenirse backend'den bonus hak istenir ve istek otomatik tekrar
+  /// denenir.
+  void _watchAdForBonusUse() {
+    bool rewardEarned = false;
+    AdService.showRewardedAd(
+      onUserEarnedReward: (reward) {
+        rewardEarned = true;
+      },
+      onAdClosed: () async {
+        if (!rewardEarned) return; // Reklam tam izlenmeden kapatıldı
+        final newRemaining = await _aiRecipeService.grantBonusUse();
+        await RevenueCatService.syncRemainingFromServer(newRemaining);
+        if (mounted) {
+          _tarifiUret();
+        }
+      },
     );
   }
 

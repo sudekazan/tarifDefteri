@@ -333,5 +333,9 @@
   "premium_plan_annual_desc": "En avantajlı plan, yılda bir kez ödeyin",
   "premium_plan_annual_desc_with_savings": "Aylık plana göre %{} tasarruf edin",
   "premium_plan_lifetime_title": "Ömür Boyu Premium",
-  "premium_plan_lifetime_desc": "Tek seferlik ödeme, sonsuza kadar Pro"
+  "premium_plan_lifetime_desc": "Tek seferlik ödeme, sonsuza kadar Pro",
+  "ai_limit_choice_title": "Günlük hakkınız doldu",
+  "ai_limit_choice_body": "Bugünkü ücretsiz AI Şef haklarınızı kullandınız. Kısa bir reklam izleyerek bugüne özel +1 hak kazanabilir, ya da Pro'ya geçerek sınırsız kullanabilirsiniz.",
+  "ai_limit_choice_go_pro": "Pro'ya Geç",
+  "ai_limit_choice_watch_ad": "Reklam İzle, +1 Hak Kazan"
 }

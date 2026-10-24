@@ -333,5 +333,9 @@
   "premium_plan_annual_desc": "La mejor opción, paga una vez al año",
   "premium_plan_annual_desc_with_savings": "Ahorra un {}% comparado con el plan mensual",
   "premium_plan_lifetime_title": "Premium de por vida",
-  "premium_plan_lifetime_desc": "Pago único, Pro para siempre"
+  "premium_plan_lifetime_desc": "Pago único, Pro para siempre",
+  "ai_limit_choice_title": "Se acabaron tus usos gratis de hoy",
+  "ai_limit_choice_body": "Has usado tus solicitudes gratuitas de Chef IA de hoy. Mira un breve anuncio para obtener +1 uso extra hoy, o pasa a Pro para acceso ilimitado.",
+  "ai_limit_choice_go_pro": "Pasar a Pro",
+  "ai_limit_choice_watch_ad": "Ver anuncio, obtener +1"
 }
