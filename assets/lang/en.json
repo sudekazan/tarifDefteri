@@ -326,5 +326,12 @@
   "klasor_limit_reached": "Free accounts can create up to {} folders. Upgrade to Premium for unlimited folders.",
   "tarif_limit_reached": "Free accounts can store up to {} recipes per folder. Upgrade to Premium for unlimited recipes.",
   "link_recipe_pro_only": "Extracting recipes from links is a Premium-only feature. Upgrade to Premium.",
-  "premium_connection_error_generic": "Can't connect right now. Please check your internet connection and try again."
+  "premium_connection_error_generic": "Can't connect right now. Please check your internet connection and try again.",
+  "premium_plan_monthly_title": "Monthly Premium",
+  "premium_plan_monthly_desc": "Renews automatically every month, cancel anytime",
+  "premium_plan_annual_title": "Annual Premium",
+  "premium_plan_annual_desc": "Best value, pay once a year",
+  "premium_plan_annual_desc_with_savings": "Save {}% compared to the monthly plan",
+  "premium_plan_lifetime_title": "Lifetime Premium",
+  "premium_plan_lifetime_desc": "One-time payment, Pro forever"
 }

@@ -326,5 +326,12 @@
   "klasor_limit_reached": "Ücretsiz üyelikte en fazla {} klasör oluşturabilirsiniz. Premium'a geçerek sınırsız klasör oluşturun.",
   "tarif_limit_reached": "Bu klasörde ücretsiz üyelikte en fazla {} tarif saklayabilirsiniz. Premium'a geçerek sınırsız tarif ekleyin.",
   "link_recipe_pro_only": "Linkten tarif çekme özelliği Premium üyelere özeldir. Premium'a geçin.",
-  "premium_connection_error_generic": "Şu an bağlanılamıyor. Lütfen internet bağlantınızı kontrol edip tekrar deneyin."
+  "premium_connection_error_generic": "Şu an bağlanılamıyor. Lütfen internet bağlantınızı kontrol edip tekrar deneyin.",
+  "premium_plan_monthly_title": "Aylık Premium",
+  "premium_plan_monthly_desc": "Her ay otomatik yenilenir, istediğiniz zaman iptal edin",
+  "premium_plan_annual_title": "Yıllık Premium",
+  "premium_plan_annual_desc": "En avantajlı plan, yılda bir kez ödeyin",
+  "premium_plan_annual_desc_with_savings": "Aylık plana göre %{} tasarruf edin",
+  "premium_plan_lifetime_title": "Ömür Boyu Premium",
+  "premium_plan_lifetime_desc": "Tek seferlik ödeme, sonsuza kadar Pro"
 }

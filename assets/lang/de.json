@@ -326,5 +326,12 @@
   "klasor_limit_reached": "Mit einem kostenlosen Konto können Sie bis zu {} Ordner erstellen. Wechseln Sie zu Premium für unbegrenzte Ordner.",
   "tarif_limit_reached": "Mit einem kostenlosen Konto können Sie bis zu {} Rezepte pro Ordner speichern. Wechseln Sie zu Premium für unbegrenzte Rezepte.",
   "link_recipe_pro_only": "Das Extrahieren von Rezepten aus Links ist eine Premium-Funktion. Wechseln Sie zu Premium.",
-  "premium_connection_error_generic": "Momentan keine Verbindung möglich. Bitte überprüfen Sie Ihre Internetverbindung und versuchen Sie es erneut."
+  "premium_connection_error_generic": "Momentan keine Verbindung möglich. Bitte überprüfen Sie Ihre Internetverbindung und versuchen Sie es erneut.",
+  "premium_plan_monthly_title": "Monatliches Premium",
+  "premium_plan_monthly_desc": "Verlängert sich automatisch jeden Monat, jederzeit kündbar",
+  "premium_plan_annual_title": "Jährliches Premium",
+  "premium_plan_annual_desc": "Bestes Angebot, einmal im Jahr zahlen",
+  "premium_plan_annual_desc_with_savings": "Sparen Sie {}% im Vergleich zum Monatsplan",
+  "premium_plan_lifetime_title": "Lebenslanges Premium",
+  "premium_plan_lifetime_desc": "Einmalige Zahlung, für immer Pro"
 }

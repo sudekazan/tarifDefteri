@@ -39,10 +39,87 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
         _offerings = offerings;
         _isLoading = false;
         if (offerings.isNotEmpty && offerings.first.availablePackages.isNotEmpty) {
-          _selectedPackage = offerings.first.availablePackages.first;
+          final packages = offerings.first.availablePackages;
+          // Yıllık paket varsa varsayılan seçim o olsun (en çok önerdiğimiz plan).
+          _selectedPackage = packages.firstWhere(
+            (p) => p.packageType == PackageType.annual,
+            orElse: () => packages.first,
+          );
         }
       });
     }
+  }
+
+  /// Paketleri kullanıcı dostu bir sırayla (aylık → yıllık → ömür boyu) dizer.
+  List<Package> _sortedPackages(List<Package> packages) {
+    const order = {
+      PackageType.weekly: 0,
+      PackageType.monthly: 1,
+      PackageType.twoMonth: 2,
+      PackageType.threeMonth: 3,
+      PackageType.sixMonth: 4,
+      PackageType.annual: 5,
+      PackageType.lifetime: 6,
+    };
+    final sorted = [...packages];
+    sorted.sort((a, b) => (order[a.packageType] ?? 99).compareTo(order[b.packageType] ?? 99));
+    return sorted;
+  }
+
+  /// Aynı offering içinde hem aylık hem yıllık paket varsa, yıllığın aylığa
+  /// göre gerçek tasarruf yüzdesini hesaplar (sabit "%40" gibi yanlış
+  /// olabilecek bir sayı yazmak yerine, panelde girilen gerçek fiyatlardan).
+  int? _annualSavingsPercent() {
+    if (_offerings.isEmpty) return null;
+    final packages = _offerings.first.availablePackages;
+    Package? monthly;
+    Package? annual;
+    for (final p in packages) {
+      if (p.packageType == PackageType.monthly) monthly = p;
+      if (p.packageType == PackageType.annual) annual = p;
+    }
+    if (monthly == null || annual == null || monthly.storeProduct.price <= 0) return null;
+    final monthlyEquivalentOfAnnual = annual.storeProduct.price / 12;
+    final savings = (1 - (monthlyEquivalentOfAnnual / monthly.storeProduct.price)) * 100;
+    if (savings <= 0) return null;
+    return savings.round();
+  }
+
+  String _packageTitle(Package pkg) {
+    switch (pkg.packageType) {
+      case PackageType.annual:
+        return 'premium_plan_annual_title'.tr();
+      case PackageType.monthly:
+        return 'premium_plan_monthly_title'.tr();
+      case PackageType.lifetime:
+        return 'premium_plan_lifetime_title'.tr();
+      default:
+        return pkg.storeProduct.title;
+    }
+  }
+
+  String _packageDescription(Package pkg) {
+    switch (pkg.packageType) {
+      case PackageType.annual:
+        final savings = _annualSavingsPercent();
+        return savings != null
+            ? 'premium_plan_annual_desc_with_savings'.tr(args: ['$savings'])
+            : 'premium_plan_annual_desc'.tr();
+      case PackageType.monthly:
+        return 'premium_plan_monthly_desc'.tr();
+      case PackageType.lifetime:
+        return 'premium_plan_lifetime_desc'.tr();
+      default:
+        return pkg.storeProduct.description;
+    }
+  }
+
+  /// "EN POPÜLER" rozeti yalnızca yıllık pakette gösterilir.
+  String? _packageBadge(Package pkg) {
+    if (pkg.packageType == PackageType.annual) {
+      return 'premium_badge_most_popular'.tr();
+    }
+    return null;
   }
 
   Future<void> _purchase(Package package) async {
@@ -375,15 +452,15 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
 
                       // Packages Section
                       if (_offerings.isNotEmpty && _offerings.first.availablePackages.isNotEmpty) ...[
-                        ..._offerings.first.availablePackages.map((pkg) {
+                        ..._sortedPackages(_offerings.first.availablePackages).map((pkg) {
                           final isSelected = _selectedPackage == pkg;
                           return _buildPackageCard(
-                            title: pkg.storeProduct.title,
-                            description: pkg.storeProduct.description,
+                            title: _packageTitle(pkg),
+                            description: _packageDescription(pkg),
                             priceString: pkg.storeProduct.priceString,
                             isSelected: isSelected,
                             onTap: () => setState(() => _selectedPackage = pkg),
-                            badgeText: 'premium_badge_most_popular'.tr(),
+                            badgeText: _packageBadge(pkg),
                             isDark: isDark,
                           );
                         }),
@@ -394,7 +471,6 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
                           description: 'premium_fallback_package_desc'.tr(),
                           priceString: 'premium_price_unavailable'.tr(),
                           isSelected: true,
-                          badgeText: 'premium_badge_most_popular'.tr(),
                           onTap: () {
                             if (RevenueCatService.lastOfferingsError != null) {
                               _showErrorDialog(_userFacingOfferingsError());

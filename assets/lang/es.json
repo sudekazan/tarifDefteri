@@ -326,5 +326,12 @@
   "klasor_limit_reached": "Con una cuenta gratuita puedes crear hasta {} carpetas. Pasa a Premium para carpetas ilimitadas.",
   "tarif_limit_reached": "Con una cuenta gratuita puedes guardar hasta {} recetas por carpeta. Pasa a Premium para recetas ilimitadas.",
   "link_recipe_pro_only": "Extraer recetas desde enlaces es una función exclusiva de Premium. Pasa a Premium.",
-  "premium_connection_error_generic": "No se puede conectar en este momento. Comprueba tu conexión a internet e inténtalo de nuevo."
+  "premium_connection_error_generic": "No se puede conectar en este momento. Comprueba tu conexión a internet e inténtalo de nuevo.",
+  "premium_plan_monthly_title": "Premium mensual",
+  "premium_plan_monthly_desc": "Se renueva automáticamente cada mes, cancela cuando quieras",
+  "premium_plan_annual_title": "Premium anual",
+  "premium_plan_annual_desc": "La mejor opción, paga una vez al año",
+  "premium_plan_annual_desc_with_savings": "Ahorra un {}% comparado con el plan mensual",
+  "premium_plan_lifetime_title": "Premium de por vida",
+  "premium_plan_lifetime_desc": "Pago único, Pro para siempre"
 }
