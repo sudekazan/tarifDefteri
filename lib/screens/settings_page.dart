@@ -208,6 +208,21 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
+  Future<void> _launchUrl(String urlString) async {
+    try {
+      final uri = Uri.parse(urlString);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${'common_error'.tr()}: $e')),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -545,6 +560,28 @@ class _SettingsPageState extends State<SettingsPage> {
             subtitle: Text('settings_rate_app_subtitle'.tr()),
             trailing: const Icon(Icons.arrow_forward_ios, size: 16),
             onTap: _rateApp,
+          ),
+          const Divider(),
+          // Yasal & Gizlilik
+          ListTile(
+            title: Text(
+              'settings_legal_title'.tr(),
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.privacy_tip_outlined, color: Colors.blueAccent),
+            title: Text('settings_privacy_policy'.tr()),
+            subtitle: Text('settings_privacy_policy_subtitle'.tr()),
+            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+            onTap: () => _launchUrl('https://sudekazan.github.io/tarifDefteri/privacy.html'),
+          ),
+          ListTile(
+            leading: const Icon(Icons.description_outlined, color: Colors.deepPurpleAccent),
+            title: Text('settings_terms_of_use'.tr()),
+            subtitle: Text('settings_terms_of_use_subtitle'.tr()),
+            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+            onTap: () => _launchUrl('https://www.apple.com/legal/internet-services/itunes/dev/stdeula/'),
           ),
           const SizedBox(height: 20),
           // Alt kısımda uygulama adı ve versiyon

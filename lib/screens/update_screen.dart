@@ -1,11 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:upgrader/upgrader.dart';
 
-/// Güncelleme ekranı - eski sürümdeki kullanıcıları zorunlu olarak güncellemeye yönlendirir.
+/// Güncelleme kontrol bileşeni:
+/// - Kullanıcı en güncel sürümdeyse hiçbir mesaj göstermez.
+/// - Alt sürümde ise kullanıcıyı rahatsız etmeden güncellemeye teşvik eden bir diyalog çıkarır.
+/// - Kullanıcı "Daha Sonra" derse, belirlenen süre (varsayılan 1 gün) boyunca tekrar sormaz,
+///   süre dolduktan sonra güncelleyene kadar belirli aralıklarla hatırlatmaya devam eder.
 class TarifDefteriUpgradeAlert extends StatefulWidget {
   final Widget child;
+  /// "Daha Sonra" denildikten ne kadar süre sonra tekrar hatırlatılsın (varsayılan: 1 gün)
+  final Duration reminderInterval;
+  /// Test amaçlı her açılışta göstermek için (canlıda false olmalı)
+  final bool debugDisplayAlways;
 
-  const TarifDefteriUpgradeAlert({super.key, required this.child});
+  const TarifDefteriUpgradeAlert({
+    super.key,
+    required this.child,
+    this.reminderInterval = const Duration(days: 1),
+    this.debugDisplayAlways = false,
+  });
 
   @override
   State<TarifDefteriUpgradeAlert> createState() =>
@@ -19,18 +32,11 @@ class _TarifDefteriUpgradeAlertState extends State<TarifDefteriUpgradeAlert> {
   void initState() {
     super.initState();
     _upgrader = Upgrader(
-      messages: _getLocalizedMessages(),
-      durationUntilAlertAgain: Duration.zero, // Her açılışta kontrol et
+      messages: TarifDefteriUpgraderMessages(),
+      durationUntilAlertAgain: widget.reminderInterval, // Hatırlatma aralığı
+      debugDisplayAlways: widget.debugDisplayAlways,
       debugLogging: false,
     );
-  }
-
-  /// Kullanıcının diline göre doğru mesaj sınıfını döndürür.
-  UpgraderMessages _getLocalizedMessages() {
-    // Bu metod initState'de çağrıldığı için context yok,
-    // Bu yüzden locale'yi Upgrader'ın kendi sistemine bırakıyoruz.
-    // Kendi özel mesajlarımızı locale-agnostic bir şekilde veriyoruz.
-    return LocalizedUpgraderMessages();
   }
 
   @override
@@ -38,40 +44,60 @@ class _TarifDefteriUpgradeAlertState extends State<TarifDefteriUpgradeAlert> {
     return UpgradeAlert(
       upgrader: _upgrader,
       dialogStyle: UpgradeDialogStyle.cupertino,
-      barrierDismissible: false,
-      showIgnore: false,   // "Yoksay/Ignore" butonu YOK → zorunlu güncelleme
-      showLater: false,    // "Sonra/Later" butonu YOK → zorunlu güncelleme
+      barrierDismissible: true, // Diyalog dışına basarak kapatabilme
+      showIgnore: false,        // "Yoksay" butonu YOK - kullanıcı güncellemeyi kalıcı olarak kapatamasın
+      showLater: true,         // "Daha Sonra" butonu VAR - zorla kilitlemek yerine teşvik eder
+      showReleaseNotes: true,   // Mağazadaki yenilikleri göster
       child: widget.child,
     );
   }
 }
 
-/// Tüm dillere uygun, dinamik güncelleme mesajları.
-class LocalizedUpgraderMessages extends UpgraderMessages {
-  LocalizedUpgraderMessages() : super(code: 'en');
+/// Türkçe ve İngilizce destekli, kullanıcıyı sıcak bir dille güncellemeye teşvik eden mesajlar
+class TarifDefteriUpgraderMessages extends UpgraderMessages {
+  TarifDefteriUpgraderMessages({super.code});
 
   @override
-  String get body {
-    return 'A new version is available! Please update to continue using the app.';
+  String get title {
+    if (languageCode == 'en') return '🎉 New Update Available!';
+    return '🎉 Yeni Güncelleme Mevcut!';
   }
 
   @override
-  String get buttonTitleIgnore => 'Ignore';
+  String get body {
+    if (languageCode == 'en') {
+      return 'A new version of {{appName}} is available! Update now to enjoy the latest features and performance improvements.';
+    }
+    return '{{appName}} için yeni ve daha gelişmiş bir sürüm hazır! Yeni tarif özellikleri, performans iyileştirmeleri ve kesintisiz deneyim için lütfen uygulamanızı güncelleyin.';
+  }
 
   @override
-  String get buttonTitleLater => 'Later';
+  String get prompt {
+    if (languageCode == 'en') return 'Would you like to update now?';
+    return 'Şimdi güncellemek ister misiniz?';
+  }
 
   @override
-  String get buttonTitleUpdate => '🚀 Update Now';
+  String get buttonTitleUpdate {
+    if (languageCode == 'en') return '🚀 Update Now';
+    return '🚀 Şimdi Güncelle';
+  }
 
   @override
-  String get prompt => 'Would you like to update?';
+  String get buttonTitleLater {
+    if (languageCode == 'en') return 'Later';
+    return 'Daha Sonra';
+  }
 
   @override
-  String get releaseNotes => "What's New";
+  String get buttonTitleIgnore {
+    if (languageCode == 'en') return 'Ignore';
+    return 'Yoksay';
+  }
 
   @override
-  String get title => '🎉 New Update Available!';
-
-  String get updateAvailable => 'New version available!';
+  String get releaseNotes {
+    if (languageCode == 'en') return "What's New";
+    return 'Yenilikler';
+  }
 }

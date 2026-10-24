@@ -42,3 +42,7 @@
     java.lang.Object writeReplace();
     java.lang.Object readResolve();
 }
+
+# RevenueCat
+-keep class com.revenuecat.purchases.** { *; }
+-dontwarn com.revenuecat.purchases.**

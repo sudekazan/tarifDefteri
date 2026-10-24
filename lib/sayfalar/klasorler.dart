@@ -8,6 +8,7 @@ import 'package:tarif_defteri/sayfalar/tarif_detay.dart';
 import 'package:tarif_defteri/sayfalar/arama_sayfasi.dart';
 import 'package:tarif_defteri/sayfalar/alisveris_listesi.dart';
 import 'package:tarif_defteri/sayfalar/premium_sayfasi.dart';
+import 'package:tarif_defteri/sayfalar/bugun_ne_pisisem_sayfasi.dart';
 import 'package:tarif_defteri/services/revenuecat_service.dart';
 import 'package:tarif_defteri/tarifler_data/klasor_data.dart';
 import 'package:tarif_defteri/tarifler_data/tarif_data.dart';
@@ -43,12 +44,19 @@ class _KlasorlerState extends State<Klasorler> {
   void initState() {
     super.initState();
     _loadBannerAd();
-    // App Open Ad gösterilmeye çalışılır - 1 saniye gecikme ile
-    Future.delayed(const Duration(seconds: 1), () {
-      print('### KLASORLER_DEBUG: timer triggered. Checking AdService...');
-      // Ensure it's loaded (idempotent if already loading/loaded)
-      AdService.loadAppOpenAd();
-      AdService.showAdIfAvailable();
+    // App Open Ad - İlk açılışlarda kullanıcıyı ve Apple incelemesini rahatsız etmemek için kontrol
+    SharedPreferences.getInstance().then((prefs) {
+      int launchCount = prefs.getInt('app_launch_count') ?? 0;
+      prefs.setInt('app_launch_count', launchCount + 1);
+
+      if (launchCount >= 2) {
+        Future.delayed(const Duration(seconds: 2), () {
+          if (mounted) {
+            AdService.loadAppOpenAd();
+            AdService.showAdIfAvailable();
+          }
+        });
+      }
     });
     _temizleEskiKlasorler();
     _klasorleriYukle().then((_) {
@@ -147,29 +155,6 @@ class _KlasorlerState extends State<Klasorler> {
     }
   }
   
-  Future<void> _varsayilanKlasorleriEkle(SharedPreferences prefs) async {
-    // 4 varsayılan klasör tanımla - kullanıcının diline göre isimlendir
-    final defaultKlasorler = [
-      KlasorData(klasor_id: 1, klasor_adi: 'default_folder_desserts'.tr(), iconCode: Icons.cake.codePoint),
-      KlasorData(klasor_id: 2, klasor_adi: 'default_folder_soups'.tr(), iconCode: Icons.soup_kitchen.codePoint),
-      KlasorData(klasor_id: 3, klasor_adi: 'default_folder_main_dishes'.tr(), iconCode: Icons.restaurant.codePoint),
-      KlasorData(klasor_id: 4, klasor_adi: 'default_folder_breakfast'.tr(), iconCode: Icons.egg_alt.codePoint),
-    ];
-    
-    // SharedPreferences'a kaydet
-    List<String> klasorJsonList = defaultKlasorler.map((k) => json.encode({
-      'klasor_id': k.klasor_id,
-      'klasor_adi': k.klasor_adi,
-      'iconCode': k.iconCode,
-    })).toList();
-    await prefs.setStringList('klasorler', klasorJsonList);
-    
-    // Firebase'e kaydet (giriş yapılmışsa)
-    for (var klasor in defaultKlasorler) {
-      await _firebaseService.saveKlasorToFirebase(klasor);
-    }
-  }
-
   // Klasörleri filtreleme metodu
   void _filtreleKlasorler(String aramaKelimesi) {
     // Favoriler klasörü için özel KlasorData
@@ -364,6 +349,36 @@ class _KlasorlerState extends State<Klasorler> {
         backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
         actions: [
           IconButton(
+            icon: Container(
+              padding: const EdgeInsets.all(5),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFFFF6F00), Color(0xFFFF8F00)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFFFF6F00).withOpacity(0.3),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: const Icon(Icons.auto_awesome, color: Colors.white, size: 20),
+            ),
+            tooltip: 'what_to_cook_title'.tr(),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const BugunNePisisemSayfasi()),
+              ).then((_) {
+                _klasorleriYukle().then((_) => _filtreleKlasorler(''));
+              });
+            },
+          ),
+          IconButton(
             icon: Icon(Icons.search, color: Theme.of(context).iconTheme.color ?? Colors.black),
             onPressed: () {
               Navigator.push(
@@ -405,68 +420,72 @@ class _KlasorlerState extends State<Klasorler> {
       body: Container(
         color: Theme.of(context).scaffoldBackgroundColor,
         child: klasorListesi.isEmpty
-            ? Center(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 32.0),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.menu_book_rounded,
-                        size: 80,
-                        color: theme.primaryColor,
+            ? SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                child: Column(
+                  children: [
+                    _buildBugunNePisisemHeroCard(context, isDark),
+                    const SizedBox(height: 36),
+                    Icon(
+                      Icons.menu_book_rounded,
+                      size: 80,
+                      color: theme.primaryColor,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'folders_empty_title'.tr(),
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                        color: Theme.of(context).textTheme.bodyLarge?.color,
                       ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'folders_empty_title'.tr(),
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w600,
-                          color:
-                              Theme.of(context).textTheme.bodyLarge?.color,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'folders_empty_subtitle'.tr(),
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Theme.of(context)
+                            .textTheme
+                            .bodyMedium
+                            ?.color
+                            ?.withOpacity(0.7),
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 24),
+                    ElevatedButton.icon(
+                      onPressed: _yeniKlasorEkle,
+                      icon: const Icon(Icons.add),
+                      label: Text('folders_empty_add_button'.tr()),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: theme.primaryColor,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 24, vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        textAlign: TextAlign.center,
+                        elevation: 2,
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'folders_empty_subtitle'.tr(),
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Theme.of(context)
-                              .textTheme
-                              .bodyMedium
-                              ?.color
-                              ?.withOpacity(0.7),
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 24),
-                      ElevatedButton.icon(
-                        onPressed: _yeniKlasorEkle,
-                        icon: const Icon(Icons.add),
-                        label: Text('folders_empty_add_button'.tr()),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: theme.primaryColor,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 24, vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          elevation: 2,
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               )
             : ListView.separated(
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-          itemCount: filtrelenmisKlasorler.length, // filtrelenmisKlasorler'i kullan
-          separatorBuilder: (context, index) => const SizedBox(height: 8),
-          itemBuilder: (context, index) {
-            var klasor = filtrelenmisKlasorler[index]; // filtrelenmisKlasorler'den oku
-            return Container(
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                itemCount: aramaYapiliyorMu
+                    ? filtrelenmisKlasorler.length
+                    : filtrelenmisKlasorler.length + 1,
+                separatorBuilder: (context, index) => const SizedBox(height: 8),
+                itemBuilder: (context, index) {
+                  if (!aramaYapiliyorMu && index == 0) {
+                    return _buildBugunNePisisemHeroCard(context, isDark);
+                  }
+                  final actualIndex = aramaYapiliyorMu ? index : index - 1;
+                  var klasor = filtrelenmisKlasorler[actualIndex];
+                  return Container(
               margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
               decoration: BoxDecoration(
                 color: klasor.klasor_id == -1
@@ -665,6 +684,120 @@ class _KlasorlerState extends State<Klasorler> {
               backgroundColor: Theme.of(context).floatingActionButtonTheme.backgroundColor,
               child: const Icon(Icons.add, color: Colors.black),
             ),
+    );
+  }
+
+  Widget _buildBugunNePisisemHeroCard(BuildContext context, bool isDark) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(4, 4, 4, 10),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: isDark
+              ? const [Color(0xFF2C1810), Color(0xFF1E1410)]
+              : const [Color(0xFFE65100), Color(0xFFFF8F00)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: isDark ? const Color(0xFFFF7043).withOpacity(0.3) : Colors.transparent,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFE65100).withOpacity(isDark ? 0.25 : 0.35),
+            blurRadius: 14,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const BugunNePisisemSayfasi()),
+            ).then((_) {
+              _klasorleriYukle().then((_) => _filtreleKlasorler(''));
+            });
+          },
+          borderRadius: BorderRadius.circular(22),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 18.0, vertical: 16.0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.22),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.auto_awesome, color: Colors.white, size: 13),
+                            const SizedBox(width: 5),
+                            Text(
+                              'what_to_cook_hero_badge'.tr(),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.8,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'what_to_cook_title'.tr(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 19,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.3,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'what_to_cook_subtitle'.tr(),
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.9),
+                          fontSize: 12.5,
+                          height: 1.25,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Container(
+                  width: 54,
+                  height: 54,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white.withOpacity(0.35), width: 1.5),
+                  ),
+                  child: const Center(
+                    child: Text(
+                      '🍳',
+                      style: TextStyle(fontSize: 28),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

@@ -2,6 +2,7 @@
     package="com.sudekazan.tarif_defteri_yeni">
     
     <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="com.android.vending.BILLING"/>
     <uses-permission android:name="com.google.android.gms.permission.AD_ID"/>
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
     
@@ -12,7 +13,7 @@
         
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-7331912696640483~6235497559" />
+            android:value="ca-app-pub-7331912696640483~5716797815" />
         
         <activity
             android:name=".MainActivity"

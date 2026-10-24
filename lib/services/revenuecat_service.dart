@@ -5,36 +5,51 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class RevenueCatService {
   // Lütfen bu anahtarları kendi RevenueCat API anahtarlarınız ile değiştirin.
-  static const _appleApiKey = 'test_tDvTyPtPmVhNXJdXCJjMCLkBfWC';
-  static const _googleApiKey = 'test_tDvTyPtPmVhNXJdXCJjMCLkBfWC';
+  static const _appleApiKey = 'appl_wzqpdBivjxBdcFMeuiwKdYiVWVW';
+  static const _googleApiKey = 'goog_JBGkRQWPAQALDKKLXqiqwLNzmDr';
 
-  // Entitlement ID (RevenueCat panelinden ayarlanacak, örn: "pro")
-  static const _entitlementID = 'pro';
+  // Entitlement ID (RevenueCat panelindeki kimlik)
+  static const _entitlementID = 'recipe_keeper_custom_cookbook_pro';
 
   static bool _isPro = false;
 
   static bool get isProUser => _isPro;
 
+  /// Son offering yükleme hatası / teşhis mesajı (UI'da göstermek için)
+  static String? lastOfferingsError;
+  static String? initError;
+
   static Future<void> init() async {
-    await Purchases.setLogLevel(LogLevel.debug);
+    try {
+      await Purchases.setLogLevel(LogLevel.debug);
 
-    PurchasesConfiguration? configuration;
-    if (Platform.isAndroid) {
-      configuration = PurchasesConfiguration(_googleApiKey);
-    } else if (Platform.isIOS) {
-      configuration = PurchasesConfiguration(_appleApiKey);
-    }
+      PurchasesConfiguration? configuration;
+      if (Platform.isAndroid) {
+        configuration = PurchasesConfiguration(_googleApiKey);
+      } else if (Platform.isIOS) {
+        configuration = PurchasesConfiguration(_appleApiKey);
+      }
 
-    if (configuration != null) {
-      await Purchases.configure(configuration);
-      await checkSubscriptionStatus();
+      if (configuration != null) {
+        await Purchases.configure(configuration);
+        await checkSubscriptionStatus();
+      }
+    } catch (e) {
+      initError = e.toString();
+      print('RevenueCat init error: $e');
     }
+  }
+
+  static bool _isEntitlementActive(CustomerInfo customerInfo) {
+    return (customerInfo.entitlements.all[_entitlementID]?.isActive ?? false) ||
+        (customerInfo.entitlements.all['pro']?.isActive ?? false) ||
+        (customerInfo.entitlements.all['premium']?.isActive ?? false);
   }
 
   static Future<bool> checkSubscriptionStatus() async {
     try {
       CustomerInfo customerInfo = await Purchases.getCustomerInfo();
-      _isPro = customerInfo.entitlements.all[_entitlementID]?.isActive ?? false;
+      _isPro = _isEntitlementActive(customerInfo);
       return _isPro;
     } catch (e) {
       print('Check subscription error: $e');
@@ -45,7 +60,7 @@ class RevenueCatService {
   static Future<bool> purchasePackage(Package package) async {
     try {
       CustomerInfo customerInfo = (await Purchases.purchasePackage(package)).customerInfo;
-      _isPro = customerInfo.entitlements.all[_entitlementID]?.isActive ?? false;
+      _isPro = _isEntitlementActive(customerInfo);
       return _isPro;
     } catch (e) {
       print('Purchase error: $e');
@@ -56,7 +71,7 @@ class RevenueCatService {
   static Future<bool> restorePurchases() async {
     try {
       CustomerInfo customerInfo = await Purchases.restorePurchases();
-      _isPro = customerInfo.entitlements.all[_entitlementID]?.isActive ?? false;
+      _isPro = _isEntitlementActive(customerInfo);
       return _isPro;
     } catch (e) {
       print('Restore error: $e');
@@ -65,13 +80,36 @@ class RevenueCatService {
   }
   
   static Future<List<Offering>> getOfferings() async {
+    if (initError != null) {
+      lastOfferingsError = 'RevenueCat başlatılamadı:\n$initError';
+      return [];
+    }
     try {
+      lastOfferingsError = null;
+      print('RevenueCat: paketler sorgulanıyor...');
       Offerings offerings = await Purchases.getOfferings();
-      if (offerings.current != null) {
+      print('RevenueCat offerings: all=${offerings.all.keys.toList()}, current=${offerings.current?.identifier}');
+      
+      if (offerings.all.isEmpty) {
+        lastOfferingsError = 'RevenueCat: Hiç offering bulunamadı.\n(RevenueCat panelinde Offering tanımlanmamış veya mağaza [App Store / Play Store] ürünleri eşleşmedi).';
+      } else if (offerings.current == null) {
+        lastOfferingsError = 'RevenueCat: Current (varsayılan) Offering seçilmemiş.\nPanelde bir offering\'i "Current / Default" yapın.\n(Mevcut offeringler: ${offerings.all.keys.join(", ")})';
+      } else if (offerings.current!.availablePackages.isEmpty) {
+        lastOfferingsError = 'RevenueCat: Current offering (${offerings.current!.identifier}) içinde paket bulunamadı veya App Store ürünleri henüz onaylanmamış/çekilemedi.';
+      }
+      
+      if (offerings.current != null && offerings.current!.availablePackages.isNotEmpty) {
         return [offerings.current!];
+      } else if (offerings.all.isNotEmpty) {
+        final withPackages = offerings.all.values.where((o) => o.availablePackages.isNotEmpty);
+        if (withPackages.isNotEmpty) {
+          return [withPackages.first];
+        }
+        return [offerings.all.values.first];
       }
     } catch (e) {
       print('Get offerings error: $e');
+      lastOfferingsError = 'RevenueCat İstek Hatası:\n$e';
     }
     return [];
   }

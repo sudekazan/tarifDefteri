@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -5,7 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:tarif_defteri/services/revenuecat_service.dart';
 
 class PremiumSayfasi extends StatefulWidget {
-  const PremiumSayfasi({Key? key}) : super(key: key);
+  const PremiumSayfasi({super.key});
 
   @override
   State<PremiumSayfasi> createState() => _PremiumSayfasiState();
@@ -94,15 +95,89 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
     }
   }
 
+  void _showErrorDialog(String errorDetail) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(Icons.info_outline, color: Color(0xFFE65100), size: 28),
+            SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Paket Yükleme Hatası',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Mağazadan satın alma paketi çekilemediği için işlem başlatılamıyor.\n\nSistemden dönen teşhis mesajı:',
+                style: TextStyle(fontSize: 13, height: 1.4),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFBE9E7),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0xFFFFCCBC)),
+                ),
+                child: SelectableText(
+                  errorDetail,
+                  style: const TextStyle(
+                    fontFamily: 'monospace',
+                    fontSize: 12,
+                    color: Color(0xFFBF360C),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+              Text(
+                Platform.isIOS
+                    ? 'Olası Nedenler (iOS):\n'
+                        '• App Store Connect > Agreements, Tax & Banking kısmında "Paid Applications" sözleşmesi onaylanmamış olabilir.\n'
+                        '• RevenueCat panelinde Offering varsayılan (Default / Current) olarak işaretlenmemiş olabilir.\n'
+                        '• RevenueCat ile App Store ürün kimliği (Product ID) uyuşmuyor olabilir.'
+                    : 'Olası Nedenler (Android):\n'
+                        '• Google Play Console > Para Kazanma altında Abonelik tanımlanmamış veya etkinleştirilmemiş olabilir.\n'
+                        '• RevenueCat panelinde Google Play Service Account (JSON) kimlik doğrulaması veya ürün eşleşmesi eksik olabilir.\n'
+                        '• Test için Google Play Console > Lisans Testi listesinde e-postanız kayıtlı olmayabilir.',
+                style: const TextStyle(fontSize: 11, color: Colors.black54, height: 1.5),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Tamam', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: const Color(0xFF0F111A),
+      backgroundColor: isDark ? const Color(0xFF131520) : const Color(0xFFFFFBF5),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.close_rounded, color: Colors.white70),
+          icon: Icon(Icons.close_rounded, color: isDark ? Colors.white70 : const Color(0xFF5D4037)),
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
@@ -111,8 +186,8 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
             child: Text(
               'premium_restore'.tr(),
               style: const TextStyle(
-                color: Color(0xFFFFD700),
-                fontWeight: FontWeight.w600,
+                color: Color(0xFFE65100),
+                fontWeight: FontWeight.w700,
                 fontSize: 14,
               ),
             ),
@@ -123,101 +198,163 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
       body: _isLoading
           ? const Center(
               child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFFD700)),
+                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE65100)),
               ),
             )
           : Stack(
               children: [
                 SingleChildScrollView(
                   physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
+                  padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 4.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // Header Hero Icon
+                      // Gourmet Hero Badge
                       Center(
                         child: Container(
-                          width: 100,
-                          height: 100,
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFFFFA000), Color(0xFFFFD54F)],
+                            ),
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFFFFA000).withOpacity(0.35),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: const [
+                              Icon(Icons.workspace_premium_rounded, size: 16, color: Color(0xFF3E2723)),
+                              SizedBox(width: 6),
+                              Text(
+                                'TARİF DEFTERİ PRO',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w900,
+                                  color: Color(0xFF3E2723),
+                                  letterSpacing: 0.8,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Chef Icon Circle
+                      Center(
+                        child: Container(
+                          width: 88,
+                          height: 88,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             gradient: const LinearGradient(
-                              colors: [Color(0xFFFFA000), Color(0xFFFFD700)],
+                              colors: [Color(0xFFE65100), Color(0xFFFF9800)],
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFFFFD700).withOpacity(0.35),
-                                blurRadius: 30,
-                                spreadRadius: 5,
+                                color: const Color(0xFFE65100).withOpacity(0.32),
+                                blurRadius: 24,
+                                spreadRadius: 4,
                               ),
                             ],
                           ),
-                          child: const Icon(
-                            Icons.workspace_premium_rounded,
-                            size: 56,
-                            color: Color(0xFF0F111A),
+                          child: const Center(
+                            child: Text('🧑‍🍳', style: TextStyle(fontSize: 44)),
                           ),
                         ),
                       ),
-                      const SizedBox(height: 20),
-                      
+                      const SizedBox(height: 16),
+
                       // Headline
                       Text(
-                        'premium_headline'.tr(),
+                        'Mutfakta Sınırları Kaldırın',
                         textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: 26,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                        style: TextStyle(
+                          fontSize: 25,
+                          fontWeight: FontWeight.w900,
+                          color: isDark ? Colors.white : const Color(0xFF3E2723),
                           letterSpacing: -0.5,
                         ),
                       ),
                       const SizedBox(height: 8),
-                      Text(
-                        'Sınırsız AI Şef tarifleri ve reklamsız deneyimin tadını çıkarın',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.white.withOpacity(0.6),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Text(
+                          'Dolabındaki malzemelerle sınırsız tarif üretin, tüm internet tariflerini tek tıkla kaydedin ve reklamsız yemek pişirin.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 13.5,
+                            height: 1.4,
+                            color: isDark ? Colors.white70 : const Color(0xFF795548),
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 32),
+                      const SizedBox(height: 24),
 
-                      // Features Card Container
+                      // Feature Cards Grid/List
                       Container(
-                        padding: const EdgeInsets.all(20),
+                        padding: const EdgeInsets.all(18),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF181B2A),
+                          color: isDark ? const Color(0xFF1E2235) : Colors.white,
                           borderRadius: BorderRadius.circular(24),
-                          border: Border.all(color: Colors.white.withOpacity(0.08)),
+                          border: Border.all(
+                            color: isDark ? Colors.white12 : const Color(0xFFFFE0B2),
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFFE65100).withOpacity(0.08),
+                              blurRadius: 20,
+                              offset: const Offset(0, 6),
+                            ),
+                          ],
                         ),
                         child: Column(
                           children: [
-                            _buildFeatureRow(
-                              Icons.block_rounded,
-                              'premium_feature_ads'.tr(),
-                              'Tüm reklamlar tamamen kaldırılır',
+                            _buildModernFeatureRow(
+                              icon: Icons.restaurant_menu_rounded,
+                              iconBg: const Color(0xFFE65100),
+                              title: 'premium_feature_what_to_cook'.tr(),
+                              desc: 'premium_feature_what_to_cook_desc'.tr(),
+                              isDark: isDark,
                             ),
-                            const Divider(color: Colors.white10, height: 28),
-                            _buildFeatureRow(
-                              Icons.auto_awesome_rounded,
-                              'premium_feature_ai'.tr(),
-                              'Sınırsız yapay zeka tarif üretme yeteneği',
+                            Divider(color: isDark ? Colors.white10 : const Color(0xFFFFF3E0), height: 24),
+                            _buildModernFeatureRow(
+                              icon: Icons.link_rounded,
+                              iconBg: const Color(0xFF1976D2),
+                              title: 'premium_feature_web_link'.tr(),
+                              desc: 'premium_feature_web_link_desc'.tr(),
+                              isDark: isDark,
                             ),
-                            const Divider(color: Colors.white10, height: 28),
-                            _buildFeatureRow(
-                              Icons.cloud_sync_rounded,
-                              'premium_feature_link'.tr(),
-                              'Tarifleriniz tüm cihazlarınızda anında senkronize',
+                            Divider(color: isDark ? Colors.white10 : const Color(0xFFFFF3E0), height: 24),
+                            _buildModernFeatureRow(
+                              icon: Icons.folder_special_rounded,
+                              iconBg: const Color(0xFFFFA000),
+                              title: 'premium_feature_unlimited'.tr(),
+                              desc: 'premium_feature_unlimited_desc'.tr(),
+                              isDark: isDark,
+                            ),
+                            Divider(color: isDark ? Colors.white10 : const Color(0xFFFFF3E0), height: 24),
+                            _buildModernFeatureRow(
+                              icon: Icons.block_rounded,
+                              iconBg: const Color(0xFF2ECC71),
+                              title: 'premium_feature_zero_ads'.tr(),
+                              desc: 'premium_feature_zero_ads_desc'.tr(),
+                              isDark: isDark,
                             ),
                           ],
                         ),
                       ),
-                      
-                      const SizedBox(height: 32),
-                      
+
+                      const SizedBox(height: 24),
+
                       // Packages Section
                       if (_offerings.isNotEmpty && _offerings.first.availablePackages.isNotEmpty) ...[
                         ..._offerings.first.availablePackages.map((pkg) {
@@ -228,57 +365,96 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
                             priceString: pkg.storeProduct.priceString,
                             isSelected: isSelected,
                             onTap: () => setState(() => _selectedPackage = pkg),
+                            badgeText: 'EN POPÜLER',
+                            isDark: isDark,
                           );
-                        }).toList(),
+                        }),
                       ] else ...[
-                        // Fallback UI when testing or before RevenueCat products are configured in store
+                        // Fallback UI (App Store Connect: ₺29.99 / Ay)
                         _buildPackageCard(
                           title: 'Tarif Defteri Pro (Aylık)',
                           description: 'Sınırsız AI Şef & Reklamsız Deneyim',
                           priceString: '₺29.99 / Ay',
                           isSelected: true,
                           badgeText: 'EN POPÜLER',
-                          onTap: () {},
+                          onTap: () {
+                            if (RevenueCatService.lastOfferingsError != null) {
+                              _showErrorDialog(RevenueCatService.lastOfferingsError!);
+                            }
+                          },
+                          isDark: isDark,
                         ),
+                        if (RevenueCatService.lastOfferingsError != null) ...[
+                          const SizedBox(height: 8),
+                          InkWell(
+                            onTap: () => _showErrorDialog(RevenueCatService.lastOfferingsError!),
+                            borderRadius: BorderRadius.circular(10),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFFF3E0),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: const Color(0xFFFFCC80)),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.info_outline, size: 16, color: Color(0xFFE65100)),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      'Hata detayı için dokunun: ${RevenueCatService.lastOfferingsError!}',
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(fontSize: 11, color: Color(0xFFD84315), fontWeight: FontWeight.w500),
+                                    ),
+                                  ),
+                                  const Icon(Icons.chevron_right, size: 16, color: Color(0xFFE65100)),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
                       ],
 
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 16),
 
-                      // Main Action CTA Button
+                      // CTA Button
                       SizedBox(
                         width: double.infinity,
                         height: 56,
                         child: ElevatedButton(
                           onPressed: _isPurchasing
                               ? null
-                              : () {
+                              : () async {
                                   if (_selectedPackage != null) {
                                     _purchase(_selectedPackage!);
                                   } else {
-                                    // Fallback test notification
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: const Text('Mağaza bağlantısı canlı anahtarla aktifleşecektir (₺29.99).'),
-                                        backgroundColor: const Color(0xFFFFA000),
-                                        behavior: SnackBarBehavior.floating,
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                      ),
-                                    );
+                                    setState(() => _isPurchasing = true);
+                                    await _fetchOfferings();
+                                    if (!mounted) return;
+                                    setState(() => _isPurchasing = false);
+
+                                    if (_selectedPackage != null) {
+                                      _purchase(_selectedPackage!);
+                                      return;
+                                    }
+
+                                    final errorDetail = RevenueCatService.lastOfferingsError ??
+                                        'Paket bilgisi mağazadan çekilemedi (RevenueCat veya StoreKit yanıt vermedi).';
+                                    _showErrorDialog(errorDetail);
                                   }
                                 },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.transparent,
                             padding: EdgeInsets.zero,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(18),
-                            ),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
                             elevation: 8,
-                            shadowColor: const Color(0xFFFFD700).withOpacity(0.4),
+                            shadowColor: const Color(0xFFE65100).withOpacity(0.4),
                           ),
                           child: Ink(
                             decoration: BoxDecoration(
                               gradient: const LinearGradient(
-                                colors: [Color(0xFFFFA000), Color(0xFFFFD700)],
+                                colors: [Color(0xFFE65100), Color(0xFFFF9800)],
                                 begin: Alignment.centerLeft,
                                 end: Alignment.centerRight,
                               ),
@@ -286,16 +462,37 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
                             ),
                             child: Container(
                               alignment: Alignment.center,
-                              child: Text(
-                                'premium_title'.tr().toUpperCase(),
-                                style: const TextStyle(
-                                  fontSize: 17,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF0F111A),
-                                  letterSpacing: 0.5,
-                                ),
+                              child: const Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.stars_rounded, color: Colors.white, size: 22),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    'PRO\'YA GEÇ VE SINIRLARI KALDIR',
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w900,
+                                      color: Colors.white,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 12),
+
+                      // Trust & Cancel Info
+                      Center(
+                        child: Text(
+                          'premium_cancel_anytime'.tr(),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: isDark ? Colors.white54 : const Color(0xFF8D6E63),
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ),
@@ -304,18 +501,20 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
 
                       // Apple Guideline 3.1.2 - Auto-Renewable Subscription Terms
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF141724),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: Colors.white.withOpacity(0.06)),
+                          color: isDark ? const Color(0xFF1E2235) : const Color(0xFFFFF3E0),
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(
+                            color: isDark ? Colors.white12 : const Color(0xFFFFE0B2),
+                          ),
                         ),
                         child: Column(
                           children: [
                             Text(
-                              'Abonelik Bilgileri & Otomatik Yenileme:',
+                              'premium_sub_terms_title'.tr(),
                               style: TextStyle(
-                                color: Colors.white.withOpacity(0.85),
+                                color: isDark ? Colors.white : const Color(0xFF4E342E),
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -323,56 +522,56 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              '• Abonelik Süresi: 1 Ay (Aylık Premium)\n'
-                              '• Ödeme, satın alma onayı ile Apple Kimliği / Google hesabınızdan tahsil edilir.\n'
-                              '• Abonelik, geçerli dönemin bitiminden en az 24 saat önce iptal edilmediği sürece otomatik olarak yenilenir.\n'
-                              '• Yenileme ücreti, dönemin bitimine 24 saat kala hesabınızdan tahsil edilir.\n'
-                              '• Satın alma işleminden sonra Apple / Google Hesap Ayarları\'na giderek aboneliğinizi yönetebilir ve iptal edebilirsiniz.',
+                              'premium_sub_terms_body'.tr(),
                               style: TextStyle(
-                                color: Colors.white.withOpacity(0.55),
+                                color: isDark ? Colors.white70 : const Color(0xFF6D4C41),
                                 fontSize: 11,
                                 height: 1.5,
                               ),
                               textAlign: TextAlign.left,
                             ),
-                            const Divider(color: Colors.white12, height: 24),
-                            // Clickable Legal Links required by Apple Review
+                            Divider(color: isDark ? Colors.white12 : const Color(0xFFFFCC80), height: 24),
+                            // Clickable Legal Links
                             Wrap(
                               alignment: WrapAlignment.center,
                               crossAxisAlignment: WrapCrossAlignment.center,
                               spacing: 12,
-                              runSpacing: 4,
+                              runSpacing: 6,
                               children: [
                                 InkWell(
-                                  onTap: () => _openUrl('https://www.apple.com/legal/internet-services/itunes/dev/mintermsprovider/'),
-                                  child: const Text(
-                                    'Kullanım Koşulları (EULA)',
-                                    style: TextStyle(
-                                      color: Color(0xFFFFD700),
+                                  onTap: () => _openUrl(
+                                    Platform.isIOS
+                                        ? 'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/'
+                                        : 'https://sudekazan.github.io/tarifDefteri/terms.html',
+                                  ),
+                                  child: Text(
+                                    Platform.isIOS ? 'Kullanım Koşulları (EULA)' : 'Kullanım Koşulları',
+                                    style: const TextStyle(
+                                      color: Color(0xFFE65100),
                                       fontSize: 11,
                                       decoration: TextDecoration.underline,
                                     ),
                                   ),
                                 ),
-                                Text('•', style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 11)),
+                                Text('•', style: TextStyle(color: isDark ? Colors.white38 : const Color(0xFFBCAAA4), fontSize: 11)),
                                 InkWell(
                                   onTap: () => _openUrl('https://sudekazan.github.io/tarifDefteri/privacy.html'),
                                   child: const Text(
                                     'Gizlilik Politikası',
                                     style: TextStyle(
-                                      color: Color(0xFFFFD700),
+                                      color: Color(0xFFE65100),
                                       fontSize: 11,
                                       decoration: TextDecoration.underline,
                                     ),
                                   ),
                                 ),
-                                Text('•', style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 11)),
+                                Text('•', style: TextStyle(color: isDark ? Colors.white38 : const Color(0xFFBCAAA4), fontSize: 11)),
                                 InkWell(
                                   onTap: _isPurchasing ? null : _restore,
                                   child: const Text(
                                     'Satın Alımları Geri Yükle',
                                     style: TextStyle(
-                                      color: Color(0xFFFFD700),
+                                      color: Color(0xFFE65100),
                                       fontSize: 11,
                                       decoration: TextDecoration.underline,
                                     ),
@@ -383,16 +582,16 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
                           ],
                         ),
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 28),
                     ],
                   ),
                 ),
                 if (_isPurchasing)
                   Container(
-                    color: Colors.black.withOpacity(0.7),
+                    color: Colors.black.withOpacity(0.5),
                     child: const Center(
                       child: CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFFD700)),
+                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE65100)),
                       ),
                     ),
                   ),
@@ -401,41 +600,49 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
     );
   }
 
-  Widget _buildFeatureRow(IconData icon, String title, String subtitle) {
+  Widget _buildModernFeatureRow({
+    required IconData icon,
+    required Color iconBg,
+    required String title,
+    required String desc,
+    required bool isDark,
+  }) {
     return Row(
       children: [
         Container(
-          padding: const EdgeInsets.all(10),
+          width: 44,
+          height: 44,
           decoration: BoxDecoration(
-            color: const Color(0xFFFFD700).withOpacity(0.12),
+            color: iconBg.withOpacity(0.14),
             borderRadius: BorderRadius.circular(14),
           ),
-          child: Icon(icon, color: const Color(0xFFFFD700), size: 22),
+          child: Icon(icon, color: iconBg, size: 22),
         ),
-        const SizedBox(width: 16),
+        const SizedBox(width: 14),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 title,
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
+                style: TextStyle(
+                  fontSize: 14.5,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : const Color(0xFF3E2723),
                 ),
               ),
               const SizedBox(height: 2),
               Text(
-                subtitle,
+                desc,
                 style: TextStyle(
                   fontSize: 12,
-                  color: Colors.white.withOpacity(0.5),
+                  color: isDark ? Colors.white60 : const Color(0xFF8D6E63),
                 ),
               ),
             ],
           ),
         ),
+        const SizedBox(width: 8),
         const Icon(Icons.check_circle_rounded, color: Color(0xFF2ECC71), size: 20),
       ],
     );
@@ -447,23 +654,25 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
     required String priceString,
     required bool isSelected,
     required VoidCallback onTap,
+    required bool isDark,
     String? badgeText,
   }) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: isSelected ? const Color(0xFF222638) : const Color(0xFF181B2A),
+        color: isSelected
+            ? (isDark ? const Color(0xFF2A2035) : const Color(0xFFFFF8E1))
+            : (isDark ? const Color(0xFF1E2235) : Colors.white),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: isSelected ? const Color(0xFFFFD700) : Colors.white.withOpacity(0.08),
+          color: isSelected ? const Color(0xFFE65100) : (isDark ? Colors.white12 : const Color(0xFFFFE0B2)),
           width: isSelected ? 2 : 1,
         ),
         boxShadow: isSelected
             ? [
                 BoxShadow(
-                  color: const Color(0xFFFFD700).withOpacity(0.2),
-                  blurRadius: 16,
-                  spreadRadius: 1,
+                  color: const Color(0xFFE65100).withOpacity(0.18),
+                  blurRadius: 18,
+                  offset: const Offset(0, 4),
                 )
               ]
             : [],
@@ -474,7 +683,7 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
           onTap: _isPurchasing ? null : onTap,
           borderRadius: BorderRadius.circular(20),
           child: Padding(
-            padding: const EdgeInsets.all(20.0),
+            padding: const EdgeInsets.all(18.0),
             child: Row(
               children: [
                 Container(
@@ -483,16 +692,16 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: isSelected ? const Color(0xFFFFD700) : Colors.white38,
+                      color: isSelected ? const Color(0xFFE65100) : Colors.grey,
                       width: 2,
                     ),
-                    color: isSelected ? const Color(0xFFFFD700) : Colors.transparent,
+                    color: isSelected ? const Color(0xFFE65100) : Colors.transparent,
                   ),
                   child: isSelected
-                      ? const Icon(Icons.check_rounded, size: 16, color: Color(0xFF0F111A))
+                      ? const Icon(Icons.check_rounded, size: 16, color: Colors.white)
                       : null,
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -502,10 +711,10 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
                           Flexible(
                             child: Text(
                               title,
-                              style: const TextStyle(
-                                fontSize: 16,
+                              style: TextStyle(
+                                fontSize: 15.5,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.white,
+                                color: isDark ? Colors.white : const Color(0xFF3E2723),
                               ),
                             ),
                           ),
@@ -514,15 +723,15 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFFFD700),
+                                color: const Color(0xFFFFA000),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
                                 badgeText,
                                 style: const TextStyle(
                                   fontSize: 10,
-                                  fontWeight: FontWeight.w800,
-                                  color: Color(0xFF0F111A),
+                                  fontWeight: FontWeight.w900,
+                                  color: Colors.white,
                                 ),
                               ),
                             ),
@@ -530,25 +739,25 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
                         ],
                       ),
                       if (description.isNotEmpty) ...[
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 3),
                         Text(
                           description,
                           style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.white.withOpacity(0.6),
+                            fontSize: 12,
+                            color: isDark ? Colors.white60 : const Color(0xFF8D6E63),
                           ),
                         ),
                       ],
                     ],
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 10),
                 Text(
                   priceString,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: isSelected ? const Color(0xFFFFD700) : Colors.white,
+                    fontWeight: FontWeight.w900,
+                    color: Color(0xFFE65100),
                   ),
                 ),
               ],

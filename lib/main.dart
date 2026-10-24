@@ -15,15 +15,35 @@ import 'screens/update_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await EasyLocalization.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-  await RevenueCatService.init();
-  await MobileAds.instance.initialize();
+
+  try {
+    await EasyLocalization.ensureInitialized();
+  } catch (e) {
+    debugPrint('EasyLocalization init error: $e');
+  }
+
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  } catch (e) {
+    debugPrint('Firebase init error: $e');
+  }
+
+  try {
+    await RevenueCatService.init();
+  } catch (e) {
+    debugPrint('RevenueCat init error: $e');
+  }
+
+  try {
+    await MobileAds.instance.initialize();
+  } catch (e) {
+    debugPrint('MobileAds init error: $e');
+  }
   
-  // Reklamları yükle
-  await AdService.requestTrackingAuthorization();
+  // Reklamları hazırla ve izin iste (UI bloklanmadan)
+  AdService.requestTrackingAuthorization();
   AdService.loadAppOpenAd();
   AdService.loadInterstitialAd();
   AdService.loadRewardedAd();
