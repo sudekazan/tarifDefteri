@@ -1,36 +1,20 @@
-# Keep all activities and components
--keep public class * extends android.app.Activity
--keep public class * extends android.app.Application
--keep public class * extends android.app.Service
--keep public class * extends android.content.BroadcastReceiver
--keep public class * extends android.content.ContentProvider
--keep public class * extends androidx.fragment.app.Fragment
--keep public class * extends android.app.Fragment
+# Not: AndroidX, Firebase, Google Play Services ve Flutter eklentileri kendi
+# consumer ProGuard kurallarını AAR içinde getirir. Bu paketler için toplu
+# "-keep ... { *; }" kuralı eklemeyin; aksi halde kod karartma (obfuscation)
+# oranı düşer ve Play Console "DEX kodu optimizasyonu" uyarısı verir.
 
-# Keep activity methods
--keepclassmembers class * extends android.app.Activity {
-   public void *(android.view.View);
-}
-
-# Keep all classes in your package
--keep class com.sudekazan.** { *; }
-
-# Keep attributes
+# Crash raporlarında okunabilir stack trace için
 -keepattributes Signature
 -keepattributes *Annotation*
 -keepattributes EnclosingMethod
 -keepattributes InnerClasses
--keepattributes SourceFile
--keepattributes LineNumberTable
+-keepattributes SourceFile,LineNumberTable
+-renamesourcefileattribute SourceFile
 
-# AndroidX
--keep class androidx.** { *; }
--keep interface androidx.** { *; }
+# Uygulama paketi (yalnızca MainActivity içeriyor, küçük)
+-keep class com.sudekazan.** { *; }
+
 -dontwarn androidx.**
-
-# Google Services
--keep class com.google.firebase.** { *; }
--keep class com.google.android.gms.** { *; }
 -dontwarn com.google.**
 
 # Serializable
@@ -43,6 +27,6 @@
     java.lang.Object readResolve();
 }
 
-# RevenueCat
+# RevenueCat (ödeme akışı; güvenli tarafta kalmak için korunuyor)
 -keep class com.revenuecat.purchases.** { *; }
 -dontwarn com.revenuecat.purchases.**

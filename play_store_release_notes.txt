@@ -1,20 +1,17 @@
 🎉 Yeni Özellikler:
 
-🔐 Hesap silme özelliği eklendi - Artık hesabınızı ve tüm verilerinizi kalıcı olarak silebilirsiniz
+👨‍🍳 Bugün Ne Pişirsem? – AI Şef: Elindeki malzemeleri seç, sana özel tarif önerisi al
 
-🎨 Dinamik tema arka planları - Seçtiğiniz temaya uygun renkli gradient arka planlar
+🎁 Her gün 3 ücretsiz AI Şef hakkı, reklamsız! Hakkın bitince kısa bir reklam izleyerek +1 hak kazanabilirsin
 
-💬 İyileştirilmiş bildirimler - Daha açıklayıcı başarı ve hata mesajları
+✨ Yenilenen Premium ekranı
 
-💳 Gelişmiş reklam yönetimi - Tüm sayfalarda optimize edilmiş banner reklamlar
+🔗 Paylaştığın tariflere uygulama indirme linki eklendi
 
-🔄 Firebase entegrasyonu iyileştirmeleri - Gerçek zamanlı oturum takibi ve otomatik güncellemeler
-
-🔒 Güvenlik iyileştirmeleri - Çıkış ve hesap silme onay dialogları
-
-🐛 Hata Düzeltmeleri:
-• Tarif oluşturma sayfası hataları giderildi
-• Tema değişiklik sorunları çözüldü
-• UI güncelleme sorunları düzeltildi
+🐛 İyileştirmeler:
+• Tarif kaydetmede yaşanabilen veri kaybı giderildi
+• Fotoğraflar artık daha az yer kaplıyor
+• Çeviri eksiklikleri tamamlandı
+• Genel hata düzeltmeleri
 
 Keyifli kullanımlar! 🎊

@@ -27,7 +27,7 @@ class RevenueCatService {
 
   static Future<void> init() async {
     try {
-      await Purchases.setLogLevel(LogLevel.debug);
+      await Purchases.setLogLevel(kDebugMode ? LogLevel.debug : LogLevel.warn);
 
       PurchasesConfiguration? configuration;
       if (Platform.isAndroid) {

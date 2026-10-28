@@ -8,9 +8,11 @@ import 'package:in_app_review/in_app_review.dart';
 import '../theme/app_theme.dart';
 import '../auth_screen.dart';
 import '../services/firebase_service.dart';
+import '../services/revenuecat_service.dart';
 import '../services/review_service.dart';
 import '../widgets/banner_ad_widget.dart';
 import '../utils/error_helper.dart';
+import '../sayfalar/premium_sayfasi.dart';
 
 class SettingsPage extends StatefulWidget {
   final Function(AppTheme) onThemeChanged;
@@ -31,6 +33,8 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
+  static const String _androidPackageName = "com.sudekazan.tarif_defteri_yeni";
+
   String appVersion = '1.0.0';
   String buildNumber = '1';
   final FirebaseService _firebaseService = FirebaseService();
@@ -181,9 +185,8 @@ class _SettingsPageState extends State<SettingsPage> {
         // Native pop-up desteklenmiyorsa mağaza sayfasına yönlendir
         // iOS'ta openStoreListing bundle ID'yi otomatik algılar
         // Android'te packageName zorunlu
-        const String androidPackageName = "com.sudekazan.tarif_defteri_yeni";
         const String appleId = "6759447259"; // App Store Connect → App Information → Apple ID
-        
+
         try {
           await inAppReview.openStoreListing(
             appStoreId: appleId,         // iOS için
@@ -192,7 +195,7 @@ class _SettingsPageState extends State<SettingsPage> {
         } catch (_) {
           // openStoreListing başarısız olursa tarayıcıda aç
           final Uri url = Platform.isAndroid
-              ? Uri.parse("https://play.google.com/store/apps/details?id=$androidPackageName")
+              ? Uri.parse("https://play.google.com/store/apps/details?id=$_androidPackageName")
               : Uri.parse("https://apps.apple.com/app/id$appleId");
           
           if (await canLaunchUrl(url)) {
@@ -347,6 +350,33 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
+  Future<void> _manageSubscription() async {
+    final String url = Platform.isIOS
+        ? 'https://apps.apple.com/account/subscriptions'
+        : 'https://play.google.com/store/account/subscriptions?package=$_androidPackageName';
+    await _launchUrl(url);
+  }
+
+  Future<void> _restorePurchases() async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+
+    final success = await RevenueCatService.restorePurchases();
+
+    if (!mounted) return;
+    Navigator.pop(context); // Loading kapat
+    setState(() {});
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(success ? 'premium_restored'.tr() : 'premium_restore_failed'.tr()),
+      ),
+    );
+  }
+
   Future<void> _launchUrl(String urlString) async {
     try {
       final uri = Uri.parse(urlString);
@@ -412,6 +442,53 @@ class _SettingsPageState extends State<SettingsPage> {
             value: widget.isDarkMode,
             onChanged: widget.onDarkModeChanged,
           ),
+          const Divider(),
+          // Premium
+          ListTile(
+            title: Text(
+              'settings_premium_title'.tr(),
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+          if (RevenueCatService.isProUser) ...[
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.amber.withOpacity(0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.workspace_premium, color: Colors.amber[700]),
+              ),
+              title: Text('settings_premium_active_title'.tr()),
+              subtitle: Text('settings_premium_active_subtitle'.tr()),
+            ),
+            ListTile(
+              leading: const Icon(Icons.settings_suggest_outlined),
+              title: Text('settings_premium_manage'.tr()),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+              onTap: _manageSubscription,
+            ),
+          ] else ...[
+            ListTile(
+              leading: Icon(Icons.workspace_premium, color: Colors.amber[700]),
+              title: Text('settings_premium_get_title'.tr()),
+              subtitle: Text('settings_premium_get_subtitle'.tr()),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+              onTap: () async {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const PremiumSayfasi(source: 'settings')),
+                );
+                setState(() {});
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.restore),
+              title: Text('settings_premium_restore'.tr()),
+              onTap: _restorePurchases,
+            ),
+          ],
           const Divider(),
           // Dil Seçimi
           ListTile(

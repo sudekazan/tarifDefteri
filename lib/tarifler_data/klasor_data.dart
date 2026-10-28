@@ -9,7 +9,7 @@ class KlasorData {
   KlasorData({
     required this.klasor_id,
     required this.klasor_adi,
-    this.iconCode = 0xe2c7, // Varsayılan: Icons.folder
+    this.iconCode = 0xe2c7, // Icons.folder
     int? updatedAt,
   }) {
     this.updatedAt = updatedAt ?? DateTime.now().millisecondsSinceEpoch;

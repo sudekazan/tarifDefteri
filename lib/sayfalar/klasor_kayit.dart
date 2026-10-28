@@ -12,9 +12,10 @@ class KlasorKayit extends StatefulWidget {
 
 class _KlasorKayitState extends State<KlasorKayit> {
   var tfklasorAdi = TextEditingController();
-  int selectedIconCode = 0xe2c7; // Varsayılan: Icons.folder
+  int selectedIconCode = 0xe2c7; // Icons.folder
 
   final List<IconData> iconOptions = [
+    Icons.folder, // Varsayılan
     Icons.favorite, // Favori
     Icons.cake, // Tatlı/muffin
     Icons.fastfood, // Poğaça/atıştırmalık
@@ -49,7 +50,7 @@ class _KlasorKayitState extends State<KlasorKayit> {
       body: Container(
         color: Theme.of(context).scaffoldBackgroundColor,
         child: Center(
-          child: Padding(
+          child: SingleChildScrollView(
             padding: const EdgeInsets.all(8.0),
             child: Column( mainAxisAlignment: MainAxisAlignment.center,
               children: [
