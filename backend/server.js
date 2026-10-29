@@ -15,11 +15,29 @@ const recipeLimiter = rateLimit({
     legacyHeaders: false,
 });
 
+// Render gibi GCP dışı ortamlarda Application Default Credentials bulunamaz;
+// Firestore'a erişim için FIREBASE_SERVICE_ACCOUNT_JSON ortam değişkeni
+// (Firebase Console > Proje Ayarları > Servis Hesapları > Yeni özel anahtar
+// üret, JSON içeriğini tek satır olarak buraya koy) tanımlanmalı.
+let firebaseCredential;
+if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+    try {
+        firebaseCredential = admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON));
+    } catch (error) {
+        console.error('FIREBASE_SERVICE_ACCOUNT_JSON ayrıştırılamadı:', error.message);
+    }
+}
+if (!firebaseCredential) {
+    console.warn('FIREBASE_SERVICE_ACCOUNT_JSON tanımlı değil; Application Default Credentials denenecek (GCP dışı ortamlarda Firestore erişimi başarısız olur).');
+}
+
 admin.initializeApp({
+    credential: firebaseCredential || admin.credential.applicationDefault(),
     projectId: "tarifdefteriuygulamasi"
 });
 
 const app = express();
+app.set('trust proxy', 1);
 app.use(cors({ origin: true }));
 app.use(express.json());
 
@@ -86,23 +104,29 @@ async function checkAndIncrementDailyUsage(firebaseUid) {
     const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD (UTC)
     const docRef = admin.firestore().collection('aiUsage').doc(`${firebaseUid}_${today}`);
 
-    return admin.firestore().runTransaction(async (tx) => {
-        const snap = await tx.get(docRef);
-        const currentCount = snap.exists ? (snap.data().count || 0) : 0;
-        const bonusUses = snap.exists ? (snap.data().bonusUses || 0) : 0;
-        const effectiveLimit = FREE_DAILY_AI_LIMIT + bonusUses;
+    try {
+        return await admin.firestore().runTransaction(async (tx) => {
+            const snap = await tx.get(docRef);
+            const currentCount = snap.exists ? (snap.data().count || 0) : 0;
+            const bonusUses = snap.exists ? (snap.data().bonusUses || 0) : 0;
+            const effectiveLimit = FREE_DAILY_AI_LIMIT + bonusUses;
 
-        if (currentCount >= effectiveLimit) {
-            return { allowed: false, remaining: 0 };
-        }
+            if (currentCount >= effectiveLimit) {
+                return { allowed: false, remaining: 0 };
+            }
 
-        tx.set(docRef, {
-            count: currentCount + 1,
-            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-        }, { merge: true });
+            tx.set(docRef, {
+                count: currentCount + 1,
+                updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            }, { merge: true });
 
-        return { allowed: true, remaining: effectiveLimit - (currentCount + 1) };
-    });
+            return { allowed: true, remaining: effectiveLimit - (currentCount + 1) };
+        });
+    } catch (error) {
+        console.error('Günlük kullanım kontrolü hatası (Firestore):', error.message);
+        // Altyapı sorununda kullanıcıyı tamamen bloklamak yerine isteğe izin ver.
+        return { allowed: true, remaining: null };
+    }
 }
 
 /**
@@ -113,24 +137,29 @@ async function grantBonusUse(firebaseUid) {
     const today = new Date().toISOString().slice(0, 10);
     const docRef = admin.firestore().collection('aiUsage').doc(`${firebaseUid}_${today}`);
 
-    return admin.firestore().runTransaction(async (tx) => {
-        const snap = await tx.get(docRef);
-        const currentCount = snap.exists ? (snap.data().count || 0) : 0;
-        const bonusUses = snap.exists ? (snap.data().bonusUses || 0) : 0;
+    try {
+        return await admin.firestore().runTransaction(async (tx) => {
+            const snap = await tx.get(docRef);
+            const currentCount = snap.exists ? (snap.data().count || 0) : 0;
+            const bonusUses = snap.exists ? (snap.data().bonusUses || 0) : 0;
 
-        if (bonusUses >= MAX_BONUS_USES_PER_DAY) {
-            return { granted: false, remaining: 0 };
-        }
+            if (bonusUses >= MAX_BONUS_USES_PER_DAY) {
+                return { granted: false, remaining: 0 };
+            }
 
-        const newBonusUses = bonusUses + 1;
-        tx.set(docRef, {
-            bonusUses: newBonusUses,
-            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-        }, { merge: true });
+            const newBonusUses = bonusUses + 1;
+            tx.set(docRef, {
+                bonusUses: newBonusUses,
+                updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            }, { merge: true });
 
-        const effectiveLimit = FREE_DAILY_AI_LIMIT + newBonusUses;
-        return { granted: true, remaining: Math.max(0, effectiveLimit - currentCount) };
-    });
+            const effectiveLimit = FREE_DAILY_AI_LIMIT + newBonusUses;
+            return { granted: true, remaining: Math.max(0, effectiveLimit - currentCount) };
+        });
+    } catch (error) {
+        console.error('Bonus hak tanımlama hatası (Firestore):', error.message);
+        return { granted: false, remaining: 0 };
+    }
 }
 
 const openai = new OpenAI({
