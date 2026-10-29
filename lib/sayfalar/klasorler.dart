@@ -355,14 +355,9 @@ class _KlasorlerState extends State<Klasorler> {
     final isDark = theme.brightness == Brightness.dark;
     return Scaffold(
       appBar: AppBar(
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            Text(
-              'app_title'.tr(),
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
-            ),
-          ],
+        title: Text(
+          'app_title'.tr(),
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
         ),
         centerTitle: false,
         backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
