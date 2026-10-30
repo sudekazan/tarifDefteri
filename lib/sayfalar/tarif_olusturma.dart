@@ -19,7 +19,11 @@ class TarifOlusturma extends StatefulWidget {
   final Map<String, dynamic>? aiResultMap;
   final bool isManual;
 
-  TarifOlusturma({required this.tarifData, this.aiResultMap, this.isManual = false});
+  TarifOlusturma({
+    required this.tarifData,
+    this.aiResultMap,
+    this.isManual = false,
+  });
 }
 
 class _TarifOlusturmaState extends State<TarifOlusturma> {
@@ -28,11 +32,11 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
   List<Map<String, dynamic>> sections = [];
   List<XFile> photos = [];
   final ImagePicker _picker = ImagePicker();
-  
+
   // Her section için TextField controller'ı
   Map<int, TextEditingController> sectionControllers = {};
   final ScrollController _scrollController = ScrollController();
-  
+
   bool isAiGenerated = false;
   final FirebaseService _firebaseService = FirebaseService();
 
@@ -41,7 +45,7 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
     try {
       final Directory appDir = await getApplicationDocumentsDirectory();
       final String imagesDir = path.join(appDir.path, 'tarif_images');
-      
+
       // Eğer dosya zaten kalıcı klasördeyse, tekrar kopyalama
       if (sourcePath.contains('tarif_images')) {
         debugPrint('Görsel zaten kalıcı klasörde: $sourcePath');
@@ -57,7 +61,8 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
         await Directory(imagesDir).create(recursive: true);
       }
 
-      final String fileName = '${DateTime.now().millisecondsSinceEpoch}_${path.basename(sourcePath)}';
+      final String fileName =
+          '${DateTime.now().millisecondsSinceEpoch}_${path.basename(sourcePath)}';
       final String destinationPath = path.join(imagesDir, fileName);
       final File destinationFile = File(destinationPath);
 
@@ -82,12 +87,12 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
     super.initState();
     var tarifData = widget.tarifData;
     tfTaridAdi.text = tarifData.tarif_adi;
-    
+
     // Check if we have AI result data
     if (widget.aiResultMap != null) {
       isAiGenerated = true;
       _parseAiResult(widget.aiResultMap!);
-    } 
+    }
     // Otherwise check for existing string description
     else if (tarifData.tarif_aciklama.isNotEmpty) {
       _parseExistingTarif(tarifData.tarif_aciklama);
@@ -99,7 +104,7 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
           sections.add({
             'title': 'recipe_section_ingredients'.tr(),
             'type': 'malzemeler',
-            'items': []
+            'items': [],
           });
         });
       });
@@ -117,25 +122,30 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
           if (grup is Map) {
             String? bolumAdi = grup['bolum_adi'];
             List<dynamic>? malzemeler = grup['malzemeler'];
-            
+
             String sectionType = 'malzemeler';
             // Auto-detect type from AI title
             if (bolumAdi != null) {
-                String lower = bolumAdi.toLowerCase();
-                if (lower.contains('sos')) sectionType = 'sos';
-                else if (lower.contains('hamur')) sectionType = 'hamur';
-                else if (lower.contains('iç') || lower.contains('harç')) sectionType = 'harc';
-                else if (lower.contains('şerbet') || lower.contains('serbet')) sectionType = 'serbet';
-                else if (lower.contains('püf') || lower.contains('ipucu')) sectionType = 'puf_noktasi';
+              String lower = bolumAdi.toLowerCase();
+              if (lower.contains('sos'))
+                sectionType = 'sos';
+              else if (lower.contains('hamur'))
+                sectionType = 'hamur';
+              else if (lower.contains('iç') || lower.contains('harç'))
+                sectionType = 'harc';
+              else if (lower.contains('şerbet') || lower.contains('serbet'))
+                sectionType = 'serbet';
+              else if (lower.contains('püf') || lower.contains('ipucu'))
+                sectionType = 'puf_noktasi';
             }
 
             if (malzemeler != null) {
-               sections.add({
-                 'title': bolumAdi ?? 'recipe_section_ingredients'.tr(),
-                 'type': sectionType,
-                 'items': List<String>.from(malzemeler.map((e) => e.toString())),
-                 'isExpanded': true,
-               });
+              sections.add({
+                'title': bolumAdi ?? 'recipe_section_ingredients'.tr(),
+                'type': sectionType,
+                'items': List<String>.from(malzemeler.map((e) => e.toString())),
+                'isExpanded': true,
+              });
             }
           }
         }
@@ -157,15 +167,15 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
     if (aiData.containsKey('puf_noktasi')) {
       var puf = aiData['puf_noktasi'];
       if (puf != null && puf.toString().isNotEmpty) {
-         sections.add({
-           'title': 'recipe_section_tips'.tr(),
-           'type': 'puf_noktasi',
-           'items': [puf.toString()],
-           'isExpanded': true,
-         });
+        sections.add({
+          'title': 'recipe_section_tips'.tr(),
+          'type': 'puf_noktasi',
+          'items': [puf.toString()],
+          'isExpanded': true,
+        });
       }
     }
-    
+
     // Refresh UI
     if (mounted) setState(() {});
   }
@@ -182,6 +192,7 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
   bool _isNetworkUrl(String path) {
     return path.startsWith('http://') || path.startsWith('https://');
   }
+
   @override
   void dispose() {
     _aciklamaFocus.dispose();
@@ -192,16 +203,20 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
     }
     super.dispose();
   }
+
   void _parseExistingTarif(String tarifAciklama) {
-    if (widget.tarifData.tarif_aciklama_json != null && widget.tarifData.tarif_aciklama_json!.isNotEmpty) {
+    if (widget.tarifData.tarif_aciklama_json != null &&
+        widget.tarifData.tarif_aciklama_json!.isNotEmpty) {
       try {
-        final List<dynamic> decoded = json.decode(widget.tarifData.tarif_aciklama_json!);
+        final List<dynamic> decoded = json.decode(
+          widget.tarifData.tarif_aciklama_json!,
+        );
         sections = decoded.map((e) {
           return {
             'title': e['title'],
             'type': e['type'],
             'items': List<String>.from(e['items'] ?? []),
-            'isExpanded': e['isExpanded'] ?? true
+            'isExpanded': e['isExpanded'] ?? true,
           };
         }).toList();
         return;
@@ -211,28 +226,62 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
     }
 
     if (tarifAciklama.isEmpty) return;
-    
+
     final lines = tarifAciklama.split('\n');
     String currentSection = '';
     String currentType = '';
     List<String> currentItems = [];
-    
+
     // Tüm dillerde bölüm başlıklarını tanımla
-    final ingredientTitles = ['malzemeler', 'ingredients', 'zutaten', 'ingredientes', 'ingrédients'];
-    final fillingTitles = ['harç', 'filling', 'füllung', 'relleno', 'garniture', 'recheio'];
+    final ingredientTitles = [
+      'malzemeler',
+      'ingredients',
+      'zutaten',
+      'ingredientes',
+      'ingrédients',
+    ];
+    final fillingTitles = [
+      'harç',
+      'filling',
+      'füllung',
+      'relleno',
+      'garniture',
+      'recheio',
+    ];
     final doughTitles = ['hamuru', 'dough', 'teig', 'masa', 'pâte'];
-    final syrupTitles = ['şerbeti', 'syrup', 'sirup', 'almíbar', 'sirop', 'calda'];
-    final instructionTitles = ['yapılışı', 'instructions', 'anleitung', 'instrucciones'];
+    final syrupTitles = [
+      'şerbeti',
+      'syrup',
+      'sirup',
+      'almíbar',
+      'sirop',
+      'calda',
+    ];
+    final instructionTitles = [
+      'yapılışı',
+      'instructions',
+      'anleitung',
+      'instrucciones',
+    ];
     final linkTitles = ['linkler', 'links', 'enlaces', 'liens'];
     final sauceTitles = ['sosu', 'sos', 'sauce', 'soße', 'salsa', 'molho'];
-    final tipTitles = ['püf noktası', 'püf noktalari', 'püf noktaları', 'tips', 'tipps', 'consejos', 'astuces', 'dicas'];
-    
+    final tipTitles = [
+      'püf noktası',
+      'püf noktalari',
+      'püf noktaları',
+      'tips',
+      'tipps',
+      'consejos',
+      'astuces',
+      'dicas',
+    ];
+
     for (String line in lines) {
       final trimmed = line.trim();
       if (trimmed.isEmpty) continue;
-      
+
       final lowerTrimmed = trimmed.toLowerCase();
-      
+
       // Başlık kontrolü - tüm diller
       if (ingredientTitles.contains(lowerTrimmed)) {
         _addSectionIfNotEmpty(currentSection, currentType, currentItems);
@@ -274,7 +323,10 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
         currentSection = trimmed;
         currentType = 'puf_noktasi';
         currentItems = [];
-      } else if (trimmed.startsWith('*') || trimmed.startsWith('•') || trimmed.startsWith('🔗') || RegExp(r'^\d+\.').hasMatch(trimmed)) {
+      } else if (trimmed.startsWith('*') ||
+          trimmed.startsWith('•') ||
+          trimmed.startsWith('🔗') ||
+          RegExp(r'^\d+\.').hasMatch(trimmed)) {
         // Madde ekle
         String item = trimmed;
         if (trimmed.startsWith('*') || trimmed.startsWith('•')) {
@@ -290,18 +342,14 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
         }
       }
     }
-    
+
     // Son section'ı ekle
     _addSectionIfNotEmpty(currentSection, currentType, currentItems);
   }
-  
+
   void _addSectionIfNotEmpty(String title, String type, List<String> items) {
     if (title.isNotEmpty && items.isNotEmpty) {
-      sections.add({
-        'title': title,
-        'type': type,
-        'items': List.from(items),
-      });
+      sections.add({'title': title, 'type': type, 'items': List.from(items)});
     }
   }
 
@@ -318,9 +366,7 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
           autofocus: true,
           maxLines: null,
           decoration: InputDecoration(
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
           ),
         ),
         actions: [
@@ -332,13 +378,20 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
             onPressed: () {
               if (editController.text.trim().isNotEmpty) {
                 setState(() {
-                  sections[sectionIndex]['items'][itemIndex] = editController.text.trim();
+                  sections[sectionIndex]['items'][itemIndex] = editController
+                      .text
+                      .trim();
                 });
               }
               Navigator.pop(context);
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).primaryColor),
-            child: Text('common_save'.tr(), style: const TextStyle(color: Colors.white)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).primaryColor,
+            ),
+            child: Text(
+              'common_save'.tr(),
+              style: const TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),
@@ -370,124 +423,135 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
 
   @override
   Widget build(BuildContext context) {
-    final hasUnsavedChanges = tfTaridAdi.text.isNotEmpty || sections.isNotEmpty || photos.isNotEmpty;
+    final hasUnsavedChanges =
+        tfTaridAdi.text.isNotEmpty || sections.isNotEmpty || photos.isNotEmpty;
     return PopScope(
       canPop: !hasUnsavedChanges,
       onPopInvokedWithResult: (didPop, result) async {
         if (didPop) return;
         // Geri tuşuna basıldığında uyarı göster (yalnızca kaydedilmemiş veri varken buraya düşer)
         final confirmDiscard = await showDialog<bool>(
-            context: context,
-            builder: (context) => AlertDialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-              contentPadding: const EdgeInsets.all(24),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // İkon
-                  Container(
-                    width: 60,
-                    height: 60,
-                    decoration: BoxDecoration(
-                      color: Colors.amber.withOpacity(0.15),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.warning_amber_rounded,
-                      color: Colors.amber.shade700,
-                      size: 32,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  // Başlık
-                  Text(
-                    'recipe_edit_discard_title'.tr(),
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).textTheme.bodyLarge?.color,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 12),
-                  // Açıklama
-                  Text(
-                    'recipe_edit_discard_message'.tr(),
-                    style: TextStyle(
-                      fontSize: 15,
-                      color: Theme.of(context).textTheme.bodyMedium?.color,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 24),
-                  // Butonlar
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () => Navigator.pop(context, false),
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            side: BorderSide(
-                              color: Colors.grey.shade400,
-                              width: 1.5,
-                            ),
-                          ),
-                          child: Text(
-                            'recipe_edit_discard_keep'.tr(),
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.grey.shade700,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () => Navigator.pop(context, true),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            elevation: 0,
-                          ),
-                          child: Text(
-                            'recipe_edit_discard_exit'.tr(),
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+          context: context,
+          builder: (context) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
             ),
-          );
+            contentPadding: const EdgeInsets.all(24),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // İkon
+                Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    color: Colors.amber.withOpacity(0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.warning_amber_rounded,
+                    color: Colors.amber.shade700,
+                    size: 32,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                // Başlık
+                Text(
+                  'recipe_edit_discard_title'.tr(),
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).textTheme.bodyLarge?.color,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                // Açıklama
+                Text(
+                  'recipe_edit_discard_message'.tr(),
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: Theme.of(context).textTheme.bodyMedium?.color,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                // Butonlar
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          side: BorderSide(
+                            color: Colors.grey.shade400,
+                            width: 1.5,
+                          ),
+                        ),
+                        child: Text(
+                          'recipe_edit_discard_keep'.tr(),
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.grey.shade700,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.pop(context, true),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: Text(
+                          'recipe_edit_discard_exit'.tr(),
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
         if (confirmDiscard == true && context.mounted) {
           Navigator.of(context).pop();
         }
       },
       child: Scaffold(
         appBar: AppBar(
-          title: Text(widget.tarifData.tarif_id > 0 ? 'recipe_edit_appbar_edit'.tr() : 'recipe_edit_appbar_add'.tr()),
+          title: Text(
+            widget.tarifData.tarif_id > 0
+                ? 'recipe_edit_appbar_edit'.tr()
+                : 'recipe_edit_appbar_add'.tr(),
+          ),
           actions: [
             IconButton(
-              icon: Icon(Icons.photo_camera, color: Theme.of(context).iconTheme.color),
+              icon: Icon(
+                Icons.photo_camera,
+                color: Theme.of(context).iconTheme.color,
+              ),
               onPressed: () async {
-                final picked = await _picker.pickMultiImage(imageQuality: 70, maxWidth: 1600);
+                final picked = await _picker.pickMultiImage(
+                  imageQuality: 70,
+                  maxWidth: 1600,
+                );
                 if (picked.isNotEmpty) {
                   setState(() {
                     photos.addAll(picked);
@@ -499,583 +563,784 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
           ],
           backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
         ),
-        body: Container(
-          color: Theme.of(context).scaffoldBackgroundColor,
-          child: Center(
-            child: SingleChildScrollView(
-              controller: _scrollController,
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Görsel Önizleme Carousel (Yatay Liste)
-                    Container(
-                      height: 140,
-                      margin: const EdgeInsets.only(bottom: 20),
-                      child: ListView(
-                        scrollDirection: Axis.horizontal,
-                        children: [
-                          // Fotoğraf Ekle Butonu (Kart şeklinde)
-                          GestureDetector(
-                            onTap: () async {
-                              final picked = await _picker.pickMultiImage(imageQuality: 70, maxWidth: 1600);
-                              if (picked.isNotEmpty) {
-                                setState(() {
-                                  photos.addAll(picked);
-                                });
-                              }
-                            },
-                            child: Container(
-                              width: 120,
-                              margin: const EdgeInsets.only(right: 12),
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).primaryColor.withOpacity(0.05),
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(
-                                  color: Theme.of(context).primaryColor.withOpacity(0.2),
-                                  width: 2,
-                                  style: BorderStyle.solid,
-                                ),
-                              ),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.add_a_photo_rounded, 
-                                    size: 32, 
-                                    color: Theme.of(context).primaryColor
+        body: SafeArea(
+          top: false,
+          child: Container(
+            color: Theme.of(context).scaffoldBackgroundColor,
+            child: Center(
+              child: SingleChildScrollView(
+                controller: _scrollController,
+                child: Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Görsel Önizleme Carousel (Yatay Liste)
+                      Container(
+                        height: 140,
+                        margin: const EdgeInsets.only(bottom: 20),
+                        child: ListView(
+                          scrollDirection: Axis.horizontal,
+                          children: [
+                            // Fotoğraf Ekle Butonu (Kart şeklinde)
+                            GestureDetector(
+                              onTap: () async {
+                                final picked = await _picker.pickMultiImage(
+                                  imageQuality: 70,
+                                  maxWidth: 1600,
+                                );
+                                if (picked.isNotEmpty) {
+                                  setState(() {
+                                    photos.addAll(picked);
+                                  });
+                                }
+                              },
+                              child: Container(
+                                width: 120,
+                                margin: const EdgeInsets.only(right: 12),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(
+                                    context,
+                                  ).primaryColor.withOpacity(0.05),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: Theme.of(
+                                      context,
+                                    ).primaryColor.withOpacity(0.2),
+                                    width: 2,
+                                    style: BorderStyle.solid,
                                   ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    'recipe_edit_add_photo_tooltip'.tr(),
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
+                                ),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.add_a_photo_rounded,
+                                      size: 32,
                                       color: Theme.of(context).primaryColor,
                                     ),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          
-                          // Eklenen Fotoğraflar
-                          ...photos.map((photo) => Container(
-                            width: 120,
-                            margin: const EdgeInsets.only(right: 12),
-                            child: Stack(
-                              children: [
-                                // Fotoğraf Kartı
-                                Card(
-                                  elevation: 4,
-                                  margin: EdgeInsets.zero,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(16),
-                                    child: GestureDetector(
-                                      onTap: () {
-                                        if (File(photo.path).existsSync()) {
-                                          _showBigPhoto(File(photo.path));
-                                        }
-                                      },
-                                      child: _isNetworkUrl(photo.path)
-                                        ? Image.network(
-                                            photo.path,
-                                            width: 120,
-                                            height: 140,
-                                            fit: BoxFit.cover,
-                                            loadingBuilder: (context, child, loadingProgress) {
-                                              if (loadingProgress == null) return child;
-                                              return Center(
-                                                child: CircularProgressIndicator(
-                                                  value: loadingProgress.expectedTotalBytes != null
-                                                      ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
-                                                      : null,
-                                                ),
-                                              );
-                                            },
-                                            errorBuilder: (context, error, stackTrace) {
-                                              return Container(
-                                                color: Colors.grey[200],
-                                                child: Icon(Icons.broken_image, color: Colors.grey[400]),
-                                              );
-                                            },
-                                          )
-                                        : File(photo.path).existsSync()
-                                          ? Image.file(
-                                              File(photo.path),
-                                              width: 120,
-                                              height: 140,
-                                              fit: BoxFit.cover,
-                                              errorBuilder: (context, error, stackTrace) {
-                                                return Container(
-                                                  color: Colors.grey[200],
-                                                  child: Icon(Icons.broken_image, color: Colors.grey[400]),
-                                                );
-                                              },
-                                            )
-                                          : Container(
-                                              color: Colors.grey[200],
-                                              child: Icon(Icons.image_not_supported, color: Colors.grey[400]),
-                                            ),
-                                    ),
-                                  ),
-                                ),
-                                // Silme Butonu (Sağ Üst)
-                                Positioned(
-                                  top: 4,
-                                  right: 4,
-                                  child: GestureDetector(
-                                    onTap: () {
-                                      setState(() {
-                                        photos.remove(photo);
-                                      });
-                                    },
-                                    child: Container(
-                                      padding: const EdgeInsets.all(4),
-                                      decoration: BoxDecoration(
-                                        color: Colors.black45,
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: const Icon(
-                                        Icons.close,
-                                        color: Colors.white,
-                                        size: 16,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          )).toList(),
-                        ],
-                      ),
-                    ),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).cardColor,
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.04),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'recipe_edit_name_label'.tr(),
-                            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16, color: Theme.of(context).textTheme.bodyLarge?.color),
-                          ),
-                          const SizedBox(height: 8),
-                          TextField(
-                            controller: tfTaridAdi,
-                            decoration: InputDecoration(
-                              hintText: 'recipe_edit_name_hint'.tr(),
-                              filled: true,
-                              fillColor: Theme.of(context).cardColor,
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(10),
-                                borderSide: BorderSide.none,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'recipe_edit_sections_label'.tr(),
-                                      style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16, color: Theme.of(context).textTheme.bodyLarge?.color),
-                                    ),
                                     const SizedBox(height: 8),
-                                    
-                                  
+                                    Text(
+                                      'recipe_edit_add_photo_tooltip'.tr(),
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: Theme.of(context).primaryColor,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
                                   ],
                                 ),
                               ),
-                              const SizedBox(width: 16),
-                              ElevatedButton.icon(
-                                onPressed: () {
-                                  _showSectionMenu();
-                                },
-                                icon: const Icon(Icons.add, size: 20),
-                                label: Text('recipe_edit_add_section_button'.tr()),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Theme.of(context).primaryColor,
-                                  foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                   // Dinamik başlık ve içerik ekleme alanları açıklama kutusunun ALTINA taşındı
-                   ...sections.asMap().entries.map((entry) {
-                      int secIndex = entry.key;
-                      var section = entry.value;
-                      return Card(
-                        margin: const EdgeInsets.symmetric(vertical: 12),
-                        color: Theme.of(context).cardColor,
-                        elevation: 3,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // Başlık ve silme butonu
-                              Row(
-                                children: [
-                                  Icon(
-                                    _getSectionIcon(section['type']),
-                                    color: Theme.of(context).primaryColor,
-                                    size: 24,
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      section['title'],
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 18,
-                                        color: Theme.of(context).textTheme.bodyLarge?.color
-                                      ),
-                                    ),
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(Icons.delete, color: Colors.red),
-                                    onPressed: () {
-                                      setState(() {
-                                        sections.removeAt(secIndex);
-                                      });
-                                    },
-                                  ),
-                                ],
-                              ),
-                              const Divider(height: 24),
-                              // İçerik listesi - daha kompakt tasarım
-                              if (section['items'].isNotEmpty) ...[
-                                ...List.generate(section['items'].length, (i) {
-                                  return Padding(
-                                    padding: const EdgeInsets.only(bottom: 8),
-                                    child: Row(
+                            ),
+
+                            // Eklenen Fotoğraflar
+                            ...photos
+                                .map(
+                                  (photo) => Container(
+                                    width: 120,
+                                    margin: const EdgeInsets.only(right: 12),
+                                    child: Stack(
                                       children: [
-                                        // Numaralandırma veya bullet point
-                                        Container(
-                                          width: 28,
-                                          height: 28,
-                                          decoration: BoxDecoration(
-                                            color: Theme.of(context).primaryColor.withOpacity(0.1),
-                                            shape: BoxShape.circle,
+                                        // Fotoğraf Kartı
+                                        Card(
+                                          elevation: 4,
+                                          margin: EdgeInsets.zero,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              16,
+                                            ),
                                           ),
-                                          child: Center(
-                                            child: section['type'] == 'yapilis'
-                                                ? Text(
-                                                    "${i + 1}",
-                                                    style: TextStyle(
-                                                      fontWeight: FontWeight.bold,
-                                                      color: Theme.of(context).primaryColor,
-                                                      fontSize: 14,
-                                                    ),
-                                                  )
-                                                : Icon(
-                                                    Icons.circle,
-                                                    size: 10,
-                                                    color: Theme.of(context).primaryColor.withOpacity(0.6),
-                                                  ),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 16),
-                                        // Madde metni
-                                        Expanded(
-                                          child: section['type'] == 'linkler' && isValidRecipeUrl(section['items'][i])
-                                              ? InkWell(
-                                                  onTap: () => launchRecipeUrl(context, section['items'][i]),
-                                                  onLongPress: () => _editSectionItem(secIndex, i),
-                                                  borderRadius: BorderRadius.circular(4),
-                                                  child: Padding(
-                                                    padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-                                                    child: Row(
-                                                      children: [
-                                                        Icon(
-                                                          Icons.link,
-                                                          size: 16,
-                                                          color: Theme.of(context).primaryColor,
-                                                        ),
-                                                        const SizedBox(width: 8),
-                                                        Expanded(
-                                                          child: Text(
-                                                            section['items'][i],
-                                                            style: TextStyle(
-                                                              color: Theme.of(context).primaryColor,
-                                                              fontSize: 16,
-                                                              decoration: TextDecoration.underline,
-                                                              decorationColor: Theme.of(context).primaryColor,
-                                                            ),
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  ),
-                                                )
-                                              : InkWell(
-                                                  onTap: () => _editSectionItem(secIndex, i),
-                                                  borderRadius: BorderRadius.circular(8),
-                                                  child: Padding(
-                                                    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-                                                    child: Text(
-                                                      section['items'][i],
-                                                      style: TextStyle(
-                                                        color: Theme.of(context).textTheme.bodyMedium?.color,
-                                                        fontSize: 16,
+                                          child: ClipRRect(
+                                            borderRadius: BorderRadius.circular(
+                                              16,
+                                            ),
+                                            child: GestureDetector(
+                                              onTap: () {
+                                                if (File(
+                                                  photo.path,
+                                                ).existsSync()) {
+                                                  _showBigPhoto(
+                                                    File(photo.path),
+                                                  );
+                                                }
+                                              },
+                                              child: _isNetworkUrl(photo.path)
+                                                  ? Image.network(
+                                                      photo.path,
+                                                      width: 120,
+                                                      height: 140,
+                                                      fit: BoxFit.cover,
+                                                      loadingBuilder:
+                                                          (
+                                                            context,
+                                                            child,
+                                                            loadingProgress,
+                                                          ) {
+                                                            if (loadingProgress ==
+                                                                null)
+                                                              return child;
+                                                            return Center(
+                                                              child: CircularProgressIndicator(
+                                                                value:
+                                                                    loadingProgress
+                                                                            .expectedTotalBytes !=
+                                                                        null
+                                                                    ? loadingProgress
+                                                                              .cumulativeBytesLoaded /
+                                                                          loadingProgress
+                                                                              .expectedTotalBytes!
+                                                                    : null,
+                                                              ),
+                                                            );
+                                                          },
+                                                      errorBuilder:
+                                                          (
+                                                            context,
+                                                            error,
+                                                            stackTrace,
+                                                          ) {
+                                                            return Container(
+                                                              color: Colors
+                                                                  .grey[200],
+                                                              child: Icon(
+                                                                Icons
+                                                                    .broken_image,
+                                                                color: Colors
+                                                                    .grey[400],
+                                                              ),
+                                                            );
+                                                          },
+                                                    )
+                                                  : File(
+                                                      photo.path,
+                                                    ).existsSync()
+                                                  ? Image.file(
+                                                      File(photo.path),
+                                                      width: 120,
+                                                      height: 140,
+                                                      fit: BoxFit.cover,
+                                                      errorBuilder:
+                                                          (
+                                                            context,
+                                                            error,
+                                                            stackTrace,
+                                                          ) {
+                                                            return Container(
+                                                              color: Colors
+                                                                  .grey[200],
+                                                              child: Icon(
+                                                                Icons
+                                                                    .broken_image,
+                                                                color: Colors
+                                                                    .grey[400],
+                                                              ),
+                                                            );
+                                                          },
+                                                    )
+                                                  : Container(
+                                                      color: Colors.grey[200],
+                                                      child: Icon(
+                                                        Icons
+                                                            .image_not_supported,
+                                                        color: Colors.grey[400],
                                                       ),
                                                     ),
-                                                  ),
-                                                ),
+                                            ),
+                                          ),
                                         ),
-                                        // Silme butonu
-                                        IconButton(
-                                          icon: Icon(Icons.clear, size: 20, color: Theme.of(context).primaryColor),
-                                          onPressed: () {
-                                            setState(() {
-                                              section['items'].removeAt(i);
-                                            });
-                                          },
+                                        // Silme Butonu (Sağ Üst)
+                                        Positioned(
+                                          top: 4,
+                                          right: 4,
+                                          child: GestureDetector(
+                                            onTap: () {
+                                              setState(() {
+                                                photos.remove(photo);
+                                              });
+                                            },
+                                            child: Container(
+                                              padding: const EdgeInsets.all(4),
+                                              decoration: BoxDecoration(
+                                                color: Colors.black45,
+                                                shape: BoxShape.circle,
+                                              ),
+                                              child: const Icon(
+                                                Icons.close,
+                                                color: Colors.white,
+                                                size: 16,
+                                              ),
+                                            ),
+                                          ),
                                         ),
                                       ],
                                     ),
-                                  );
-                                }),
-                                const SizedBox(height: 16),
-                              ],
-                              // Tek TextField
-                              Container(
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context).scaffoldBackgroundColor,
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                    color: Theme.of(context).dividerColor.withOpacity(0.3),
+                                  ),
+                                )
+                                .toList(),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).cardColor,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.04),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'recipe_edit_name_label'.tr(),
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 16,
+                                color: Theme.of(
+                                  context,
+                                ).textTheme.bodyLarge?.color,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            TextField(
+                              controller: tfTaridAdi,
+                              decoration: InputDecoration(
+                                hintText: 'recipe_edit_name_hint'.tr(),
+                                filled: true,
+                                fillColor: Theme.of(context).cardColor,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  borderSide: BorderSide.none,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'recipe_edit_sections_label'.tr(),
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 16,
+                                          color: Theme.of(
+                                            context,
+                                          ).textTheme.bodyLarge?.color,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                    ],
                                   ),
                                 ),
-                                child: Row(
+                                const SizedBox(width: 16),
+                                ElevatedButton.icon(
+                                  onPressed: () {
+                                    _showSectionMenu();
+                                  },
+                                  icon: const Icon(Icons.add, size: 20),
+                                  label: Text(
+                                    'recipe_edit_add_section_button'.tr(),
+                                  ),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Theme.of(
+                                      context,
+                                    ).primaryColor,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 8,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      // Dinamik başlık ve içerik ekleme alanları açıklama kutusunun ALTINA taşındı
+                      ...sections.asMap().entries.map((entry) {
+                        int secIndex = entry.key;
+                        var section = entry.value;
+                        return Card(
+                          margin: const EdgeInsets.symmetric(vertical: 12),
+                          color: Theme.of(context).cardColor,
+                          elevation: 3,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Başlık ve silme butonu
+                                Row(
                                   children: [
+                                    Icon(
+                                      _getSectionIcon(section['type']),
+                                      color: Theme.of(context).primaryColor,
+                                      size: 24,
+                                    ),
+                                    const SizedBox(width: 12),
                                     Expanded(
-                                      child: TextField(
-                                        controller: sectionControllers[secIndex] ??= TextEditingController(),
-                                        decoration: InputDecoration(
-                                          hintText: section['type'] == 'yapilis' ? 'recipe_edit_step_placeholder'.tr() : 'recipe_edit_item_placeholder'.tr(),
-                                          border: InputBorder.none,
-                                          contentPadding: const EdgeInsets.all(16),
+                                      child: Text(
+                                        section['title'],
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 18,
+                                          color: Theme.of(
+                                            context,
+                                          ).textTheme.bodyLarge?.color,
                                         ),
-                                        onSubmitted: (val) {
-                                          // Enter'a basınca malzeme ekle
-                                          if (val.trim().isNotEmpty) {
-                                            setState(() {
-                                              section['items'].add(val.trim());
-                                            });
-                                            // TextField'ı temizle (klavye/focus zaten alanda kalır,
-                                            // böylece art arda madde eklenebilir)
-                                            sectionControllers[secIndex]?.clear();
-                                          }
-                                        },
                                       ),
                                     ),
-                                    Container(
-                                      decoration: BoxDecoration(
-                                        color: Theme.of(context).primaryColor.withOpacity(0.1),
-                                        shape: BoxShape.circle,
+                                    IconButton(
+                                      icon: const Icon(
+                                        Icons.delete,
+                                        color: Colors.red,
                                       ),
-                                      child: IconButton(
-                                        icon: Icon(
-                                          Icons.add_circle,
-                                          color: Theme.of(context).primaryColor,
-                                        ),
-                                        onPressed: () {
-                                          // + butonuna basarak malzeme ekle
-                                          final controller = sectionControllers[secIndex];
-                                          if (controller != null && controller.text.trim().isNotEmpty) {
-                                            setState(() {
-                                              section['items'].add(controller.text.trim());
-                                            });
-                                            // TextField'ı temizle
-                                            controller.clear();
-                                          }
-                                        },
-                                      ),
+                                      onPressed: () {
+                                        setState(() {
+                                          sections.removeAt(secIndex);
+                                        });
+                                      },
                                     ),
                                   ],
                                 ),
-                              ),
-                            ],
+                                const Divider(height: 24),
+                                // İçerik listesi - daha kompakt tasarım
+                                if (section['items'].isNotEmpty) ...[
+                                  ...List.generate(section['items'].length, (
+                                    i,
+                                  ) {
+                                    return Padding(
+                                      padding: const EdgeInsets.only(bottom: 8),
+                                      child: Row(
+                                        children: [
+                                          // Numaralandırma veya bullet point
+                                          Container(
+                                            width: 28,
+                                            height: 28,
+                                            decoration: BoxDecoration(
+                                              color: Theme.of(
+                                                context,
+                                              ).primaryColor.withOpacity(0.1),
+                                              shape: BoxShape.circle,
+                                            ),
+                                            child: Center(
+                                              child:
+                                                  section['type'] == 'yapilis'
+                                                  ? Text(
+                                                      "${i + 1}",
+                                                      style: TextStyle(
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                        color: Theme.of(
+                                                          context,
+                                                        ).primaryColor,
+                                                        fontSize: 14,
+                                                      ),
+                                                    )
+                                                  : Icon(
+                                                      Icons.circle,
+                                                      size: 10,
+                                                      color: Theme.of(context)
+                                                          .primaryColor
+                                                          .withOpacity(0.6),
+                                                    ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 16),
+                                          // Madde metni
+                                          Expanded(
+                                            child:
+                                                section['type'] == 'linkler' &&
+                                                    isValidRecipeUrl(
+                                                      section['items'][i],
+                                                    )
+                                                ? InkWell(
+                                                    onTap: () =>
+                                                        launchRecipeUrl(
+                                                          context,
+                                                          section['items'][i],
+                                                        ),
+                                                    onLongPress: () =>
+                                                        _editSectionItem(
+                                                          secIndex,
+                                                          i,
+                                                        ),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          4,
+                                                        ),
+                                                    child: Padding(
+                                                      padding:
+                                                          const EdgeInsets.symmetric(
+                                                            vertical: 4,
+                                                            horizontal: 8,
+                                                          ),
+                                                      child: Row(
+                                                        children: [
+                                                          Icon(
+                                                            Icons.link,
+                                                            size: 16,
+                                                            color: Theme.of(
+                                                              context,
+                                                            ).primaryColor,
+                                                          ),
+                                                          const SizedBox(
+                                                            width: 8,
+                                                          ),
+                                                          Expanded(
+                                                            child: Text(
+                                                              section['items'][i],
+                                                              style: TextStyle(
+                                                                color: Theme.of(
+                                                                  context,
+                                                                ).primaryColor,
+                                                                fontSize: 16,
+                                                                decoration:
+                                                                    TextDecoration
+                                                                        .underline,
+                                                                decorationColor:
+                                                                    Theme.of(
+                                                                      context,
+                                                                    ).primaryColor,
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  )
+                                                : InkWell(
+                                                    onTap: () =>
+                                                        _editSectionItem(
+                                                          secIndex,
+                                                          i,
+                                                        ),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          8,
+                                                        ),
+                                                    child: Padding(
+                                                      padding:
+                                                          const EdgeInsets.symmetric(
+                                                            vertical: 8,
+                                                            horizontal: 4,
+                                                          ),
+                                                      child: Text(
+                                                        section['items'][i],
+                                                        style: TextStyle(
+                                                          color:
+                                                              Theme.of(context)
+                                                                  .textTheme
+                                                                  .bodyMedium
+                                                                  ?.color,
+                                                          fontSize: 16,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                          ),
+                                          // Silme butonu
+                                          IconButton(
+                                            icon: Icon(
+                                              Icons.clear,
+                                              size: 20,
+                                              color: Theme.of(
+                                                context,
+                                              ).primaryColor,
+                                            ),
+                                            onPressed: () {
+                                              setState(() {
+                                                section['items'].removeAt(i);
+                                              });
+                                            },
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  }),
+                                  const SizedBox(height: 16),
+                                ],
+                                // Tek TextField
+                                Container(
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(
+                                      context,
+                                    ).scaffoldBackgroundColor,
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: Theme.of(
+                                        context,
+                                      ).dividerColor.withOpacity(0.3),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: TextField(
+                                          controller:
+                                              sectionControllers[secIndex] ??=
+                                                  TextEditingController(),
+                                          decoration: InputDecoration(
+                                            hintText:
+                                                section['type'] == 'yapilis'
+                                                ? 'recipe_edit_step_placeholder'
+                                                      .tr()
+                                                : 'recipe_edit_item_placeholder'
+                                                      .tr(),
+                                            border: InputBorder.none,
+                                            contentPadding:
+                                                const EdgeInsets.all(16),
+                                          ),
+                                          onSubmitted: (val) {
+                                            // Enter'a basınca malzeme ekle
+                                            if (val.trim().isNotEmpty) {
+                                              setState(() {
+                                                section['items'].add(
+                                                  val.trim(),
+                                                );
+                                              });
+                                              // TextField'ı temizle (klavye/focus zaten alanda kalır,
+                                              // böylece art arda madde eklenebilir)
+                                              sectionControllers[secIndex]
+                                                  ?.clear();
+                                            }
+                                          },
+                                        ),
+                                      ),
+                                      Container(
+                                        decoration: BoxDecoration(
+                                          color: Theme.of(
+                                            context,
+                                          ).primaryColor.withOpacity(0.1),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: IconButton(
+                                          icon: Icon(
+                                            Icons.add_circle,
+                                            color: Theme.of(
+                                              context,
+                                            ).primaryColor,
+                                          ),
+                                          onPressed: () {
+                                            // + butonuna basarak malzeme ekle
+                                            final controller =
+                                                sectionControllers[secIndex];
+                                            if (controller != null &&
+                                                controller.text
+                                                    .trim()
+                                                    .isNotEmpty) {
+                                              setState(() {
+                                                section['items'].add(
+                                                  controller.text.trim(),
+                                                );
+                                              });
+                                              // TextField'ı temizle
+                                              controller.clear();
+                                            }
+                                          },
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                      );
-                    }),
-                    const SizedBox(height: 24),
-                    SizedBox(
-                      height: 48,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Theme.of(context).primaryColor,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                        );
+                      }),
+                      const SizedBox(height: 24),
+                      ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Theme.of(context).primaryColor,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 2,
                           ),
-                          elevation: 2,
-                        ),
-                        onPressed: () async {
-                          // Tarif adı kontrolü
-                          if (tfTaridAdi.text.trim().isEmpty) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('recipe_edit_error_no_name'.tr()),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                            return;
-                          }
-                          
-                          // En az bir section olmalı
-                          if (sections.isEmpty) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('recipe_edit_error_no_section'.tr()),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                            return;
-                          }
-                          
-                          // En az bir madde olmalı
-                          bool hasItems = false;
-                          for (var section in sections) {
-                            if (section['items'].isNotEmpty) {
-                              hasItems = true;
-                              break;
+                          onPressed: () async {
+                            // Tarif adı kontrolü
+                            if (tfTaridAdi.text.trim().isEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    'recipe_edit_error_no_name'.tr(),
+                                  ),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                              return;
                             }
-                          }
-                          
-                          if (!hasItems) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('recipe_edit_error_no_item'.tr()),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                            return;
-                          }
-                          
-                          // Sections verilerini tarif açıklamasına dönüştür
-                          String tarifAciklama = '';
-                          for (var section in sections) {
-                            tarifAciklama += '\n${section['title']}\n';
-                            if (section['type'] == 'yapilis') {
-                              for (int i = 0; i < section['items'].length; i++) {
-                                tarifAciklama += '${i + 1}. ${section['items'][i]}\n';
-                              }
-                            } else if (section['type'] == 'linkler') {
-                              for (String item in section['items']) {
-                                tarifAciklama += '🔗 $item\n';
-                              }
-                            } else {
-                              for (String item in section['items']) {
-                                tarifAciklama += '* $item\n';
-                              }
-                            }
-                          }
-                          
-                          // Görselleri işle ve kaydet
-                          List<String> resimYollari = [];
-                          
-                          if (photos.isNotEmpty) {
-                            // Loading göster
-                            showDialog(
-                              context: context,
-                              barrierDismissible: false,
-                              builder: (context) => const Center(
-                                child: CircularProgressIndicator(),
-                              ),
-                            );
 
-                            try {
-                              for (var photo in photos) {
-                                if (_isNetworkUrl(photo.path)) {
-                                  // Zaten bulutta olan görsel
-                                  resimYollari.add(photo.path);
-                                } else {
-                                  // Yeni yerel görsel - önce yerel hafızaya kopyala
-                                  String localPath = await _copyImageToPermanentLocation(photo.path);
-                                  
-                                  // Eğer kullanıcı giriş yapmışsa buluta yükle
-                                  if (_firebaseService.isUserLoggedIn && localPath.isNotEmpty) {
-                                    String? cloudUrl = await _firebaseService.uploadImage(File(localPath));
-                                    if (cloudUrl != null) {
-                                      resimYollari.add(cloudUrl);
-                                    } else {
-                                      resimYollari.add(localPath); // Yükleme başarısızsa yerel yolu tut
-                                    }
-                                  } else {
-                                    resimYollari.add(localPath);
-                                  }
+                            // En az bir section olmalı
+                            if (sections.isEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    'recipe_edit_error_no_section'.tr(),
+                                  ),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                              return;
+                            }
+
+                            // En az bir madde olmalı
+                            bool hasItems = false;
+                            for (var section in sections) {
+                              if (section['items'].isNotEmpty) {
+                                hasItems = true;
+                                break;
+                              }
+                            }
+
+                            if (!hasItems) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    'recipe_edit_error_no_item'.tr(),
+                                  ),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                              return;
+                            }
+
+                            // Sections verilerini tarif açıklamasına dönüştür
+                            String tarifAciklama = '';
+                            for (var section in sections) {
+                              tarifAciklama += '\n${section['title']}\n';
+                              if (section['type'] == 'yapilis') {
+                                for (
+                                  int i = 0;
+                                  i < section['items'].length;
+                                  i++
+                                ) {
+                                  tarifAciklama +=
+                                      '${i + 1}. ${section['items'][i]}\n';
+                                }
+                              } else if (section['type'] == 'linkler') {
+                                for (String item in section['items']) {
+                                  tarifAciklama += '🔗 $item\n';
+                                }
+                              } else {
+                                for (String item in section['items']) {
+                                  tarifAciklama += '* $item\n';
                                 }
                               }
-                            } catch (e) {
-                              debugPrint('Görsel işleme hatası: $e');
-                            } finally {
-                              // Loading kapat
-                              if (mounted) Navigator.pop(context);
                             }
-                          }
-                          
-                          debugPrint('Kaydedilecek görsel sayısı: ${resimYollari.length}');
-                          debugPrint('Görsel yolları: $resimYollari');
-                          
-                          String tarifAciklamaJson = '';
-                          try {
-                            tarifAciklamaJson = json.encode(sections);
-                          } catch (e) {
-                            debugPrint('Error encoding JSON: $e');
-                          }
-                          
-                          if (mounted) {
-                            Navigator.pop(context, TarifData(
-                              tarif_id: widget.tarifData.tarif_id,
-                              tarif_adi: tfTaridAdi.text.trim(),
-                              tarif_aciklama: tarifAciklama.trim(),
-                              tarif_aciklama_json: tarifAciklamaJson,
-                              tarif_resimler: resimYollari,
-                              klasor_id: widget.tarifData.klasor_id,
-                            ));
-                          }
-                        },
-                        child: Text(
-                          'recipe_edit_save_button'.tr(),
-                          style: TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold),
+
+                            // Görselleri işle ve kaydet
+                            List<String> resimYollari = [];
+
+                            if (photos.isNotEmpty) {
+                              // Loading göster
+                              showDialog(
+                                context: context,
+                                barrierDismissible: false,
+                                builder: (context) => const Center(
+                                  child: CircularProgressIndicator(),
+                                ),
+                              );
+
+                              try {
+                                for (var photo in photos) {
+                                  if (_isNetworkUrl(photo.path)) {
+                                    // Zaten bulutta olan görsel
+                                    resimYollari.add(photo.path);
+                                  } else {
+                                    // Yeni yerel görsel - önce yerel hafızaya kopyala
+                                    String localPath =
+                                        await _copyImageToPermanentLocation(
+                                          photo.path,
+                                        );
+
+                                    // Eğer kullanıcı giriş yapmışsa buluta yükle
+                                    if (_firebaseService.isUserLoggedIn &&
+                                        localPath.isNotEmpty) {
+                                      String? cloudUrl = await _firebaseService
+                                          .uploadImage(File(localPath));
+                                      if (cloudUrl != null) {
+                                        resimYollari.add(cloudUrl);
+                                      } else {
+                                        resimYollari.add(
+                                          localPath,
+                                        ); // Yükleme başarısızsa yerel yolu tut
+                                      }
+                                    } else {
+                                      resimYollari.add(localPath);
+                                    }
+                                  }
+                                }
+                              } catch (e) {
+                                debugPrint('Görsel işleme hatası: $e');
+                              } finally {
+                                // Loading kapat
+                                if (mounted) Navigator.pop(context);
+                              }
+                            }
+
+                            debugPrint(
+                              'Kaydedilecek görsel sayısı: ${resimYollari.length}',
+                            );
+                            debugPrint('Görsel yolları: $resimYollari');
+
+                            String tarifAciklamaJson = '';
+                            try {
+                              tarifAciklamaJson = json.encode(sections);
+                            } catch (e) {
+                              debugPrint('Error encoding JSON: $e');
+                            }
+
+                            if (mounted) {
+                              Navigator.pop(
+                                context,
+                                TarifData(
+                                  tarif_id: widget.tarifData.tarif_id,
+                                  tarif_adi: tfTaridAdi.text.trim(),
+                                  tarif_aciklama: tarifAciklama.trim(),
+                                  tarif_aciklama_json: tarifAciklamaJson,
+                                  tarif_resimler: resimYollari,
+                                  klasor_id: widget.tarifData.klasor_id,
+                                ),
+                              );
+                            }
+                          },
+                          child: Text(
+                            'recipe_edit_save_button'.tr(),
+                            style: TextStyle(
+                              fontSize: 18,
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -1114,17 +1379,21 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
             Flexible(
               child: ListView(
                 shrinkWrap: true,
-                children: _getAvailableSections().map((section) => ListTile(
-                  leading: Icon(
-                    _getSectionIcon(section['type']),
-                    color: Theme.of(context).primaryColor,
-                  ),
-                  title: Text(section['title']),
-                  onTap: () {
-                    Navigator.pop(context);
-                    _addSection(section['type']);
-                  },
-                )).toList(),
+                children: _getAvailableSections()
+                    .map(
+                      (section) => ListTile(
+                        leading: Icon(
+                          _getSectionIcon(section['type']),
+                          color: Theme.of(context).primaryColor,
+                        ),
+                        title: Text(section['title']),
+                        onTap: () {
+                          Navigator.pop(context);
+                          _addSection(section['type']);
+                        },
+                      ),
+                    )
+                    .toList(),
               ),
             ),
             const SizedBox(height: 16),
@@ -1148,7 +1417,9 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
 
     // Mevcut section'ları filtrele
     return allSections.where((section) {
-      return !sections.any((existingSection) => existingSection['type'] == section['type']);
+      return !sections.any(
+        (existingSection) => existingSection['type'] == section['type'],
+      );
     }).toList();
   }
 
@@ -1159,12 +1430,12 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
       Map<String, dynamic> yeniSection = {
         'title': _getSectionTitle(type),
         'type': type,
-        'items': []
+        'items': [],
       };
       setState(() {
         sections.add(yeniSection);
       });
-      
+
       // Yeni bölüm eklendikten sonra ekranı o bölüme (en alta) kaydır
       Future.delayed(const Duration(milliseconds: 300), () {
         if (_scrollController.hasClients) {
@@ -1223,5 +1494,4 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
         return Icons.category;
     }
   }
-
 }
