@@ -1,0 +1,16 @@
+Tarifly, yapay zeka destekli kişisel dijital tarif defterin. Kendi tariflerini kaydet, klasörlere ayır, saniyeler içinde yeni tarifler üret ve "bugün ne pişirsem?" derdine son ver.
+
+NEDEN TARIFLY?
+• Kendi Tariflerini Ekle: Aile tariflerini ve kendi denemelerini malzemeleri ve adım adım yapılışıyla tek bir yerde sakla.
+• Klasörlerle Düzenle: Tariflerini Tatlılar, Çorbalar, Ana Yemekler veya Kahvaltılık gibi klasörlere ayır, saniyeler içinde bul.
+• Yapay Zeka ile Tarif Üret: Yemeğin adını yaz, Tarifly'ın yapay zeka şefi malzemeleri, yapılışı ve ölçüleriyle detaylı bir tarif hazırlasın.
+• Bugün Ne Pişirsem?: Aklına bir şey gelmiyor mu? Kahvaltı, öğle ya da akşam yemeği için anında öneriler al, yeni lezzetler keşfet.
+• Tarif Paylaş: En sevdiğin tarifleri tek dokunuşla arkadaşlarına ve ailene gönder.
+• Favoriler: Sevdiğin yemekleri işaretle, istediğin an hızlıca ulaş.
+• 6 Dil: Türkçe, İngilizce, İspanyolca, Almanca, Fransızca ve Portekizce dillerinde kullanılabilir.
+• Açık ve Koyu Mod: Mutfakta gözünü yormayan sade ve modern bir tasarım.
+
+Dağınık notlar, ekran görüntüleri ve yer imleri arasında tarif aramayı bırak. Tarifly'ı hemen indir, sana özel tarif defterini oluştur.
+
+Gizlilik Politikası: https://sudekazan.github.io/tarifDefteri/privacy.html
+Kullanım Koşulları: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/

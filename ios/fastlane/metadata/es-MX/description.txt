@@ -1,0 +1,16 @@
+Tarifly es tu recetario digital personal con inteligencia artificial. Guarda tus propias recetas, organízalas en carpetas, crea nuevas en segundos y olvídate de pensar qué cocinar.
+
+¿POR QUÉ TARIFLY?
+• Añade tus recetas: Guarda las recetas de la familia y tus propias creaciones en un solo lugar, con ingredientes y pasos detallados.
+• Organiza en carpetas: Agrupa tus recetas en carpetas como Postres, Sopas, Platos Fuertes o Desayunos y encuéntralas al instante.
+• Generador de recetas con IA: Escribe el nombre de un plato y el chef con IA de Tarifly crea una receta completa con ingredientes, pasos y medidas.
+• ¿Qué cocino hoy?: ¿Sin ideas? Recibe sugerencias al instante y descubre algo nuevo para el desayuno, la comida o la cena.
+• Comparte recetas: Envía tus recetas favoritas a amigos y familia con un solo toque.
+• Favoritos: Marca los platos que más te gustan para tenerlos siempre a mano.
+• 6 idiomas: Disponible en español, inglés, alemán, francés, portugués y turco.
+• Modo claro y oscuro: Un diseño limpio y moderno, cómodo para usar en la cocina.
+
+Deja de buscar entre notas, capturas y marcadores desordenados. Descarga Tarifly hoy y crea el recetario que de verdad es tuyo.
+
+Política de privacidad: https://sudekazan.github.io/tarifDefteri/privacy.html
+Términos de uso: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/

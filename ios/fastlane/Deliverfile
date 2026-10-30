@@ -1,0 +1,18 @@
+# This Deliverfile only uploads metadata (name, subtitle, keywords, promo
+# text, description, release notes). It does NOT upload a build, does NOT
+# touch screenshots, and does NOT submit the app for review.
+
+app_identifier("com.sudekazan.tarifDefteri")
+api_key_path("fastlane/api_key.json")
+
+skip_binary_upload(true)
+skip_screenshots(true)
+skip_metadata(false)
+force(true) # don't open an interactive diff prompt before confirming
+submit_for_review(false)
+automatic_release(false)
+run_precheck_before_submit(false) # API key can't check in-app purchases; not needed since we don't submit here
+
+# Uncomment and set your version before running `fastlane deliver`,
+# otherwise it uploads metadata for the current "Prepare for Submission" version.
+# app_version("1.1")

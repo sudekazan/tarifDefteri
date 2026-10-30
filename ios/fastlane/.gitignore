@@ -1,0 +1,5 @@
+api_key.json
+*.p8
+report.xml
+Preview.html
+fastlane/README.md

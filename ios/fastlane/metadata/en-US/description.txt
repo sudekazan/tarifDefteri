@@ -1,0 +1,16 @@
+Tarifly is your personal digital cookbook, powered by AI. Save your own recipes, organize them into folders, generate new ones in seconds and never wonder what to cook again.
+
+WHY TARIFLY?
+• Add Your Own Recipes: Keep family favorites and your own creations in one place, with ingredients and step-by-step instructions.
+• Organize with Folders: Group recipes into folders like Desserts, Soups, Main Dishes or Breakfast and find them in seconds.
+• AI Recipe Generator: Type a dish name and Tarifly's AI chef creates a detailed recipe with ingredients, steps and measurements.
+• What Should I Cook Today?: Out of ideas? Get instant meal suggestions and discover something new for breakfast, lunch or dinner.
+• Share Recipes: Send your favorite recipes to friends and family with a single tap.
+• Favorites: Bookmark the dishes you love for quick access anytime.
+• 6 Languages: Fully localized in English, Spanish, German, French, Portuguese and Turkish.
+• Dark & Light Mode: A clean, modern design that's easy on the eyes in the kitchen.
+
+Stop digging through messy notes, screenshots and bookmarks. Download Tarifly today and build the cookbook that's truly yours.
+
+Privacy Policy: https://sudekazan.github.io/tarifDefteri/privacy.html
+Terms of Use: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
