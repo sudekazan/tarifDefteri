@@ -1,13 +1,14 @@
-# This Deliverfile only uploads metadata (name, subtitle, keywords, promo
-# text, description, release notes). It does NOT upload a build, does NOT
-# touch screenshots, and does NOT submit the app for review.
+# This Deliverfile uploads metadata (name, subtitle, keywords, promo text,
+# description, release notes) and screenshots. It does NOT upload a build
+# and does NOT submit the app for review.
 
 app_identifier("com.sudekazan.tarifDefteri")
 api_key_path("fastlane/api_key.json")
 
 skip_binary_upload(true)
-skip_screenshots(true)
+skip_screenshots(false)
 skip_metadata(false)
+overwrite_screenshots(true)
 force(true) # don't open an interactive diff prompt before confirming
 submit_for_review(false)
 automatic_release(false)
