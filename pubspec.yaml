@@ -1,7 +1,7 @@
 name: tarif_defteri
 description: "Tarifly - Kişisel tarif koleksiyonunuzu oluşturun, düzenleyin ve favorilerinizi yönetin. Fotoğraflarla zenginleştirilmiş tariflerinizi organize edin."
 publish_to: 'none'
-version: 1.0.23+52
+version: 1.0.24+53
 
 environment:
   sdk: ^3.8.1
@@ -38,6 +38,9 @@ dependencies:
   wakelock_plus: ^1.3.3
   purchases_flutter: ^10.15.1
   firebase_analytics: ^11.6.0
+  google_sign_in: ^7.2.0
+  sign_in_with_apple: ^8.2.0
+  crypto: ^3.0.8
 
 
 dev_dependencies:

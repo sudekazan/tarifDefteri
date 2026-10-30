@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'firebase_options.dart';
 import 'managers/app_state_manager.dart';
 import 'builders/app_theme_builder.dart';
@@ -29,6 +30,12 @@ void main() async {
     );
   } catch (e) {
     debugPrint('Firebase init error: $e');
+  }
+
+  try {
+    await GoogleSignIn.instance.initialize();
+  } catch (e) {
+    debugPrint('GoogleSignIn init error: $e');
   }
 
   try {

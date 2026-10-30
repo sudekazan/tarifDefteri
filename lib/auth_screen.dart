@@ -1,3 +1,4 @@
+import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -162,6 +163,76 @@ class _AuthScreenState extends State<AuthScreen> {
       debugPrint('General Exception: $e');
     }
   }
+
+  Future<void> _handleSocialSignIn(
+    Future<UserCredential> Function() signInFn,
+  ) async {
+    FocusScope.of(context).unfocus();
+    setState(() {
+      _errorMessage = null;
+      _isLoading = true;
+    });
+
+    try {
+      final userCredential = await signInFn();
+      if (userCredential.user != null) {
+        await RevenueCatService.loginWithFirebaseUid(
+          userCredential.user!.uid,
+        );
+      }
+      // Giriş yapmadan eklenen yerel tarifler kaybolmasın diye akıllıca birleştir
+      await _firebaseService.mergeLocalAndCloudData();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.check_circle, color: Colors.white),
+              const SizedBox(width: 12),
+              Text('auth_login_success'.tr()),
+            ],
+          ),
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+      await Future.delayed(const Duration(milliseconds: 500));
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+    } on SignInCancelledException {
+      // Kullanıcı kendi iptal etti, hata gösterme
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      String message = 'auth_error_generic'.tr();
+      if (e.code == 'account-exists-with-different-credential') {
+        message = 'auth_error_account_exists_different_credential'.tr();
+      } else if (e.code == 'network-request-failed') {
+        message = 'auth_error_network'.tr();
+      } else {
+        message = '${'auth_error_code_prefix'.tr()}${e.code}';
+      }
+      setState(() => _errorMessage = message);
+      debugPrint('FirebaseAuthException (social): ${e.code} - ${e.message}');
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage =
+            '${'auth_error_unexpected_prefix'.tr()}${ErrorHelper.getFriendlyErrorMessage(e)}';
+      });
+      debugPrint('Social sign-in error: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  Future<void> _signInWithGoogle() =>
+      _handleSocialSignIn(_firebaseService.signInWithGoogle);
+
+  Future<void> _signInWithApple() =>
+      _handleSocialSignIn(_firebaseService.signInWithApple);
 
   Future<void> _resetPassword() async {
     final email = _emailController.text.trim();
@@ -538,6 +609,114 @@ class _AuthScreenState extends State<AuthScreen> {
                                   ),
                           ),
                         ),
+
+                        // "veya" ayracı
+                        const SizedBox(height: 20),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Divider(
+                                color: isDark
+                                    ? Colors.white24
+                                    : Colors.black12,
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                              ),
+                              child: Text(
+                                'auth_divider_or'.tr(),
+                                style: TextStyle(
+                                  color: isDark
+                                      ? Colors.white54
+                                      : Colors.black45,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ),
+                            Expanded(
+                              child: Divider(
+                                color: isDark
+                                    ? Colors.white24
+                                    : Colors.black12,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+
+                        // Google ile devam et
+                        SizedBox(
+                          height: 54,
+                          child: OutlinedButton.icon(
+                            onPressed: _isLoading ? null : _signInWithGoogle,
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: isDark
+                                  ? Colors.white
+                                  : Colors.black87,
+                              side: BorderSide(
+                                color: isDark
+                                    ? const Color(0xFF2C3044)
+                                    : Colors.grey.withOpacity(0.3),
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                            icon: const Text(
+                              'G',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF4285F4),
+                              ),
+                            ),
+                            label: Text(
+                              'auth_continue_with_google'.tr(),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 15,
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        // Apple ile devam et (yalnızca iOS/macOS)
+                        if (Platform.isIOS || Platform.isMacOS) ...[
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            height: 54,
+                            child: OutlinedButton.icon(
+                              onPressed: _isLoading ? null : _signInWithApple,
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: isDark
+                                    ? Colors.white
+                                    : Colors.black87,
+                                side: BorderSide(
+                                  color: isDark
+                                      ? const Color(0xFF2C3044)
+                                      : Colors.grey.withOpacity(0.3),
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                              ),
+                              icon: Icon(
+                                Icons.apple,
+                                size: 22,
+                                color: isDark ? Colors.white : Colors.black87,
+                              ),
+                              label: Text(
+                                'auth_continue_with_apple'.tr(),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 15,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),

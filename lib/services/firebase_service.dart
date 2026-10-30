@@ -3,11 +3,20 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
+import 'package:crypto/crypto.dart';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 import '../tarifler_data/tarif_data.dart';
 import '../tarifler_data/klasor_data.dart';
 import 'revenuecat_service.dart';
+
+/// Kullanıcı Google/Apple sign-in akışını kendi isteğiyle iptal ettiğinde
+/// (ör. hesap seçim ekranını kapatınca) fırlatılır; bu durumda hata
+/// mesajı gösterilmemelidir.
+class SignInCancelledException implements Exception {}
 
 /// deleteUserAccount() sırasında Firebase Auth hesabını silmek için
 /// yeniden (güncel) kimlik doğrulaması gerektiğinde fırlatılır.
@@ -451,9 +460,91 @@ class FirebaseService {
     }
   }
 
+  // Google hesabıyla giriş yap
+  Future<UserCredential> signInWithGoogle() async {
+    try {
+      final GoogleSignInAccount account = await GoogleSignIn.instance
+          .authenticate();
+      final String? idToken = account.authentication.idToken;
+      if (idToken == null) {
+        throw Exception('Google kimlik doğrulama tokenı alınamadı.');
+      }
+      final credential = GoogleAuthProvider.credential(idToken: idToken);
+      return await _auth.signInWithCredential(credential);
+    } on GoogleSignInException catch (e) {
+      if (e.code == GoogleSignInExceptionCode.canceled) {
+        throw SignInCancelledException();
+      }
+      rethrow;
+    }
+  }
+
+  // Apple ID ile giriş yap
+  Future<UserCredential> signInWithApple() async {
+    final rawNonce = _generateNonce();
+    final hashedNonce = sha256.convert(utf8.encode(rawNonce)).toString();
+
+    try {
+      final appleCredential = await SignInWithApple.getAppleIDCredential(
+        scopes: [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
+        nonce: hashedNonce,
+      );
+
+      final oauthCredential = OAuthProvider('apple.com').credential(
+        idToken: appleCredential.identityToken,
+        rawNonce: rawNonce,
+        accessToken: appleCredential.authorizationCode,
+      );
+
+      final userCredential = await _auth.signInWithCredential(
+        oauthCredential,
+      );
+
+      // Apple yalnızca ilk girişte ad/soyad döner; Firebase profilinde yoksa ekle
+      final user = userCredential.user;
+      if (user != null &&
+          (user.displayName == null || user.displayName!.isEmpty) &&
+          (appleCredential.givenName != null ||
+              appleCredential.familyName != null)) {
+        final fullName = [
+          appleCredential.givenName,
+          appleCredential.familyName,
+        ].where((e) => e != null && e.isNotEmpty).join(' ');
+        if (fullName.isNotEmpty) {
+          await user.updateDisplayName(fullName);
+        }
+      }
+
+      return userCredential;
+    } on SignInWithAppleAuthorizationException catch (e) {
+      if (e.code == AuthorizationErrorCode.canceled) {
+        throw SignInCancelledException();
+      }
+      rethrow;
+    }
+  }
+
+  String _generateNonce([int length = 32]) {
+    const charset =
+        '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
+    final random = Random.secure();
+    return List.generate(
+      length,
+      (_) => charset[random.nextInt(charset.length)],
+    ).join();
+  }
+
   // Çıkış yap
   Future<void> signOut() async {
     await _auth.signOut();
+    try {
+      await GoogleSignIn.instance.signOut();
+    } catch (e) {
+      debugPrint('Google sign-out hatası: $e');
+    }
     await RevenueCatService.logoutFromRevenueCat();
 
     try {
