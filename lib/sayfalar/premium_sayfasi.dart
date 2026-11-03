@@ -583,7 +583,7 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
                           'premium_cancel_anytime'.tr(),
                           style: TextStyle(
                             fontSize: 12,
-                            color: isDark ? Colors.white54 : const Color(0xFF8D6E63),
+                            color: isDark ? Colors.white54 : const Color(0xFF795548),
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -638,8 +638,8 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
                                   ),
                                   child: Text(
                                     'premium_terms_of_use'.tr(),
-                                    style: const TextStyle(
-                                      color: Color(0xFFE65100),
+                                    style: TextStyle(
+                                      color: isDark ? const Color(0xFFE65100) : const Color(0xFFBF360C),
                                       fontSize: 11,
                                       decoration: TextDecoration.underline,
                                     ),
@@ -650,8 +650,8 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
                                   onTap: () => _openUrl('https://sudekazan.github.io/tarifDefteri/privacy.html'),
                                   child: Text(
                                     'premium_privacy_policy'.tr(),
-                                    style: const TextStyle(
-                                      color: Color(0xFFE65100),
+                                    style: TextStyle(
+                                      color: isDark ? const Color(0xFFE65100) : const Color(0xFFBF360C),
                                       fontSize: 11,
                                       decoration: TextDecoration.underline,
                                     ),
@@ -662,8 +662,8 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
                                   onTap: _isPurchasing ? null : _restore,
                                   child: Text(
                                     'premium_restore_purchases'.tr(),
-                                    style: const TextStyle(
-                                      color: Color(0xFFE65100),
+                                    style: TextStyle(
+                                      color: isDark ? const Color(0xFFE65100) : const Color(0xFFBF360C),
                                       fontSize: 11,
                                       decoration: TextDecoration.underline,
                                     ),
@@ -821,9 +821,9 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
                               child: Text(
                                 badgeText,
                                 style: const TextStyle(
-                                  fontSize: 10,
+                                  fontSize: 11,
                                   fontWeight: FontWeight.w900,
-                                  color: Colors.white,
+                                  color: Color(0xFF3E2723),
                                 ),
                               ),
                             ),

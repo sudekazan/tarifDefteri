@@ -729,7 +729,7 @@ class _KlasorlerState extends State<Klasorler> {
                               'what_to_cook_hero_badge'.tr(),
                               style: const TextStyle(
                                 color: Colors.white,
-                                fontSize: 10.5,
+                                fontSize: 11,
                                 fontWeight: FontWeight.w800,
                                 letterSpacing: 0.8,
                               ),

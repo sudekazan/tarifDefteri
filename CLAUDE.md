@@ -26,10 +26,11 @@ cd backend && npm start
 - Yeni bir metin anahtarı eklerken `assets/lang/` altındaki altı dosyanın hepsine ekle; Türkçe metni çevrilmeden bırakma.
 - Girişte yerel tarifler Firebase verisiyle birleştirilir, asla ezilmez (COZUM_DOKUMANI.md). Elle test senaryoları: NASIL_TEST_EDILIR.md.
 - Kökteki `AuthKey_*.p8` App Store Connect API anahtarı; gitignore'da. Dokunma, içeriğini okuma.
-- Commit biçimi: `feat: ...`, `fix: ...`
+- Commit mesajları Türkçe, kısa ve anlaşılır olsun. Başına `fix:`, `feat:`, `düzeltme:` gibi ön ek konmaz. Örnek: `Küçük yazıları 11 pt'ye çıkar`
 
 # Son kararlar
 - 2026-10-24: Ödüllü reklam zorunlu değil, "+1 hak" modeli.
 - 2026-10-24: Premium ekranı çoklu plan (aylık / yıllık / ömür boyu).
 - 2026-10-29: Uygulama Tarifly olarak yeniden markalandı.
 - 2026-10-30: Google ve Apple ile giriş eklendi.
+- 2026-11-03: En küçük yazı 11 pt, yazılarda en az 4.5:1 kontrast (Apple HIG).
