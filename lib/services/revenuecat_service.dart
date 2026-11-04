@@ -52,11 +52,38 @@ class RevenueCatService {
 
       if (configuration != null) {
         await Purchases.configure(configuration);
+        await _firebaseKimliginiGonder();
+        if (Platform.isIOS) await _appleAdsTokenToplamayiAc();
         await checkSubscriptionStatus();
       }
     } catch (e) {
       initError = e.toString();
       debugPrint('RevenueCat init error: $e');
+    }
+  }
+
+  /// RevenueCat'in Firebase entegrasyonu için Firebase kurulum kimliğini
+  /// müşteri özelliği olarak kaydeder; böylece yenileme, iptal ve deneme
+  /// dönüşümü olayları Firebase'e düşer. Giriş yapınca tekrar çağrılır,
+  /// çünkü kimlik o andaki RevenueCat kullanıcısına yazılır.
+  static Future<void> _firebaseKimliginiGonder() async {
+    try {
+      final id = await AnalyticsService.appInstanceId();
+      if (id != null && id.isNotEmpty) {
+        await Purchases.setFirebaseAppInstanceId(id);
+      }
+    } catch (e) {
+      debugPrint('RevenueCat Firebase kimliği hatası: $e');
+    }
+  }
+
+  /// Aboneliklerin hangi Apple Ads kampanyasından geldiğini görmek için
+  /// AdServices token'ını toplamaya başlar (yalnızca iOS). ATT izni gerektirmez.
+  static Future<void> _appleAdsTokenToplamayiAc() async {
+    try {
+      await Purchases.enableAdServicesAttributionTokenCollection();
+    } catch (e) {
+      debugPrint('RevenueCat AdServices hatası: $e');
     }
   }
 
@@ -69,6 +96,7 @@ class RevenueCatService {
     try {
       final result = await Purchases.logIn(firebaseUid);
       _setPro(_isEntitlementActive(result.customerInfo));
+      await _firebaseKimliginiGonder();
     } catch (e) {
       debugPrint('RevenueCat logIn error: $e');
     }

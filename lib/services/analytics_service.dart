@@ -44,6 +44,17 @@ class AnalyticsService {
 
   static String _bool(bool value) => value ? 'true' : 'false';
 
+  /// Firebase'in bu kurulum için ürettiği kimlik; RevenueCat'in Firebase
+  /// entegrasyonu abonelik olaylarını bu kimlikle eşleştirir. Alınamazsa null.
+  static Future<String?> appInstanceId() async {
+    try {
+      return await _analytics.appInstanceId;
+    } catch (e) {
+      debugPrint('Analytics appInstanceId error: $e');
+      return null;
+    }
+  }
+
   /// Kullanıcının Pro olup olmadığını kullanıcı özelliği olarak kaydeder;
   /// böylece tüm olaylar Pro / ücretsiz diye ayrılabilir.
   static Future<void> setIsPro(bool isPro) => _setUserProperty('is_pro', _bool(isPro));
