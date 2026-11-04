@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 import 'package:tarif_defteri/services/revenuecat_service.dart';
+import 'analytics_service.dart';
 
 class AdService {
   static AppOpenAd? _appOpenAd;
@@ -241,8 +242,9 @@ class AdService {
     );
   }
 
-  /// Show Rewarded Ad.
-  static void showRewardedAd({VoidCallback? onAdClosed, Function(RewardItem)? onUserEarnedReward}) {
+  /// Show Rewarded Ad. [yer], reklamın istendiği ekrandır ("ne_pisirsem" veya
+  /// "klasor_ici"); sonuç `odullu_reklam` olayıyla kaydedilir.
+  static void showRewardedAd({required String yer, VoidCallback? onAdClosed, Function(RewardItem)? onUserEarnedReward}) {
     if (RevenueCatService.isProUser) {
       onUserEarnedReward?.call(RewardItem(1, 'premium_skip'));
       onAdClosed?.call();
@@ -252,12 +254,14 @@ class AdService {
       debugPrint('RewardedAd not ready yet (null). Attempting to load...');
       loadRewardedAd();
       // If ad is not ready, we proceed as if they watched it so the flow doesn't break
+      AnalyticsService.odulluReklam(sonuc: 'yuklenemedi', yer: yer);
       onUserEarnedReward?.call(RewardItem(0, 'fallback'));
       onAdClosed?.call();
       return;
     }
 
     debugPrint('Attempting to show RewardedAd...');
+    bool odulKazanildi = false;
     _rewardedAd!.fullScreenContentCallback = FullScreenContentCallback(
       onAdShowedFullScreenContent: (ad) {
         _isShowingAd = true;
@@ -265,6 +269,7 @@ class AdService {
       },
       onAdDismissedFullScreenContent: (ad) {
         debugPrint('RewardedAd dismissed.');
+        AnalyticsService.odulluReklam(sonuc: odulKazanildi ? 'izlendi' : 'yarida_kapatildi', yer: yer);
         _isShowingAd = false;
         ad.dispose();
         _rewardedAd = null;
@@ -278,6 +283,7 @@ class AdService {
         _rewardedAd = null;
         loadRewardedAd();
         // Even if it fails to show, we proceed so user isn't stuck
+        AnalyticsService.odulluReklam(sonuc: 'yuklenemedi', yer: yer);
         onUserEarnedReward?.call(RewardItem(0, 'fallback_error'));
         onAdClosed?.call();
       },
@@ -285,6 +291,7 @@ class AdService {
 
     _rewardedAd!.show(onUserEarnedReward: (AdWithoutView ad, RewardItem rewardItem) {
       debugPrint('User earned reward: ${rewardItem.amount} ${rewardItem.type}');
+      odulKazanildi = true;
       onUserEarnedReward?.call(rewardItem);
     });
   }

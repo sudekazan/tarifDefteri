@@ -585,6 +585,7 @@ class _KlasorIciState extends State<KlasorIci> {
 
     bool canUseAi = await RevenueCatService.canUseAi();
     if (!canUseAi) {
+      AnalyticsService.aiLimitDoldu(kaynak: isUrl ? 'link' : 'klasor_ai');
       _showAiLimitChoiceDialog(input, isUrl);
       return;
     }
@@ -754,6 +755,7 @@ class _KlasorIciState extends State<KlasorIci> {
   void _watchAdForBonusUse(String input, bool isUrl) {
     bool rewardEarned = false;
     AdService.showRewardedAd(
+      yer: 'klasor_ici',
       onUserEarnedReward: (reward) {
         rewardEarned = true;
       },

@@ -179,6 +179,7 @@ class _BugunNePisisemSayfasiState extends State<BugunNePisisemSayfasi> {
     bool canUseAi = await RevenueCatService.canUseAi();
     if (!mounted) return;
     if (!canUseAi) {
+      AnalyticsService.aiLimitDoldu(kaynak: 'ne_pisirsem');
       _showAiLimitChoiceDialog();
       return;
     }
@@ -348,6 +349,7 @@ class _BugunNePisisemSayfasiState extends State<BugunNePisisemSayfasi> {
   void _watchAdForBonusUse() {
     bool rewardEarned = false;
     AdService.showRewardedAd(
+      yer: 'ne_pisirsem',
       onUserEarnedReward: (reward) {
         rewardEarned = true;
       },
