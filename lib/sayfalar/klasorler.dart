@@ -18,6 +18,7 @@ import 'dart:io';
 
 import 'package:share_plus/share_plus.dart';
 import 'klasor_kayit.dart';
+import '../services/analytics_service.dart';
 import '../services/firebase_service.dart';
 import '../services/ad_service.dart';
 
@@ -189,6 +190,7 @@ class _KlasorlerState extends State<Klasorler> {
     await prefs.setStringList('klasorler', klasorJsonList);
 
     await _firebaseService.saveKlasorToFirebase(yeniKlasor);
+    AnalyticsService.klasorOlusturuldu(klasorSayisi: klasorJsonList.length);
     
     _klasorleriYukle().then((_) {
       _filtreleKlasorler(aramaController.text); // Yeni klasör eklendiğinde filtreyi güncelle

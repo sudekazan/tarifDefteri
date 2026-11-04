@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:tarif_defteri/tarifler_data/tarif_data.dart';
 import 'package:tarif_defteri/sayfalar/tarif_detay.dart';
+import '../services/analytics_service.dart';
 
 class AramaSayfasi extends StatefulWidget {
   const AramaSayfasi({Key? key}) : super(key: key);
@@ -19,10 +20,23 @@ class _AramaSayfasiState extends State<AramaSayfasi> {
   List<TarifData> _filtrelenmisTarifler = [];
   bool _isLoading = true;
 
+  /// Son boş olmayan aramanın sonuç bulup bulmadığı; hiç arama yapılmadıysa
+  /// null. Sayfadan çıkarken tek bir arama_yapildi olayı göndermek için.
+  bool? _sonAramaSonucVar;
+
   @override
   void initState() {
     super.initState();
     _tumTarifleriYukle();
+  }
+
+  @override
+  void dispose() {
+    if (_sonAramaSonucVar != null) {
+      AnalyticsService.aramaYapildi(sonucVar: _sonAramaSonucVar!);
+    }
+    _aramaController.dispose();
+    super.dispose();
   }
 
   Future<void> _tumTarifleriYukle() async {
@@ -65,6 +79,7 @@ class _AramaSayfasiState extends State<AramaSayfasi> {
                tarif.tarif_aciklama.toLowerCase().contains(lowerQuery);
       }).toList();
     });
+    _sonAramaSonucVar = _filtrelenmisTarifler.isNotEmpty;
   }
 
   @override

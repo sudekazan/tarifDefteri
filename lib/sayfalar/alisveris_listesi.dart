@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:easy_localization/easy_localization.dart';
+import '../services/analytics_service.dart';
 
 class AlisverisListesi extends StatefulWidget {
   const AlisverisListesi({Key? key}) : super(key: key);
@@ -18,6 +19,7 @@ class _AlisverisListesiState extends State<AlisverisListesi> {
   @override
   void initState() {
     super.initState();
+    AnalyticsService.alisverisListesiAcildi();
     _yukle();
   }
 
@@ -43,6 +45,7 @@ class _AlisverisListesiState extends State<AlisverisListesi> {
       });
       _controller.clear();
       _kaydet();
+      AnalyticsService.alisverisListesineEklendi();
     }
   }
 

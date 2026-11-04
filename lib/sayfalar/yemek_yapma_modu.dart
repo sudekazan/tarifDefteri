@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:tarif_defteri/tarifler_data/tarif_data.dart';
+import '../services/analytics_service.dart';
 import '../services/review_service.dart';
 
 class YemekYapmaModu extends StatefulWidget {
@@ -27,6 +28,7 @@ class _YemekYapmaModuState extends State<YemekYapmaModu> {
   void initState() {
     super.initState();
     WakelockPlus.enable();
+    AnalyticsService.yemekModuAcildi();
     _parseRecipeContent();
   }
 
@@ -648,6 +650,7 @@ class _YemekYapmaModuState extends State<YemekYapmaModu> {
                             : () async {
                                 // Tarifi bitirmek mutlu bir an olduğu için
                                 // değerlendirme isteği burada sorulur.
+                                AnalyticsService.yemekModuTamamlandi();
                                 await ReviewService.checkAndRequestReview(context);
                                 if (context.mounted) Navigator.pop(context);
                               },
