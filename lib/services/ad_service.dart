@@ -8,12 +8,10 @@ import 'analytics_service.dart';
 
 class AdService {
   static AppOpenAd? _appOpenAd;
-  static InterstitialAd? _interstitialAd;
   static RewardedAd? _rewardedAd;
   static bool _isShowingAd = false;
   static bool _showAfterLoad = false;
   static bool _isLoadingAd = false;
-  static bool _isLoadingInterstitial = false;
   static bool _isLoadingRewarded = false;
 
   /// Onay (UMP) ve takip izni (ATT) adımları bitip reklam SDK'sı
@@ -27,18 +25,6 @@ class AdService {
       return Platform.isAndroid
           ? 'ca-app-pub-3940256099942544/9257395924'
           : 'ca-app-pub-3940256099942544/5662855259';
-    } else {
-      return Platform.isAndroid
-          ? 'ca-app-pub-7331912696640483/9388360220'
-          : 'ca-app-pub-7331912696640483/5884229487';
-    }
-  }
-
-  static String get interstitialAdUnitId {
-    if (kDebugMode) {
-      return Platform.isAndroid
-          ? 'ca-app-pub-3940256099942544/1033173712'
-          : 'ca-app-pub-3940256099942544/4411468910';
     } else {
       return Platform.isAndroid
           ? 'ca-app-pub-7331912696640483/9388360220'
@@ -251,71 +237,6 @@ class AdService {
       },
     );
     _appOpenAd!.show();
-  }
-
-  /// Load Interstitial Ad.
-  static void loadInterstitialAd() {
-    if (RevenueCatService.isProUser) return;
-    if (_isLoadingInterstitial || _interstitialAd != null) return;
-
-    _isLoadingInterstitial = true;
-    debugPrint('Loading InterstitialAd ($interstitialAdUnitId)...');
-
-    InterstitialAd.load(
-      adUnitId: interstitialAdUnitId,
-      request: const AdRequest(),
-      adLoadCallback: InterstitialAdLoadCallback(
-        onAdLoaded: (ad) {
-          _interstitialAd = ad;
-          _isLoadingInterstitial = false;
-          debugPrint('InterstitialAd loaded successfully.');
-        },
-        onAdFailedToLoad: (error) {
-          debugPrint('InterstitialAd failed to load: $error');
-          _isLoadingInterstitial = false;
-        },
-      ),
-    );
-  }
-
-  /// Show Interstitial Ad.
-  static void showInterstitialAd({VoidCallback? onAdClosed}) {
-    if (RevenueCatService.isProUser) {
-      onAdClosed?.call();
-      return;
-    }
-    if (_interstitialAd == null) {
-      debugPrint('InterstitialAd not ready yet (null). Attempting to load...');
-      loadInterstitialAd();
-      onAdClosed?.call();
-      return;
-    }
-
-    debugPrint('Attempting to show InterstitialAd...');
-    _interstitialAd!.fullScreenContentCallback = FullScreenContentCallback(
-      onAdShowedFullScreenContent: (ad) {
-        _isShowingAd = true;
-        debugPrint('InterstitialAd showed full screen content.');
-      },
-      onAdDismissedFullScreenContent: (ad) {
-        debugPrint('InterstitialAd dismissed.');
-        _isShowingAd = false;
-        ad.dispose();
-        _interstitialAd = null;
-        loadInterstitialAd();
-        onAdClosed?.call();
-      },
-      onAdFailedToShowFullScreenContent: (ad, error) {
-        debugPrint('InterstitialAd failed to show: $error');
-        _isShowingAd = false;
-        ad.dispose();
-        _interstitialAd = null;
-        loadInterstitialAd();
-        onAdClosed?.call();
-      },
-    );
-
-    _interstitialAd!.show();
   }
 
   /// Load Rewarded Ad.
