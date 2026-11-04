@@ -131,6 +131,7 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
         AnalyticsService.satinAlma(
           packageId: package.identifier,
           priceString: package.storeProduct.priceString,
+          source: widget.source,
         );
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

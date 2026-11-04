@@ -336,7 +336,7 @@ class _TarifDetayState extends State<TarifDetay> {
                       subject: widget.tarif.tarif_adi,
                       sharePositionOrigin: sharePositionOrigin,
                     );
-                    AnalyticsService.tarifPaylasildi();
+                    AnalyticsService.tarifPaylasildi(kaynak: 'tarif_detay');
                   } catch (e) {
                     if (mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(

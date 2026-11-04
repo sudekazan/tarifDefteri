@@ -4,6 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'analytics_service.dart';
+
 class RevenueCatService {
   // Lütfen bu anahtarları kendi RevenueCat API anahtarlarınız ile değiştirin.
   static const _appleApiKey = 'appl_wzqpdBivjxBdcFMeuiwKdYiVWVW';
@@ -20,6 +22,13 @@ class RevenueCatService {
   static bool _isPro = false;
 
   static bool get isProUser => _isPro;
+
+  /// Pro durumunu günceller ve Firebase'e `is_pro` kullanıcı özelliği
+  /// olarak bildirir.
+  static void _setPro(bool isPro) {
+    _isPro = isPro;
+    AnalyticsService.setIsPro(isPro);
+  }
 
   /// Son offering yükleme hatası / teşhis mesajı (UI'da göstermek için)
   static String? lastOfferingsError;
@@ -54,7 +63,7 @@ class RevenueCatService {
   static Future<void> loginWithFirebaseUid(String firebaseUid) async {
     try {
       final result = await Purchases.logIn(firebaseUid);
-      _isPro = _isEntitlementActive(result.customerInfo);
+      _setPro(_isEntitlementActive(result.customerInfo));
     } catch (e) {
       debugPrint('RevenueCat logIn error: $e');
     }
@@ -65,7 +74,7 @@ class RevenueCatService {
   static Future<void> logoutFromRevenueCat() async {
     try {
       await Purchases.logOut();
-      _isPro = false;
+      _setPro(false);
     } catch (e) {
       debugPrint('RevenueCat logOut error: $e');
     }
@@ -80,7 +89,7 @@ class RevenueCatService {
   static Future<bool> checkSubscriptionStatus() async {
     try {
       CustomerInfo customerInfo = await Purchases.getCustomerInfo();
-      _isPro = _isEntitlementActive(customerInfo);
+      _setPro(_isEntitlementActive(customerInfo));
       return _isPro;
     } catch (e) {
       debugPrint('Check subscription error: $e');
@@ -91,7 +100,7 @@ class RevenueCatService {
   static Future<bool> purchasePackage(Package package) async {
     try {
       CustomerInfo customerInfo = (await Purchases.purchasePackage(package)).customerInfo;
-      _isPro = _isEntitlementActive(customerInfo);
+      _setPro(_isEntitlementActive(customerInfo));
       return _isPro;
     } catch (e) {
       debugPrint('Purchase error: $e');
@@ -102,7 +111,7 @@ class RevenueCatService {
   static Future<bool> restorePurchases() async {
     try {
       CustomerInfo customerInfo = await Purchases.restorePurchases();
-      _isPro = _isEntitlementActive(customerInfo);
+      _setPro(_isEntitlementActive(customerInfo));
       return _isPro;
     } catch (e) {
       debugPrint('Restore error: $e');

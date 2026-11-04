@@ -649,7 +649,7 @@ class _KlasorIciState extends State<KlasorIci> {
         languageCode: languageCode,
       );
       final recipeData = aiResult.recipeData;
-      AnalyticsService.aiKullanildi(isPro: RevenueCatService.isProUser);
+      AnalyticsService.aiKullanildi(isPro: RevenueCatService.isProUser, kaynak: isUrl ? 'link' : 'klasor_ai');
 
       if (!mounted) return;
       Navigator.pop(context); // Close Loading
@@ -781,7 +781,7 @@ class _KlasorIciState extends State<KlasorIci> {
 
     if (e is AiLimitExceededException) {
       RevenueCatService.syncRemainingFromServer(0);
-      AnalyticsService.aiLimitDoldu();
+      AnalyticsService.aiLimitDoldu(kaynak: isUrl ? 'link' : 'klasor_ai');
       if (input != null) {
         _showAiLimitChoiceDialog(input, isUrl);
       } else {

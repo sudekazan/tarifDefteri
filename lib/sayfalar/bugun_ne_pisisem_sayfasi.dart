@@ -218,7 +218,7 @@ class _BugunNePisisemSayfasiState extends State<BugunNePisisemSayfasi> {
     try {
       final aiResult = await recipeFuture;
       final recipeData = aiResult.recipeData;
-      AnalyticsService.aiKullanildi(isPro: RevenueCatService.isProUser);
+      AnalyticsService.aiKullanildi(isPro: RevenueCatService.isProUser, kaynak: 'ne_pisirsem');
       await RevenueCatService.syncRemainingFromServer(aiResult.remaining);
       _verileriYukle();
 
@@ -269,7 +269,7 @@ class _BugunNePisisemSayfasiState extends State<BugunNePisisemSayfasi> {
         setState(() => _isLoading = false);
         if (e is AiLimitExceededException) {
           await RevenueCatService.syncRemainingFromServer(0);
-          AnalyticsService.aiLimitDoldu();
+          AnalyticsService.aiLimitDoldu(kaynak: 'ne_pisirsem');
           _showAiLimitChoiceDialog();
         } else {
           _showErrorDialog(e.toString());
