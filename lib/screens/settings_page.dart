@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:in_app_review/in_app_review.dart';
 import '../theme/app_theme.dart';
 import '../auth_screen.dart';
+import '../services/ad_service.dart';
 import '../services/firebase_service.dart';
 import '../services/revenuecat_service.dart';
 import '../services/review_service.dart';
@@ -40,11 +41,17 @@ class _SettingsPageState extends State<SettingsPage> {
   final FirebaseService _firebaseService = FirebaseService();
   User? _currentUser;
 
+  /// AB'deki kullanıcılar için reklam onayını değiştirme satırı gösterilsin mi?
+  bool _gizlilikSecenekleriGerekli = false;
+
   @override
   void initState() {
     super.initState();
     _getAppInfo();
     _getCurrentUser();
+    AdService.gizlilikSecenekleriGerekli().then((gerekli) {
+      if (mounted && gerekli) setState(() => _gizlilikSecenekleriGerekli = true);
+    });
     // Auth durumu değişikliklerini dinle
     FirebaseAuth.instance.authStateChanges().listen((User? user) {
       if (mounted) {
@@ -743,6 +750,13 @@ class _SettingsPageState extends State<SettingsPage> {
             trailing: const Icon(Icons.arrow_forward_ios, size: 16),
             onTap: () => _launchUrl('https://www.apple.com/legal/internet-services/itunes/dev/stdeula/'),
           ),
+          if (_gizlilikSecenekleriGerekli)
+            ListTile(
+              leading: const Icon(Icons.shield_outlined, color: Colors.blueGrey),
+              title: Text('settings_privacy_options'.tr()),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+              onTap: AdService.gizlilikSecenekleriniGoster,
+            ),
           const SizedBox(height: 20),
           // Alt kısımda uygulama adı ve versiyon
           Center(

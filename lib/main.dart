@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:provider/provider.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -11,7 +10,6 @@ import 'builders/app_theme_builder.dart';
 import 'widgets/klasorler_with_theme.dart';
 import 'screens/settings_page.dart';
 
-import 'services/ad_service.dart';
 import 'services/revenuecat_service.dart';
 import 'screens/update_screen.dart';
 
@@ -50,17 +48,10 @@ void main() async {
     debugPrint('RevenueCat init error: $e');
   }
 
-  try {
-    await MobileAds.instance.initialize();
-  } catch (e) {
-    debugPrint('MobileAds init error: $e');
-  }
-  
-  // Reklamları hazırla ve izin iste (UI bloklanmadan)
-  AdService.requestTrackingAuthorization();
-  AdService.loadAppOpenAd();
-  AdService.loadRewardedAd();
-  
+  // Reklam SDK'sı, AB onay formu ve ATT izni artık ilk ekran çizildikten
+  // sonra başlatılıyor (bkz. AdService.izinleriIsteVeReklamlariBaslat,
+  // Klasorler.initState).
+
   runApp(
     EasyLocalization(
       supportedLocales: const [

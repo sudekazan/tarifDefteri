@@ -44,9 +44,14 @@ class _KlasorlerState extends State<Klasorler> {
   @override
   void initState() {
     super.initState();
-    _loadBannerAd();
-    // App Open Ad - İlk açılışlarda kullanıcıyı ve Apple incelemesini rahatsız etmemek için kontrol
-    SharedPreferences.getInstance().then((prefs) {
+    AdService.reklamlarHazir.addListener(_reklamlarHazirOlunca);
+    _reklamlarHazirOlunca();
+    // AB onay formu ve ATT izni ekran çizildikten sonra istenir; reklamlar
+    // ancak bunlardan sonra yüklenir.
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await AdService.izinleriIsteVeReklamlariBaslat();
+      // App Open Ad - İlk açılışlarda kullanıcıyı ve Apple incelemesini rahatsız etmemek için kontrol
+      final prefs = await SharedPreferences.getInstance();
       int launchCount = prefs.getInt('app_launch_count') ?? 0;
       prefs.setInt('app_launch_count', launchCount + 1);
 
@@ -71,6 +76,7 @@ class _KlasorlerState extends State<Klasorler> {
 
   @override
   void dispose() {
+    AdService.reklamlarHazir.removeListener(_reklamlarHazirOlunca);
     aramaController.dispose(); // Controller'ı dispose etmeyi unutmayın
     _bannerAd?.dispose();
     super.dispose();
@@ -327,6 +333,13 @@ class _KlasorlerState extends State<Klasorler> {
 
   // _interstitialAdUnitId kaldırıldı.
 
+
+  /// Banner, onay ve izin adımları bitince bir kez yüklenir.
+  void _reklamlarHazirOlunca() {
+    if (!AdService.reklamlarHazir.value || _bannerAd != null) return;
+    AdService.reklamlarHazir.removeListener(_reklamlarHazirOlunca);
+    _loadBannerAd();
+  }
 
   void _loadBannerAd() {
     if (RevenueCatService.isProUser) return; // Pro kullanıcılara reklam gösterilmez

@@ -226,6 +226,7 @@
   "settings_privacy_policy_subtitle": "Data security and privacy terms",
   "settings_terms_of_use": "Terms of Use (EULA)",
   "settings_terms_of_use_subtitle": "Terms of service and license agreement",
+  "settings_privacy_options": "Ad privacy options",
   "premium_sub_terms_title": "Subscription Information & Auto-Renewal:",
   "premium_sub_terms_body": "• Subscription Duration: 1 Month (Monthly Premium)\n• Payment will be charged to your Apple ID account upon purchase confirmation.\n• Subscription automatically renews unless canceled at least 24 hours prior to the end of the current period.\n• Renewal will be charged within 24 hours prior to the end of the current period.\n• You can manage and cancel your subscriptions in your Apple ID Account Settings after purchase.",
   "premium_terms_monthly_ios": "• Plan: Monthly Premium, {} / month\n• Payment will be charged to your Apple ID account upon purchase confirmation.\n• The subscription renews automatically unless canceled at least 24 hours before the end of the current period; renewal is charged within 24 hours before the period ends.\n• You can manage and cancel your subscription in your Apple ID Account Settings.",

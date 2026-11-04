@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
@@ -14,6 +15,11 @@ class AdService {
   static bool _isLoadingAd = false;
   static bool _isLoadingInterstitial = false;
   static bool _isLoadingRewarded = false;
+
+  /// Onay (UMP) ve takip izni (ATT) adımları bitip reklam SDK'sı
+  /// başlatıldığında true olur. Banner'lar bunu dinler ve ancak o zaman yüklenir.
+  static final ValueNotifier<bool> reklamlarHazir = ValueNotifier(false);
+  static Future<void>? _izinIslemi;
 
   /// Test and Real Ad Units
   static String get appOpenAdUnitId {
@@ -64,6 +70,101 @@ class AdService {
     }
   }
 
+  /// AB kullanıcıları için Google onay formunu (UMP), ardından iOS takip
+  /// iznini (ATT) ister; reklam istenebiliyorsa SDK'yı başlatıp açılış ve
+  /// ödüllü reklamları yükler. İlk ekran çizildikten sonra çağrılmalı (ATT
+  /// penceresi yalnızca uygulama ekrandayken çıkar). Tekrar çağrılırsa aynı
+  /// işlemi döndürür. Bir adım hata verirse sonrakine geçilir, akış takılmaz.
+  static Future<void> izinleriIsteVeReklamlariBaslat() => _izinIslemi ??= _izinleriIste();
+
+  static Future<void> _izinleriIste() async {
+    await _onayBilgisiniGuncelle();
+    await _onayFormunuGerekirseGoster();
+    await requestTrackingAuthorization();
+
+    bool reklamIstenebilir = false;
+    try {
+      reklamIstenebilir = await ConsentInformation.instance.canRequestAds();
+    } catch (e) {
+      debugPrint('canRequestAds error: $e');
+    }
+    if (!reklamIstenebilir) return;
+
+    try {
+      await MobileAds.instance.initialize();
+    } catch (e) {
+      debugPrint('MobileAds init error: $e');
+    }
+    reklamlarHazir.value = true;
+    loadAppOpenAd();
+    loadRewardedAd();
+  }
+
+  static Future<void> _onayBilgisiniGuncelle() {
+    final tamamlandi = Completer<void>();
+    void bitir() {
+      if (!tamamlandi.isCompleted) tamamlandi.complete();
+    }
+
+    try {
+      ConsentInformation.instance.requestConsentInfoUpdate(
+        ConsentRequestParameters(),
+        bitir,
+        (error) {
+          debugPrint('Consent info update error: ${error.message}');
+          bitir();
+        },
+      );
+    } catch (e) {
+      debugPrint('Consent info update error: $e');
+      bitir();
+    }
+    // Yerel SDK hiç yanıt vermezse reklamlar sonsuza kadar beklemesin.
+    return tamamlandi.future.timeout(const Duration(seconds: 10), onTimeout: () {});
+  }
+
+  static Future<void> _onayFormunuGerekirseGoster() {
+    final tamamlandi = Completer<void>();
+    try {
+      ConsentForm.loadAndShowConsentFormIfRequired((formError) {
+        if (formError != null) debugPrint('Consent form error: ${formError.message}');
+        if (!tamamlandi.isCompleted) tamamlandi.complete();
+      });
+    } catch (e) {
+      debugPrint('Consent form error: $e');
+      if (!tamamlandi.isCompleted) tamamlandi.complete();
+    }
+    return tamamlandi.future;
+  }
+
+  /// AB'de kullanıcının onay seçimini değiştirebileceği ayar satırı
+  /// gösterilmeli mi? (Google bunu zorunlu tutuyor.)
+  static Future<bool> gizlilikSecenekleriGerekli() async {
+    try {
+      await _izinIslemi;
+      return await ConsentInformation.instance.getPrivacyOptionsRequirementStatus() ==
+          PrivacyOptionsRequirementStatus.required;
+    } catch (e) {
+      debugPrint('Privacy options status error: $e');
+      return false;
+    }
+  }
+
+  /// Onay seçimini değiştirme formunu açar.
+  static Future<void> gizlilikSecenekleriniGoster() {
+    final tamamlandi = Completer<void>();
+    try {
+      ConsentForm.showPrivacyOptionsForm((formError) {
+        if (formError != null) debugPrint('Privacy options form error: ${formError.message}');
+        if (!tamamlandi.isCompleted) tamamlandi.complete();
+      });
+    } catch (e) {
+      debugPrint('Privacy options form error: $e');
+      if (!tamamlandi.isCompleted) tamamlandi.complete();
+    }
+    return tamamlandi.future;
+  }
+
   /// Request Tracking Authorization for iOS
   static Future<void> requestTrackingAuthorization() async {
     if (Platform.isIOS) {
@@ -82,7 +183,7 @@ class AdService {
 
   /// Load an AppOpenAd.
   static void loadAppOpenAd() {
-    if (RevenueCatService.isProUser) return;
+    if (RevenueCatService.isProUser || !reklamlarHazir.value) return;
     if (_isLoadingAd || _appOpenAd != null) {
       debugPrint('### AD_DEBUG: loadAppOpenAd called but skipped. isLoading: $_isLoadingAd, hasAd: ${_appOpenAd != null}');
       return;
@@ -116,7 +217,7 @@ class AdService {
 
   /// Show the ad if available.
   static void showAdIfAvailable() {
-    if (RevenueCatService.isProUser) return;
+    if (RevenueCatService.isProUser || !reklamlarHazir.value) return;
     if (_appOpenAd == null) {
       debugPrint('Ad not ready yet, set to show after load.');
       _showAfterLoad = true;
@@ -219,7 +320,7 @@ class AdService {
 
   /// Load Rewarded Ad.
   static void loadRewardedAd() {
-    if (RevenueCatService.isProUser) return;
+    if (RevenueCatService.isProUser || !reklamlarHazir.value) return;
     if (_isLoadingRewarded || _rewardedAd != null) return;
 
     _isLoadingRewarded = true;

@@ -17,6 +17,14 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
   @override
   void initState() {
     super.initState();
+    AdService.reklamlarHazir.addListener(_reklamlarHazirOlunca);
+    _reklamlarHazirOlunca();
+  }
+
+  /// Banner, AB onayı ve ATT adımları bitince bir kez yüklenir.
+  void _reklamlarHazirOlunca() {
+    if (!AdService.reklamlarHazir.value || _bannerAd != null) return;
+    AdService.reklamlarHazir.removeListener(_reklamlarHazirOlunca);
     _loadBannerAd();
   }
 
@@ -46,6 +54,7 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
 
   @override
   void dispose() {
+    AdService.reklamlarHazir.removeListener(_reklamlarHazirOlunca);
     _bannerAd?.dispose();
     super.dispose();
   }
