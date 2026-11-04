@@ -6,6 +6,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:tarif_defteri/services/revenuecat_service.dart';
 import '../services/analytics_service.dart';
+import '../utils/abonelik_kosullari.dart';
 
 class PremiumSayfasi extends StatefulWidget {
   /// Bu ekranın hangi noktadan açıldığı (ör. "ai_limit", "klasor_limit",
@@ -124,7 +125,16 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
     }
   }
 
-  /// "EN POPÜLER" rozeti yalnızca yıllık pakette gösterilir.
+  /// Seçili plana göre abonelik koşulları metni; paket yüklenemediyse eski
+  /// genel metin gösterilir.
+  String _abonelikKosullariMetni() {
+    final pkg = _selectedPackage;
+    if (pkg == null) return 'premium_sub_terms_body'.tr();
+    final kosul = abonelikKosullari(pkg.packageType, pkg.storeProduct.priceString, isIOS: Platform.isIOS);
+    return kosul.key.tr(args: kosul.args);
+  }
+
+  /// "EN AVANTAJLI" rozeti yalnızca yıllık pakette gösterilir.
   String? _packageBadge(Package pkg) {
     if (pkg.packageType == PackageType.annual) {
       return 'premium_badge_most_popular'.tr();
@@ -635,7 +645,7 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              'premium_sub_terms_body'.tr(),
+                              _abonelikKosullariMetni(),
                               style: TextStyle(
                                 color: isDark ? Colors.white70 : const Color(0xFF6D4C41),
                                 fontSize: 11,
