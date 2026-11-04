@@ -20,6 +20,7 @@ import 'package:share_plus/share_plus.dart';
 import 'klasor_kayit.dart';
 import '../services/analytics_service.dart';
 import '../services/firebase_service.dart';
+import '../utils/magaza_linki.dart';
 import '../services/ad_service.dart';
 
 class Klasorler extends StatefulWidget {
@@ -888,6 +889,7 @@ class _FavoriTariflerSayfasiState extends State<FavoriTariflerSayfasi> {
       shareText += tarif.tarif_aciklama;
       shareText += '\n\n━━━━━━━━━━━━━━━━━━\n';
       shareText += 'share_from_app'.tr();
+      shareText += '\n${'share_download_cta'.tr()} $magazaLinki';
 
       // iOS için butonun konumunu al (iPad popup için)
       final box = btnContext.findRenderObject() as RenderBox?;
@@ -899,6 +901,7 @@ class _FavoriTariflerSayfasiState extends State<FavoriTariflerSayfasi> {
         subject: tarif.tarif_adi,
         sharePositionOrigin: sharePositionOrigin,
       );
+      AnalyticsService.tarifPaylasildi(kaynak: 'klasorler');
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

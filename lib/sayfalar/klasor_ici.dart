@@ -19,6 +19,7 @@ import 'package:tarif_defteri/sayfalar/premium_sayfasi.dart';
 import '../utils/error_helper.dart';
 import '../services/review_service.dart';
 import '../services/analytics_service.dart';
+import '../utils/magaza_linki.dart';
 
 class KlasorIci extends StatefulWidget {
   final KlasorData klasorData;
@@ -1110,6 +1111,7 @@ class _KlasorIciState extends State<KlasorIci> {
                                               shareText += tarif.tarif_aciklama;
                                               shareText += '\n\n━━━━━━━━━━━━━━━━━━\n';
                                               shareText += 'share_from_app'.tr();
+                                              shareText += '\n${'share_download_cta'.tr()} $magazaLinki';
                                               
                                               // iOS için butonun konumunu al
                                               final box = btnContext.findRenderObject() as RenderBox?;
@@ -1122,6 +1124,7 @@ class _KlasorIciState extends State<KlasorIci> {
                                                 subject: tarif.tarif_adi,
                                                 sharePositionOrigin: sharePositionOrigin,
                                               );
+                                              AnalyticsService.tarifPaylasildi(kaynak: 'klasor_ici');
                                             } catch (e) {
                                               if (mounted) {
                                                 ScaffoldMessenger.of(context)

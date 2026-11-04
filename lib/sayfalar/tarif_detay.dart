@@ -9,6 +9,7 @@ import 'package:tarif_defteri/sayfalar/tarif_olusturma.dart';
 import 'package:tarif_defteri/sayfalar/yemek_yapma_modu.dart';
 import 'package:share_plus/share_plus.dart';
 import '../widgets/banner_ad_widget.dart';
+import '../utils/magaza_linki.dart';
 import '../utils/recipe_link_helper.dart';
 import '../services/analytics_service.dart';
 
@@ -24,11 +25,6 @@ class TarifDetay extends StatefulWidget {
 class _TarifDetayState extends State<TarifDetay> {
   List<Map<String, dynamic>> sections = [];
   double _portionMultiplier = 1.0;
-
-  /// Paylaşım metnine eklenen indirme linki; platforma göre doğru mağazaya gider.
-  String get _appStoreLink => Platform.isIOS
-      ? 'https://apps.apple.com/tr/app/dijital-tarif-defteri/id6759447259'
-      : 'https://play.google.com/store/apps/details?id=com.sudekazan.tarif_defteri_yeni';
 
   String _scaleIngredient(String ingredient, double multiplier) {
     if (multiplier == 1.0) return ingredient;
@@ -324,7 +320,7 @@ class _TarifDetayState extends State<TarifDetay> {
                     
                     shareText += '\n━━━━━━━━━━━━━━━━━━\n';
                     shareText += 'share_from_app'.tr();
-                    shareText += '\n${'share_download_cta'.tr()} $_appStoreLink';
+                    shareText += '\n${'share_download_cta'.tr()} $magazaLinki';
 
                     // iOS için butonun konumunu al
                     final box = context.findRenderObject() as RenderBox?;
