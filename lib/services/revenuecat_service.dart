@@ -1,10 +1,15 @@
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'analytics_service.dart';
+
+/// [RevenueCatService.purchasePackage] sonucu. [iptal], kullanıcının mağaza
+/// penceresinde vazgeçtiğini belirtir; hata mesajı gösterilmemelidir.
+enum SatinAlmaSonucu { basarili, iptal, hata }
 
 class RevenueCatService {
   // Lütfen bu anahtarları kendi RevenueCat API anahtarlarınız ile değiştirin.
@@ -97,14 +102,30 @@ class RevenueCatService {
     }
   }
 
-  static Future<bool> purchasePackage(Package package) async {
+  static Future<SatinAlmaSonucu> purchasePackage(Package package) async {
     try {
       CustomerInfo customerInfo = (await Purchases.purchasePackage(package)).customerInfo;
       _setPro(_isEntitlementActive(customerInfo));
-      return _isPro;
+      return _isPro ? SatinAlmaSonucu.basarili : SatinAlmaSonucu.hata;
+    } on PlatformException catch (e) {
+      debugPrint('Purchase error: $e');
+      return sonucFromError(e);
     } catch (e) {
       debugPrint('Purchase error: $e');
-      return false;
+      return SatinAlmaSonucu.hata;
+    }
+  }
+
+  /// RevenueCat hatasını satın alma sonucuna çevirir: kullanıcının mağaza
+  /// penceresinde vazgeçmesi [SatinAlmaSonucu.iptal], geri kalanı hata.
+  @visibleForTesting
+  static SatinAlmaSonucu sonucFromError(PlatformException e) {
+    try {
+      return PurchasesErrorHelper.getErrorCode(e) == PurchasesErrorCode.purchaseCancelledError
+          ? SatinAlmaSonucu.iptal
+          : SatinAlmaSonucu.hata;
+    } catch (_) {
+      return SatinAlmaSonucu.hata; // Kod sayı değilse
     }
   }
 

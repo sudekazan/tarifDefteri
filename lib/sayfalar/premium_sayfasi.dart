@@ -25,11 +25,21 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
   bool _isLoading = true;
   bool _isPurchasing = false;
 
+  /// Satın alma veya geri yükleme başarılı olduysa true; bu durumda ekranın
+  /// kapanması "vazgeçti" sayılmaz ve paywall_kapatildi gönderilmez.
+  bool _proAktiflesti = false;
+
   @override
   void initState() {
     super.initState();
     AnalyticsService.paywallGoruldu(widget.source);
     _fetchOfferings();
+  }
+
+  @override
+  void dispose() {
+    if (!_proAktiflesti) AnalyticsService.paywallKapatildi(widget.source);
+    super.dispose();
   }
 
   Future<void> _fetchOfferings() async {
@@ -124,15 +134,24 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
 
   Future<void> _purchase(Package package) async {
     setState(() => _isPurchasing = true);
-    bool success = await RevenueCatService.purchasePackage(package);
+    final sonuc = await RevenueCatService.purchasePackage(package);
+    if (sonuc == SatinAlmaSonucu.basarili) {
+      _proAktiflesti = true;
+      AnalyticsService.satinAlma(
+        packageId: package.identifier,
+        priceString: package.storeProduct.priceString,
+        source: widget.source,
+      );
+    } else {
+      AnalyticsService.satinAlmaBasarisiz(
+        source: widget.source,
+        packageId: package.identifier,
+        iptalEdildi: sonuc == SatinAlmaSonucu.iptal,
+      );
+    }
     if (mounted) {
       setState(() => _isPurchasing = false);
-      if (success) {
-        AnalyticsService.satinAlma(
-          packageId: package.identifier,
-          priceString: package.storeProduct.priceString,
-          source: widget.source,
-        );
+      if (sonuc == SatinAlmaSonucu.basarili) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('premium_success'.tr()),
@@ -149,6 +168,7 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
   Future<void> _restore() async {
     setState(() => _isPurchasing = true);
     bool success = await RevenueCatService.restorePurchases();
+    if (success) _proAktiflesti = true;
     if (mounted) {
       setState(() => _isPurchasing = false);
       if (success) {
