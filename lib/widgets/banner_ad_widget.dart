@@ -61,8 +61,13 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
 
   @override
   Widget build(BuildContext context) {
+    // Reklam gösterilmiyorsa (Pro kullanıcı veya henüz yüklenmediyse) bile
+    // sistemin alt güvenli alanını (Android gezinme çubuğu/gesture bar) boş
+    // bırakmıyoruz: aksi halde bu widget `bottomNavigationBar` olarak
+    // kullanıldığında yükseklik 0 olur ve altındaki Kaydet gibi butonlar
+    // doğrudan sistem navigasyon çubuğunun arkasına/altına düşer.
     if (RevenueCatService.isProUser || !_isBannerAdReady || _bannerAd == null) {
-      return const SizedBox.shrink();
+      return SizedBox(height: MediaQuery.of(context).padding.bottom);
     }
 
     return SafeArea(

@@ -15,6 +15,7 @@ import '../services/ai_recipe_service.dart';
 import '../services/ad_service.dart';
 import '../services/revenuecat_service.dart';
 import '../widgets/banner_ad_widget.dart';
+import '../widgets/ai_chef_loading_animation.dart';
 import 'package:tarif_defteri/sayfalar/premium_sayfasi.dart';
 import '../utils/error_helper.dart';
 import '../services/review_service.dart';
@@ -604,17 +605,13 @@ class _KlasorIciState extends State<KlasorIci> {
              color: Theme.of(context).cardColor,
              borderRadius: BorderRadius.circular(24),
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CircularProgressIndicator(color: Theme.of(context).primaryColor),
-              const SizedBox(height: 24),
-              Text(
-                'ai_generating_title'.tr(),
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-              const SizedBox(height: 8),
-              Text('ai_generating_message'.tr(), textAlign: TextAlign.center),
+          child: AiChefLoadingAnimation(
+            title: 'ai_generating_title'.tr(),
+            color: Theme.of(context).primaryColor,
+            messages: [
+              'ai_generating_step_1'.tr(),
+              'ai_generating_step_2'.tr(),
+              'ai_generating_step_3'.tr(),
             ],
           ),
         ),
@@ -691,9 +688,28 @@ class _KlasorIciState extends State<KlasorIci> {
     }
   }
 
-  /// Günlük ücretsiz AI hakkı bittiğinde gösterilir: kullanıcı ya reklam
-  /// izleyip o güne +1 hak kazanır ya da Pro'ya geçip sınırsız kullanır.
+  /// Günlük AI hakkı bittiğinde gösterilir. Pro kullanıcıya "reklam izle"
+  /// ya da "Pro'ya geç" seçenekleri anlamsız olduğundan (zaten Pro ve bonus
+  /// hakkı yok), onlara sadece günlük tavanın dolduğunu söyleyen basit bir
+  /// bilgi gösterilir; free kullanıcıya eski "reklam/Pro" seçim diyaloğu çıkar.
   void _showAiLimitChoiceDialog(String input, bool isUrl) {
+    if (RevenueCatService.isProUser) {
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Text('ai_limit_pro_title'.tr(), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+          content: Text('ai_limit_pro_body'.tr(), style: const TextStyle(fontSize: 14, height: 1.4)),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text('ai_limit_pro_ok'.tr(), style: const TextStyle(fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(

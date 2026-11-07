@@ -15,6 +15,7 @@ import '../auth_screen.dart';
 import '../utils/error_helper.dart';
 import '../services/review_service.dart';
 import '../services/analytics_service.dart';
+import '../widgets/ai_chef_loading_animation.dart';
 
 class BugunNePisisemSayfasi extends StatefulWidget {
   const BugunNePisisemSayfasi({super.key});
@@ -122,6 +123,35 @@ class _BugunNePisisemSayfasiState extends State<BugunNePisisemSayfasi> {
     }
   }
 
+  /// Kullanıcının hedef klasörünü döndürür. Hiç klasörü yoksa (örn. ilk
+  /// kurulumda klasör oluşturmadan doğrudan "Bugün ne pişirsem"i kullandıysa),
+  /// tarifin "kayboluyor" hissi vermemesi için otomatik bir varsayılan klasör
+  /// oluşturup oraya kaydeder — eskiden burada sabit `1` ID'sine düşülüyordu,
+  /// ama o ID'ye ait bir klasör hiç oluşmamışsa tarif hiçbir yerde görünmüyordu.
+  Future<int> _hedefKlasorIdGetir() async {
+    if (_hedefKlasor != null) return _hedefKlasor!.klasor_id;
+    if (_klasorListesi.isNotEmpty) return _klasorListesi.first.klasor_id;
+
+    final prefs = await SharedPreferences.getInstance();
+    final klasorJsonList = prefs.getStringList('klasorler') ?? [];
+    final yeniKlasorId = DateTime.now().millisecondsSinceEpoch;
+    final yeniKlasor = KlasorData(
+      klasor_id: yeniKlasorId,
+      klasor_adi: 'what_to_cook_default_folder_name'.tr(),
+    );
+    klasorJsonList.add(json.encode(yeniKlasor.toMap()));
+    await prefs.setStringList('klasorler', klasorJsonList);
+    await _firebaseService.saveKlasorToFirebase(yeniKlasor);
+
+    if (mounted) {
+      setState(() {
+        _klasorListesi = [..._klasorListesi, yeniKlasor];
+        _hedefKlasor = yeniKlasor;
+      });
+    }
+    return yeniKlasorId;
+  }
+
   void _malzemeEkle(String malzeme) {
     final temiz = malzeme.trim();
     if (temiz.isEmpty) return;
@@ -205,6 +235,7 @@ class _BugunNePisisemSayfasiState extends State<BugunNePisisemSayfasi> {
       final recipeFuture = _aiRecipeService.generateRecipe(
         prompt,
         languageCode: languageCode,
+        mode: 'ingredients',
       );
       await _handleRecipeResult(recipeFuture);
     } catch (e) {
@@ -226,7 +257,7 @@ class _BugunNePisisemSayfasiState extends State<BugunNePisisemSayfasi> {
       if (!mounted) return;
       setState(() => _isLoading = false);
 
-      final hedefKlasorId = _hedefKlasor?.klasor_id ?? 1;
+      final hedefKlasorId = await _hedefKlasorIdGetir();
 
       final yeniTarif = TarifData(
         tarif_id: 0,
@@ -295,9 +326,28 @@ class _BugunNePisisemSayfasiState extends State<BugunNePisisemSayfasi> {
     await prefs.setStringList(key, tariflerJson);
   }
 
-  /// Günlük ücretsiz AI hakkı bittiğinde gösterilir: kullanıcı ya reklam
-  /// izleyip o güne +1 hak kazanır ya da Pro'ya geçip sınırsız kullanır.
+  /// Günlük AI hakkı bittiğinde gösterilir. Pro kullanıcıya "reklam izle"
+  /// ya da "Pro'ya geç" seçenekleri anlamsız olduğundan (zaten Pro ve bonus
+  /// hakkı yok), onlara sadece günlük tavanın dolduğunu söyleyen basit bir
+  /// bilgi gösterilir; free kullanıcıya eski "reklam/Pro" seçim diyaloğu çıkar.
   void _showAiLimitChoiceDialog() {
+    if (RevenueCatService.isProUser) {
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Text('ai_limit_pro_title'.tr(), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+          content: Text('ai_limit_pro_body'.tr(), style: const TextStyle(fontSize: 14, height: 1.4)),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text('ai_limit_pro_ok'.tr(), style: const TextStyle(fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -915,28 +965,12 @@ class _BugunNePisisemSayfasiState extends State<BugunNePisisemSayfasi> {
                     borderRadius: BorderRadius.circular(24),
                     boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 20)],
                   ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const SizedBox(
-                        width: 52,
-                        height: 52,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 4,
-                          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE65100)),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      Text(
-                        'what_to_cook_loading_title'.tr(),
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'what_to_cook_loading_message'.tr(),
-                        textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 13, color: Colors.grey[600]),
-                      ),
+                  child: AiChefLoadingAnimation(
+                    title: 'what_to_cook_loading_title'.tr(),
+                    messages: [
+                      'what_to_cook_loading_step_1'.tr(),
+                      'what_to_cook_loading_step_2'.tr(),
+                      'what_to_cook_loading_step_3'.tr(),
                     ],
                   ),
                 ),

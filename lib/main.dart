@@ -31,7 +31,13 @@ void main() async {
   }
 
   try {
-    await GoogleSignIn.instance.initialize();
+    // serverClientId: Firebase Console'daki Web OAuth client ID'si.
+    // Firebase idToken üretebilmesi için Android'de bu şart; Google
+    // Sign-In SHA parmak izi eklendikten sonra google-services.json
+    // yeniden indirilip buradan alındı.
+    await GoogleSignIn.instance.initialize(
+      serverClientId: '919442709959-k7ebgmegt80tccnqabphb3d0dd0coer4.apps.googleusercontent.com',
+    );
   } catch (e) {
     debugPrint('GoogleSignIn init error: $e');
   }

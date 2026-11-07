@@ -60,9 +60,9 @@ flutter_icons:
 
 flutter_native_splash:
   image: assets/logo.png
-  color: "#FFFFFF"
+  color: "#F8F9FC"
   image_dark: assets/logo.png
-  color_dark: "#000000"
+  color_dark: "#10121A"
   android_gravity: center
   ios_content_mode: center
 

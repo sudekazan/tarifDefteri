@@ -48,12 +48,20 @@ class AiRecipeService {
     }
   }
 
-  /// Kullanıcının girdiği yemek ismine göre yapay zekadan tarif oluşturur.
-  Future<AiRecipeResult> generateRecipe(String dishName, {String languageCode = 'en'}) async {
+  /// Kullanıcının girdiği yemek ismine (ya da elindeki malzemelere) göre
+  /// yapay zekadan tarif oluşturur.
+  /// [mode]: 'dish_name' (AI Şef: tek yemek adı/link) veya 'ingredients'
+  /// (Bugün Ne Pişirsem: malzeme listesi) — backend buna göre başlık
+  /// üretimini ve geçersiz girdi mesajlarını ayırır.
+  Future<AiRecipeResult> generateRecipe(
+    String dishName, {
+    String languageCode = 'en',
+    String mode = 'dish_name',
+  }) async {
     try {
       final idToken = await _getIdToken();
       final url = Uri.parse('$_baseUrl/generate-recipe');
-      
+
       final response = await http.post(
         url,
         headers: {
@@ -63,6 +71,7 @@ class AiRecipeService {
         body: jsonEncode({
           'prompt': dishName,
           'language': languageCode,
+          'mode': mode,
         }),
       ).timeout(const Duration(seconds: 45));
 

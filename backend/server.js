@@ -51,6 +51,10 @@ const REVENUECAT_SECRET_KEY = process.env.REVENUECAT_SECRET_KEY;
 // RevenueCatService.canUseAi() ile aynı değer olmalı).
 const FREE_DAILY_AI_LIMIT = 3;
 
+// Pro kullanıcılar da artık tamamen sınırsız değil; normal kullanımı
+// rahatça karşılayan ama otomatik/kötüye kullanımı önleyen bir tavan.
+const PRO_DAILY_AI_LIMIT = 20;
+
 // Ücretsiz kullanıcının ödüllü reklam izleyerek günde kazanabileceği
 // azami ekstra hak sayısı (reklam "vergi" değil, isteğe bağlı ödül olsun diye).
 const MAX_BONUS_USES_PER_DAY = 3;
@@ -97,10 +101,11 @@ async function isProUserViaRevenueCat(firebaseUid) {
 }
 
 /**
- * Ücretsiz kullanıcının günlük AI Şef hakkını Firestore'da (transaction ile) kontrol eder ve artırır.
- * Günlük limit, reklamla kazanılmış bonusUses kadar artırılmış olabilir.
+ * Kullanıcının günlük AI Şef hakkını Firestore'da (transaction ile) kontrol eder ve artırır.
+ * [baseLimit]: free kullanıcı için FREE_DAILY_AI_LIMIT, pro kullanıcı için PRO_DAILY_AI_LIMIT.
+ * [allowBonus]: sadece free kullanıcılar reklamla kazanılmış bonusUses hakkı kullanabilir.
  */
-async function checkAndIncrementDailyUsage(firebaseUid) {
+async function checkAndIncrementDailyUsage(firebaseUid, baseLimit, allowBonus) {
     const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD (UTC)
     const docRef = admin.firestore().collection('aiUsage').doc(`${firebaseUid}_${today}`);
 
@@ -108,8 +113,8 @@ async function checkAndIncrementDailyUsage(firebaseUid) {
         return await admin.firestore().runTransaction(async (tx) => {
             const snap = await tx.get(docRef);
             const currentCount = snap.exists ? (snap.data().count || 0) : 0;
-            const bonusUses = snap.exists ? (snap.data().bonusUses || 0) : 0;
-            const effectiveLimit = FREE_DAILY_AI_LIMIT + bonusUses;
+            const bonusUses = allowBonus && snap.exists ? (snap.data().bonusUses || 0) : 0;
+            const effectiveLimit = baseLimit + bonusUses;
 
             if (currentCount >= effectiveLimit) {
                 return { allowed: false, remaining: 0 };
@@ -124,8 +129,11 @@ async function checkAndIncrementDailyUsage(firebaseUid) {
         });
     } catch (error) {
         console.error('Günlük kullanım kontrolü hatası (Firestore):', error.message);
-        // Altyapı sorununda kullanıcıyı tamamen bloklamak yerine isteğe izin ver.
-        return { allowed: true, remaining: null };
+        // ÖNEMLİ: Altyapı sorununda sınırsız izin vermek maliyet riski oluşturur
+        // (önceki haliyle bu catch bloğu "allowed: true, remaining: null" döndürüp
+        // hem free hem pro kullanıcıyı fiilen sınırsız yapıyordu). Güvenli taraf:
+        // isteği reddet, UI "limit doldu" değil "geçici sorun" mesajı göstersin.
+        return { allowed: false, remaining: null, infraError: true };
     }
 }
 
@@ -239,37 +247,73 @@ app.post('/api/grant-bonus-ai-use', recipeLimiter, authenticate, async (req, res
 app.post('/api/generate-recipe', recipeLimiter, authenticate, async (req, res) => {
     const userPrompt = req.body.prompt;
     const languageCode = req.body.language || 'en';
+    // 'dish_name': kullanıcı tek bir yemek adı/link girdi (AI Şef).
+    // 'ingredients': kullanıcı elindeki malzemeleri girdi (Bugün Ne Pişirsem).
+    const mode = req.body.mode === 'ingredients' ? 'ingredients' : 'dish_name';
 
     if (!userPrompt || typeof userPrompt !== 'string' || userPrompt.trim().length === 0) {
         return res.status(400).json({ success: false, message: 'Please enter a valid food name.' });
     }
 
-    // Ücretsiz kullanıcı günlük limiti: Pro abonelerin RevenueCat kaydı
-    // Firebase UID'ye bağlıysa (Purchases.logIn) burada tespit edilip
-    // limit tamamen atlanır; değilse Firestore'daki günlük sayaç kontrol edilir.
+    // Hem free hem pro kullanıcı artık günlük bir tavana tabi (free: düşük +
+    // reklamla bonus, pro: cömert ama sınırsız değil — maliyet güvenliği).
     const firebaseUid = req.user.uid;
     const isPro = await isProUserViaRevenueCat(firebaseUid);
+    const baseLimit = isPro ? PRO_DAILY_AI_LIMIT : FREE_DAILY_AI_LIMIT;
 
-    // null => Pro/sınırsız. Değilse Flutter tarafı yerel "kalan hak" sayacını
-    // bu değerle senkronize eder (bkz. RevenueCatService.syncRemainingFromServer).
-    let remaining = null;
-    if (!isPro) {
-        const usage = await checkAndIncrementDailyUsage(firebaseUid);
-        if (!usage.allowed) {
-            return res.status(429).json({
+    const usage = await checkAndIncrementDailyUsage(firebaseUid, baseLimit, !isPro);
+    if (!usage.allowed) {
+        if (usage.infraError) {
+            // Firestore'a ulaşılamadı: limiti sessizce atlamak yerine kullanıcıya
+            // "geçici sorun" diyoruz; bunu "hakkın bitti" ile karıştırmamalı.
+            return res.status(503).json({
                 success: false,
-                message: 'Daily free AI Chef limit reached. Upgrade to Pro for unlimited recipes.',
-                remaining: 0,
+                message: 'Şu anda isteğiniz kontrol edilemiyor. Lütfen birkaç dakika sonra tekrar deneyin.',
+                remaining: null,
             });
         }
-        remaining = usage.remaining;
+        return res.status(429).json({
+            success: false,
+            message: isPro
+                ? 'Daily Pro AI Chef limit reached. Please try again tomorrow.'
+                : 'Daily free AI Chef limit reached. Upgrade to Pro for a higher limit.',
+            remaining: 0,
+            isPro,
+        });
     }
+    const remaining = usage.remaining;
 
-    console.log(`Recipe requested: "${userPrompt}" | Language: ${languageCode} | Pro: ${isPro}`);
+    console.log(`Recipe requested: "${userPrompt}" | Mode: ${mode} | Language: ${languageCode} | Pro: ${isPro}`);
 
     const measurementRule = languageCode === 'en'
         ? 'Use US Imperial measurements (cups, oz, tbsp, tsp, °F) for all quantities and temperatures.'
         : 'Use metric measurements (grams, ml, °C) for all quantities and temperatures.';
+
+    const titleRule = mode === 'ingredients'
+        ? `=== TITLE (CRITICAL) ===
+The user input is a list of ingredients and preferences, NOT a dish name. Invent a natural,
+appetizing dish name in '${languageCode}' for something that can realistically be cooked from
+them — NEVER just list or concatenate the ingredient names as the title.`
+        : `=== FOOD NAME INTERPRETATION ===
+Always interpret the dish name in the culinary/cultural context of language code '${languageCode}'.
+Examples:
+- language='en', input='pasta' → Italian-style pasta dish (spaghetti, penne, etc.) NOT a Turkish cream cake.
+- language='tr', input='pasta' → Turkish cream cake.
+- language='en', input='mantı' → Turkish-style dumplings (explain what it is in English).
+Apply the meaning that is most natural and common in the cuisine of the given language.`;
+
+    const validationRule = mode === 'ingredients'
+        ? `=== VALIDATION ===
+The ingredients may be an imperfect or unusual combination — that's expected and fine: do your
+best to invent a plausible, edible recipe from (most of) them, improvising a reasonable addition
+only when truly necessary. Only return an error if the input contains NO real food ingredients at
+all (e.g. random objects, gibberish). When you do return an error, give a SPECIFIC, helpful reason
+(e.g. which ingredients you couldn't work with, or that the requested meal type doesn't fit them) —
+never a vague "something went wrong" message:
+{ "success": false, "message": "<specific, helpful reason translated to '${languageCode}'>" }`
+        : `=== VALIDATION ===
+If the input is clearly NOT a food or drink name in any language, return:
+{ "success": false, "message": "<appropriate error message translated to '${languageCode}'>" }`;
 
     try {
         const response = await openai.chat.completions.create({
@@ -277,7 +321,7 @@ app.post('/api/generate-recipe', recipeLimiter, authenticate, async (req, res) =
             messages: [
                 {
                     "role": "system",
-                    "content": `You are an expert chef assistant. Your job is to generate a detailed, reliable recipe for the dish the user requests.
+                    "content": `You are an expert chef assistant. Your job is to generate a detailed, reliable recipe ${mode === 'ingredients' ? 'from the ingredients and preferences the user provides' : 'for the dish the user requests'}.
 
 === LANGUAGE (HIGHEST PRIORITY) ===
 User's language code: '${languageCode}'
@@ -285,17 +329,9 @@ User's language code: '${languageCode}'
 - Never mix languages.
 - ${measurementRule}
 
-=== FOOD NAME INTERPRETATION ===
-Always interpret the dish name in the culinary/cultural context of language code '${languageCode}'.
-Examples:
-- language='en', input='pasta' → Italian-style pasta dish (spaghetti, penne, etc.) NOT a Turkish cream cake.
-- language='tr', input='pasta' → Turkish cream cake.
-- language='en', input='mantı' → Turkish-style dumplings (explain what it is in English).
-Apply the meaning that is most natural and common in the cuisine of the given language.
+${titleRule}
 
-=== VALIDATION ===
-If the input is clearly NOT a food or drink name in any language, return:
-{ "success": false, "message": "<appropriate error message translated to '${languageCode}'>" }
+${validationRule}
 
 === RESPONSE FORMAT (CRITICAL) ===
 Return ONLY valid JSON. No markdown, no code fences, no extra text.
@@ -315,7 +351,9 @@ Error:
                 },
                 {
                     "role": "user",
-                    "content": `Generate a recipe for: ${userPrompt}`
+                    "content": mode === 'ingredients'
+                        ? `Generate a recipe using these ingredients/preferences: ${userPrompt}`
+                        : `Generate a recipe for: ${userPrompt}`
                 }
             ],
             temperature: 0.7,
