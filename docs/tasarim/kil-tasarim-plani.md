@@ -1,6 +1,6 @@
 # Kil tasarımına geçiş planı (Tarifly)
 
-Tarih: 2026-11-09. Durum: **Aşama 1 ve 2 tamamlandı; ekranlar aşama 3'ten itibaren yenilenecek.**
+Tarih: 2026-11-09. Durum: **Aşama 1, 2 ve 3 tamamlandı; ekranlar aşama 4'ten itibaren yenilenecek.**
 Kaynak: UI UX Pro Max'in "Recipe & Cooking App" önerisi (claymorphism) ve Sude ile yapılan önce/sonra görsel çalışması.
 
 ## Kararlar (Sude, 2026-11-09)
@@ -111,7 +111,13 @@ Her aşamadan sonra: `flutter analyze`, ilgili testler, simülatörde açık ve 
    - `/settings` rotası ve kullanılmayan `KlasorlerWithTheme` (`lib/widgets/klasorler_with_theme.dart`) kaldırıldı.
    - `test/widget_test.dart`: Flutter'ın sayaç şablonu duruyordu (uygulamada sayaç yok, hep kalıyordu). Yerine kabuğun duman testi geldi: sekme geçişi, sekmelerin ilk seçilince kurulması, yeniden seçilince sinyal, geri tuşu. Testte sekmeler `AnaKabuk.sekmeKurucu` ile sahte sayfalarla değiştirilir (Firebase gerekmesin).
    - Testler: `test/kil_sekme_cubugu_test.dart` (48'lik dokunma alanı, altı dilde 320 genişlikte ve en büyük yazıda taşma yok, yeni metinler altı dilde), `test/ana_sayfa_parcalari_test.dart` (48'lik dokunma alanı, iki sütun / tek sütun, açık ve koyu modda 3.2 kat yazıda taşma yok).
-3. **Klasör içi:** tarif listesi, tarif ekleme alt sayfası (kendim yazacağım, Şefe sor, linkten tarif), klasör kaydı. Ana sayfadaki "Yeni klasör ekle" düğmesi "Yeni tarif" olur ve bu alt sayfayı açar (tarifin hangi klasöre gideceği seçilir).
+3. **Klasör içi — tamamlandı (2026-11-09; simülatör yerine test görüntüleriyle açık/koyu ve 3.2 kat yazıda bakıldı, gerçek cihaz kontrolü aşama 2 ile birlikte Sude'nin derlemesinde):** tarif listesi, tarif ekleme alt sayfası (kendim yazacağım, Şefe sor, linkten tarif), klasör kaydı. Ana sayfadaki düğme "Yeni tarif" oldu ve bu alt sayfayı açıyor.
+   - Sude'nin kararları: "Yeni klasör" düğmesi "Klasörlerim" başlığının yanında, sığmazsa (büyük yazı) altına iner (hiç klasör yokken boş durumdaki "Yeni klasör ekle" düğmesi kalır). Alt sayfada klasör seçici hep görünür; klasör içinden açılınca o klasör seçili gelir. Ana sayfadan eklenen tarif kaydedilince o klasör açılır (klasör içinden başka klasör seçilirse de o klasör açılır). Favoriler ekranı da aynı görünüme geçti.
+   - Dosyalar: `lib/sayfalar/tarif_ekleme_akisi.dart` (`TarifEklemeAkisi`: üç akış klasör içinden buraya taşındı, mantık ve analitik değerleri aynı; tarif sınırı için klasördeki tarif sayısı cihazdan okunuyor), `lib/widgets/tarif_ekle_alt_sayfasi.dart`, `lib/widgets/tarif_listesi_parcalari.dart` (`TarifSatiri`, `TarifListesiGorunumu`, `TarifBosDurum`), `lib/widgets/klasor_ikon_secici.dart`, `lib/widgets/kil/kil_sayfa_basligi.dart` (`KilSayfaBasligi`, `kilDurumCubuguStili`), `lib/utils/klasor_adi.dart` (`klasorGorunenAdi`, iki sayfadaki kopya kaldırıldı).
+   - İç sayfalarda üst çubuk yok: geri ve arama yuvarlak düğme, altında Caveat 34 başlık (büyük yazıda kesilmez). Tarif satırında kalp ve "⋮" menüsü (Paylaş, Tarif Sil); yazı 1.6 katın üstündeyse ad, görsel ve düğmelerin altına iner. Alt sayfadaki seçenekler de 1.6 katın üstünde ikonu metnin üstüne alır.
+   - Klasör kaydı: başlık "Yeni klasör", ad kutusunun görünen etiketi var, ad boşken Kaydet pasif. İkon kutuları 56x56; seçili kutuda onay işareti de var.
+   - Diyaloglar ve snackbar'lar aşama 9'a bırakıldı (akışlardaki sabit renkler orada).
+   - Testler: `test/tarif_listesi_parcalari_test.dart`, `test/tarif_ekle_alt_sayfasi_test.dart` (48'lik dokunma alanları, seçim, girişsiz kilit, 320 genişlik ve 3.2 kat yazıda taşma, ekran okuyucu, klasör kaydı dönüşü, yeni metinler altı dilde). Bu testler ekranı `tester.view.physicalSize` ile gerçekten daraltıyor.
 4. **Tarif detayı ve tarif oluşturma:** `flutter_quill` editörünün araç çubuğu ve renkleri dikkat ister.
 5. **Yemek yapma modu.**
 6. **Bugün ne pişirsem:** AI bekleme ekranındaki Lottie animasyonunun yeni renklerle uyumu da kontrol edilir.

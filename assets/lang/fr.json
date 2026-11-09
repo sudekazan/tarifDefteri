@@ -392,5 +392,14 @@
   "tab_shopping": "Courses",
   "tab_profile": "Profil",
   "home_pro_badge": "Pro",
-  "home_folders_title": "Mes dossiers"
+  "home_folders_title": "Mes dossiers",
+  "home_new_recipe": "Nouvelle recette",
+  "home_new_folder": "Nouveau dossier",
+  "recipe_add_folder_label": "Dans quel dossier ?",
+  "add_option_manual_desc": "Saisissez vous-même les ingrédients et les étapes",
+  "add_option_ai_desc": "Donnez le nom d'un plat, le Chef rédige la recette",
+  "add_option_link_desc": "Collez le lien d'une page de recette",
+  "folder_name_label": "Nom du dossier",
+  "recipe_favorite_add": "Ajouter aux favoris",
+  "recipe_favorite_remove": "Retirer des favoris"
 }

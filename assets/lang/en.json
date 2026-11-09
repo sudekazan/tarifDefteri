@@ -392,5 +392,14 @@
   "tab_shopping": "Shopping",
   "tab_profile": "Profile",
   "home_pro_badge": "Pro",
-  "home_folders_title": "My folders"
+  "home_folders_title": "My folders",
+  "home_new_recipe": "New recipe",
+  "home_new_folder": "New folder",
+  "recipe_add_folder_label": "Which folder?",
+  "add_option_manual_desc": "Type the ingredients and steps yourself",
+  "add_option_ai_desc": "Name a dish and the Chef writes the recipe",
+  "add_option_link_desc": "Paste the link to a recipe page",
+  "folder_name_label": "Folder name",
+  "recipe_favorite_add": "Add to favorites",
+  "recipe_favorite_remove": "Remove from favorites"
 }

@@ -392,5 +392,14 @@
   "tab_shopping": "Compras",
   "tab_profile": "Perfil",
   "home_pro_badge": "Pro",
-  "home_folders_title": "Minhas pastas"
+  "home_folders_title": "Minhas pastas",
+  "home_new_recipe": "Nova receita",
+  "home_new_folder": "Nova pasta",
+  "recipe_add_folder_label": "Em qual pasta?",
+  "add_option_manual_desc": "Escreva você mesmo os ingredientes e os passos",
+  "add_option_ai_desc": "Digite o nome de um prato e o Chef prepara a receita",
+  "add_option_link_desc": "Cole o link de uma página de receita",
+  "folder_name_label": "Nome da pasta",
+  "recipe_favorite_add": "Adicionar aos favoritos",
+  "recipe_favorite_remove": "Remover dos favoritos"
 }

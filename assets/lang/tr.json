@@ -392,5 +392,14 @@
   "tab_shopping": "Alışveriş",
   "tab_profile": "Profil",
   "home_pro_badge": "Pro",
-  "home_folders_title": "Klasörlerim"
+  "home_folders_title": "Klasörlerim",
+  "home_new_recipe": "Yeni tarif",
+  "home_new_folder": "Yeni klasör",
+  "recipe_add_folder_label": "Hangi klasöre?",
+  "add_option_manual_desc": "Malzemeleri ve adımları kendiniz yazın",
+  "add_option_ai_desc": "Yemeğin adını yazın, Şef tarifi hazırlasın",
+  "add_option_link_desc": "Bir tarif sayfasının linkini yapıştırın",
+  "folder_name_label": "Klasör adı",
+  "recipe_favorite_add": "Favorilere ekle",
+  "recipe_favorite_remove": "Favorilerden çıkar"
 }

@@ -392,5 +392,14 @@
   "tab_shopping": "Compras",
   "tab_profile": "Perfil",
   "home_pro_badge": "Pro",
-  "home_folders_title": "Mis carpetas"
+  "home_folders_title": "Mis carpetas",
+  "home_new_recipe": "Nueva receta",
+  "home_new_folder": "Nueva carpeta",
+  "recipe_add_folder_label": "¿En qué carpeta?",
+  "add_option_manual_desc": "Escribe tú los ingredientes y los pasos",
+  "add_option_ai_desc": "Escribe el nombre de un plato y el Chef prepara la receta",
+  "add_option_link_desc": "Pega el enlace de una página de recetas",
+  "folder_name_label": "Nombre de la carpeta",
+  "recipe_favorite_add": "Añadir a favoritos",
+  "recipe_favorite_remove": "Quitar de favoritos"
 }
