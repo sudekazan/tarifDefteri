@@ -34,3 +34,5 @@ cd backend && npm start
 - 2026-10-29: Uygulama Tarifly olarak yeniden markalandı.
 - 2026-10-30: Google ve Apple ile giriş eklendi.
 - 2026-11-03: En küçük yazı 11 pt, yazılarda en az 4.5:1 kontrast (Apple HIG).
+- 2026-11-04: Gerçek abone yok; önce ölçüm (analitik olayları). RevenueCat Experiments ile deneyler gerçek satın almalar başlayınca.
+- 2026-11-04: AB onay formunda (AdMob GDPR mesajı) "İzin vermeyin" düğmesi tüm ülkelerde açık.
