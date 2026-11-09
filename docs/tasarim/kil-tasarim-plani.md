@@ -118,6 +118,7 @@ Her aşamadan sonra: `flutter analyze`, ilgili testler, simülatörde açık ve 
    - İç sayfalarda üst çubuk yok: geri ve arama yuvarlak düğme, altında Caveat 34 başlık (büyük yazıda kesilmez). Tarif satırında kalp ve "⋮" menüsü (Paylaş, Tarif Sil); yazı 1.6 katın üstündeyse ad, görsel ve düğmelerin altına iner. Alt sayfadaki seçenekler de 1.6 katın üstünde ikonu metnin üstüne alır.
    - Klasör kaydı: başlık "Yeni klasör", ad kutusunun görünen etiketi var, ad boşken Kaydet pasif. İkon kutuları 56x56; seçili kutuda onay işareti de var.
    - Diyaloglar ve snackbar'lar aşama 9'a bırakıldı (akışlardaki sabit renkler orada).
+   - Klasör ikonu (2026-11-10, Sude onayladı): eski varsayılan kod `0xe2c7` bugünkü ikon fontunda "5 sn ileri" ikonu çıkıyordu (ikon seçmeden açılan klasörler, Ne pişirsem'in "Tariflerim"i dahil). `KlasorData.icon` bu kodu ekranda klasör ikonu (`0xe2a3`) olarak gösterir; kayıtlı değer değişmez. Yeni klasörlerin ve klasör kaydının varsayılanı `KlasorData.varsayilanIkon`. Test: `test/klasor_data_test.dart`.
    - Testler: `test/tarif_listesi_parcalari_test.dart`, `test/tarif_ekle_alt_sayfasi_test.dart` (48'lik dokunma alanları, seçim, girişsiz kilit, 320 genişlik ve 3.2 kat yazıda taşma, ekran okuyucu, klasör kaydı dönüşü, yeni metinler altı dilde). Bu testler ekranı `tester.view.physicalSize` ile gerçekten daraltıyor.
 4. **Tarif detayı ve tarif oluşturma:** `flutter_quill` editörünün araç çubuğu ve renkleri dikkat ister.
 5. **Yemek yapma modu.**

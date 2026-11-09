@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
+import '../tarifler_data/klasor_data.dart';
 import '../widgets/banner_ad_widget.dart';
 import '../widgets/kil/kil.dart';
 import '../widgets/klasor_ikon_secici.dart';
@@ -15,7 +16,7 @@ class KlasorKayit extends StatefulWidget {
 
 class _KlasorKayitState extends State<KlasorKayit> {
   var tfklasorAdi = TextEditingController();
-  int selectedIconCode = 0xe2c7; // Icons.folder
+  int selectedIconCode = KlasorData.varsayilanIkon;
 
   @override
   void dispose() {

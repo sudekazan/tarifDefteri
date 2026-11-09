@@ -286,6 +286,18 @@ void main() {
       final kaydet = find.widgetWithText(KilDugme, 'common_save');
       expect(tester.widget<KilDugme>(kaydet).onPressed, isNull);
 
+      // Açılışta klasör ikonu seçili (onay işareti tek ve klasör kutusunda).
+      expect(
+        find.descendant(
+          of: find.ancestor(
+            of: find.byIcon(Icons.folder),
+            matching: find.byType(AnimatedContainer),
+          ),
+          matching: find.byIcon(Icons.check_rounded),
+        ),
+        findsOneWidget,
+      );
+
       await tester.enterText(find.byType(TextField), '  Hamur işleri  ');
       await tester.pump();
       await tester.tap(find.byIcon(Icons.cake));
