@@ -12,6 +12,7 @@ import 'dart:io';
 import 'dart:math';
 import '../tarifler_data/tarif_data.dart';
 import '../tarifler_data/klasor_data.dart';
+import '../utils/error_helper.dart';
 import 'revenuecat_service.dart';
 
 /// Kullanıcı Google/Apple sign-in akışını kendi isteğiyle iptal ettiğinde
@@ -473,14 +474,16 @@ class FirebaseService {
           .authenticate();
       final String? idToken = account.authentication.idToken;
       if (idToken == null) {
-        throw Exception('auth_error_google_token'.tr());
+        throw KullaniciHatasi('auth_error_google_token'.tr());
       }
       return GoogleAuthProvider.credential(idToken: idToken);
     } on GoogleSignInException catch (e) {
       if (e.code == GoogleSignInExceptionCode.canceled) {
         throw SignInCancelledException();
       }
-      rethrow;
+      // SDK'nın ham metni (ör. "providerConfigurationError ...") kullanıcıya değil konsola.
+      debugPrint('Google sign-in hatası: $e');
+      throw KullaniciHatasi('auth_error_google_token'.tr());
     }
   }
 
@@ -510,7 +513,11 @@ class FirebaseService {
       if (e.code == AuthorizationErrorCode.canceled) {
         throw SignInCancelledException();
       }
-      rethrow;
+      debugPrint('Apple sign-in hatası: $e');
+      throw KullaniciHatasi('auth_error_apple_failed'.tr());
+    } on SignInWithAppleException catch (e) {
+      debugPrint('Apple sign-in hatası: $e');
+      throw KullaniciHatasi('auth_error_apple_failed'.tr());
     }
   }
 

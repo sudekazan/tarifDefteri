@@ -414,7 +414,9 @@ Error:
         const recipeData = JSON.parse(jsonContent);
 
         if (recipeData.success === false) {
-            return res.json({ success: false, message: recipeData.message || "This does not appear to be a valid food name.", remaining });
+            // Mesajı yapay zekâ kullanıcının dilinde yazar; yoksa istemci kendi
+            // çevrilmiş metnini gösterir (İngilizce yedek metin göndermiyoruz).
+            return res.json({ success: false, message: recipeData.message || null, remaining });
         }
 
         return res.json({ success: true, data: recipeData, remaining });

@@ -241,7 +241,7 @@ class _BugunNePisisemSayfasiState extends State<BugunNePisisemSayfasi> {
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        _showErrorDialog(e.toString());
+        _showErrorDialog(e);
       }
     }
   }
@@ -304,7 +304,7 @@ class _BugunNePisisemSayfasiState extends State<BugunNePisisemSayfasi> {
           AnalyticsService.aiLimitDoldu(kaynak: 'ne_pisirsem');
           _showAiLimitChoiceDialog();
         } else {
-          _showErrorDialog(e.toString());
+          _showErrorDialog(e);
         }
       }
     }
@@ -414,7 +414,7 @@ class _BugunNePisisemSayfasiState extends State<BugunNePisisemSayfasi> {
     );
   }
 
-  void _showErrorDialog(String error) {
+  void _showErrorDialog(Object error) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(

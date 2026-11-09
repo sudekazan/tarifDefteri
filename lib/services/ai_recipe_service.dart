@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:easy_localization/easy_localization.dart';
+import '../utils/error_helper.dart';
 
 /// generateRecipe() başarılı olduğunda döndürülen sonuç.
 /// [remaining], backend'in o gün için hesapladığı gerçek kalan ücretsiz
@@ -34,17 +35,17 @@ class AiRecipeService {
   Future<String> _getIdToken() async {
     User? user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      throw Exception('auth_required_for_ai'.tr());
+      throw KullaniciHatasi('auth_required_for_ai'.tr());
     }
     try {
       final idToken = await user.getIdToken() ?? '';
       if (idToken.isEmpty) {
-        throw Exception('Token boş döndü.');
+        throw StateError('Firebase idToken boş döndü');
       }
       return idToken;
     } catch (e) {
       debugPrint('Token error: $e');
-      throw Exception('ai_error_session'.tr());
+      throw KullaniciHatasi('ai_error_session'.tr());
     }
   }
 
@@ -80,20 +81,31 @@ class AiRecipeService {
       debugPrint('Response Body: ${response.body}');
 
       if (response.statusCode == 401) {
-        throw Exception('ai_error_session'.tr());
+        throw KullaniciHatasi('ai_error_session'.tr());
+      }
+      if (response.statusCode == 400) {
+        throw KullaniciHatasi('ai_error_not_food'.tr());
       }
       if (response.statusCode >= 500) {
-        throw Exception('ai_error_server'.tr());
+        throw KullaniciHatasi('ai_error_server'.tr());
       }
 
-      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      // Sunucu uyanırken (Render) JSON yerine HTML dönebilir; ham
+      // FormatException kullanıcıya gitmesin.
+      final Map<String, dynamic> data;
+      try {
+        data = jsonDecode(response.body) as Map<String, dynamic>;
+      } catch (e) {
+        debugPrint('AI yanıtı ayrıştırılamadı: $e');
+        throw KullaniciHatasi('ai_error_server'.tr());
+      }
       final remaining = data['remaining'] is int ? data['remaining'] as int : null;
 
       if (response.statusCode == 429) {
         // Saatlik istek sınırı günlük hak bitimiyle karıştırılmamalı; aksi
         // halde hakkı olan kullanıcıya "reklam izle / Pro'ya geç" gösterilir.
         if (data['rateLimited'] == true) {
-          throw Exception('ai_error_rate_limited'.tr());
+          throw KullaniciHatasi('ai_error_rate_limited'.tr());
         }
         throw AiLimitExceededException(data['message'] ?? 'ai_limit_reached'.tr());
       }
@@ -101,7 +113,12 @@ class AiRecipeService {
       if (data['success'] == true) {
         return AiRecipeResult(recipeData: Map<String, dynamic>.from(data['data']), remaining: remaining);
       } else {
-        throw Exception(data['message'] ?? 'ai_error_server'.tr());
+        // Buradaki mesajı yapay zekâ kullanıcının dilinde yazar (ör. "bu bir
+        // yemek adı değil"); yoksa çevrilmiş genel mesaj gösterilir.
+        final aiMesaji = data['message'];
+        throw KullaniciHatasi(
+          aiMesaji is String && aiMesaji.trim().isNotEmpty ? aiMesaji : 'ai_error_not_food'.tr(),
+        );
       }
 
     } catch (e) {

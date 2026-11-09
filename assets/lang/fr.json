@@ -75,7 +75,7 @@
   "auth_error_invalid_email": "Format d'e-mail invalide.",
   "auth_error_invalid_credential": "E-mail ou mot de passe incorrect. Cet e-mail n'est peut-être pas enregistré.",
   "auth_error_network": "Veuillez vérifier votre connexion internet.",
-  "auth_error_operation_not_allowed": "La connexion par e-mail/mot de passe n'est pas activée.",
+  "auth_error_operation_not_allowed": "Cette méthode de connexion est indisponible pour le moment. Veuillez en essayer une autre.",
   "auth_error_too_many_requests": "Trop de tentatives. Veuillez réessayer plus tard.",
   "auth_error_code_prefix": "Erreur : ",
   "auth_error_unexpected_prefix": "Une erreur inattendue s'est produite : ",
@@ -376,7 +376,7 @@
   "error_timeout": "Délai dépassé. Le serveur ne répond pas, veuillez réessayer plus tard.",
   "error_server_connection": "Impossible de se connecter au serveur. Vérifiez votre connexion internet.",
   "error_server_unexpected": "Une erreur serveur inattendue s'est produite. Veuillez réessayer.",
-  "error_technical": "Une erreur technique s'est produite. Veuillez contacter le développeur.",
+  "error_technical": "Une erreur inattendue s'est produite. Veuillez réessayer.",
   "link_recipe_fallback_title": "Recette depuis un lien",
   "update_dialog_title": "🎉 Nouvelle mise à jour disponible !",
   "update_dialog_body": "Une nouvelle version de {{appName}} est disponible ! Mettez à jour pour profiter des dernières fonctionnalités et améliorations de performance.",
@@ -384,5 +384,7 @@
   "update_dialog_button_update": "🚀 Mettre à jour",
   "update_dialog_button_later": "Plus tard",
   "update_dialog_button_ignore": "Ignorer",
-  "update_dialog_release_notes": "Nouveautés"
+  "update_dialog_release_notes": "Nouveautés",
+  "auth_error_user_disabled": "Ce compte a été désactivé. Pour obtenir de l'aide, contactez-nous via l'adresse indiquée dans les Paramètres.",
+  "auth_error_apple_failed": "La connexion avec Apple n'a pas pu aboutir. Veuillez réessayer."
 }

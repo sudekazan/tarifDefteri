@@ -126,30 +126,8 @@ class _AuthScreenState extends State<AuthScreen> {
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
       
-      String message = 'auth_error_generic'.tr();
-      if (e.code == 'weak-password') {
-        message = 'auth_error_weak_password'.tr();
-      } else if (e.code == 'email-already-in-use') {
-        message = 'auth_error_email_in_use'.tr();
-      } else if (e.code == 'user-not-found') {
-        message = 'auth_error_user_not_found'.tr();
-      } else if (e.code == 'wrong-password') {
-        message = 'auth_error_wrong_password'.tr();
-      } else if (e.code == 'invalid-email') {
-        message = 'auth_error_invalid_email'.tr();
-      } else if (e.code == 'invalid-credential') {
-        message = 'auth_error_invalid_credential'.tr();
-      } else if (e.code == 'network-request-failed') {
-        message = 'auth_error_network'.tr();
-      } else if (e.code == 'operation-not-allowed') {
-        message = 'auth_error_operation_not_allowed'.tr();
-      } else if (e.code == 'too-many-requests') {
-        message = 'auth_error_too_many_requests'.tr();
-      } else {
-        message = '${'auth_error_code_prefix'.tr()}${e.code}';
-      }
       setState(() {
-        _errorMessage = message;
+        _errorMessage = ErrorHelper.authHatasiMesaji(e.code);
         _isLoading = false;
       });
       debugPrint('FirebaseAuthException: ${e.code} - ${e.message}');
@@ -157,7 +135,7 @@ class _AuthScreenState extends State<AuthScreen> {
       if (!mounted) return;
       
       setState(() {
-        _errorMessage = '${'auth_error_unexpected_prefix'.tr()}${ErrorHelper.getFriendlyErrorMessage(e)}';
+        _errorMessage = ErrorHelper.getFriendlyErrorMessage(e);
         _isLoading = false;
       });
       debugPrint('General Exception: $e');
@@ -204,22 +182,11 @@ class _AuthScreenState extends State<AuthScreen> {
       // Kullanıcı kendi iptal etti, hata gösterme
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
-      String message = 'auth_error_generic'.tr();
-      if (e.code == 'account-exists-with-different-credential') {
-        message = 'auth_error_account_exists_different_credential'.tr();
-      } else if (e.code == 'network-request-failed') {
-        message = 'auth_error_network'.tr();
-      } else {
-        message = '${'auth_error_code_prefix'.tr()}${e.code}';
-      }
-      setState(() => _errorMessage = message);
+      setState(() => _errorMessage = ErrorHelper.authHatasiMesaji(e.code));
       debugPrint('FirebaseAuthException (social): ${e.code} - ${e.message}');
     } catch (e) {
       if (!mounted) return;
-      setState(() {
-        _errorMessage =
-            '${'auth_error_unexpected_prefix'.tr()}${ErrorHelper.getFriendlyErrorMessage(e)}';
-      });
+      setState(() => _errorMessage = ErrorHelper.getFriendlyErrorMessage(e));
       debugPrint('Social sign-in error: $e');
     } finally {
       if (mounted) {
@@ -260,18 +227,12 @@ class _AuthScreenState extends State<AuthScreen> {
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
       setState(() {
-        _errorMessage = switch (e.code) {
-          'user-not-found' => 'auth_error_user_not_found'.tr(),
-          'invalid-email' => 'auth_error_invalid_email'.tr(),
-          'network-request-failed' => 'auth_error_network'.tr(),
-          'too-many-requests' => 'auth_error_too_many_requests'.tr(),
-          _ => 'auth_error_generic'.tr(),
-        };
+        _errorMessage = ErrorHelper.authHatasiMesaji(e.code);
       });
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _errorMessage = '${'auth_error_unexpected_prefix'.tr()}${ErrorHelper.getFriendlyErrorMessage(e)}';
+        _errorMessage = ErrorHelper.getFriendlyErrorMessage(e);
       });
     } finally {
       if (mounted) {

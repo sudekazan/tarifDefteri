@@ -75,7 +75,7 @@
   "auth_error_invalid_email": "Invalid email format.",
   "auth_error_invalid_credential": "Email or password is incorrect. This email may not be registered.",
   "auth_error_network": "Please check your internet connection.",
-  "auth_error_operation_not_allowed": "Email/password sign-in is not enabled.",
+  "auth_error_operation_not_allowed": "This sign-in method is currently unavailable. Please try another method.",
   "auth_error_too_many_requests": "Too many attempts. Please try again later.",
   "auth_error_code_prefix": "Error: ",
   "auth_error_unexpected_prefix": "An unexpected error occurred: ",
@@ -376,7 +376,7 @@
   "error_timeout": "The request timed out. The server isn't responding, please try again later.",
   "error_server_connection": "Could not connect to the server. Please check your internet connection.",
   "error_server_unexpected": "An unexpected server error occurred. Please try again.",
-  "error_technical": "A technical error occurred. Please contact the developer.",
+  "error_technical": "Something went wrong. Please try again.",
   "link_recipe_fallback_title": "Recipe from Link",
   "update_dialog_title": "🎉 New Update Available!",
   "update_dialog_body": "A new version of {{appName}} is available! Update now to enjoy the latest features and performance improvements.",
@@ -384,5 +384,7 @@
   "update_dialog_button_update": "🚀 Update Now",
   "update_dialog_button_later": "Later",
   "update_dialog_button_ignore": "Ignore",
-  "update_dialog_release_notes": "What's New"
+  "update_dialog_release_notes": "What's New",
+  "auth_error_user_disabled": "This account has been disabled. For help, contact us via the address in Settings.",
+  "auth_error_apple_failed": "Sign in with Apple could not be completed. Please try again."
 }

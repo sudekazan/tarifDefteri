@@ -213,7 +213,7 @@ class _SettingsPageState extends State<SettingsPage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${'common_error'.tr()}: $e')),
+          SnackBar(content: Text(ErrorHelper.getFriendlyErrorMessage(e))),
         );
       }
     }
@@ -275,13 +275,7 @@ class _SettingsPageState extends State<SettingsPage> {
       _showAccountDeletionErrorText('settings_delete_account_retry'.tr());
       return false;
     } on FirebaseAuthException catch (e) {
-      _showAccountDeletionErrorText(
-        e.code == 'user-mismatch'
-            ? 'settings_reauth_user_mismatch'.tr()
-            : e.code == 'network-request-failed'
-                ? 'auth_error_network'.tr()
-                : '${'auth_error_code_prefix'.tr()}${e.code}',
-      );
+      _showAccountDeletionErrorText(ErrorHelper.authHatasiMesaji(e.code));
       return false;
     } catch (e) {
       _showAccountDeletionErrorSnackBar(e);
@@ -365,7 +359,7 @@ class _SettingsPageState extends State<SettingsPage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${'common_error'.tr()}: $e')),
+          SnackBar(content: Text(ErrorHelper.getFriendlyErrorMessage(e))),
         );
       }
     }
@@ -806,12 +800,11 @@ class _SifreDogrulamaDialogState extends State<_SifreDogrulamaDialog> {
       if (!mounted) return;
       setState(() {
         _isSubmitting = false;
-        _errorText = switch (e.code) {
-          'wrong-password' || 'invalid-credential' => 'auth_error_wrong_password'.tr(),
-          'too-many-requests' => 'auth_error_too_many_requests'.tr(),
-          'network-request-failed' => 'auth_error_network'.tr(),
-          _ => '${'auth_error_code_prefix'.tr()}${e.code}',
-        };
+        // Burada e-posta zaten belli; "e-posta veya şifre hatalı" yerine
+        // doğrudan "şifre hatalı" de.
+        _errorText = e.code == 'invalid-credential'
+            ? 'auth_error_wrong_password'.tr()
+            : ErrorHelper.authHatasiMesaji(e.code);
       });
     } catch (e) {
       if (!mounted) return;

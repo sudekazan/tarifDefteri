@@ -75,7 +75,7 @@
   "auth_error_invalid_email": "Formato de e-mail inválido.",
   "auth_error_invalid_credential": "E-mail ou senha incorretos. Este e-mail pode não estar registrado.",
   "auth_error_network": "Por favor, verifique sua conexão com a internet.",
-  "auth_error_operation_not_allowed": "O login por e-mail/senha não está habilitado.",
+  "auth_error_operation_not_allowed": "Este método de login não está disponível no momento. Tente outro método.",
   "auth_error_too_many_requests": "Muitas tentativas. Por favor, tente novamente mais tarde.",
   "auth_error_code_prefix": "Erro: ",
   "auth_error_unexpected_prefix": "Ocorreu um erro inesperado: ",
@@ -376,7 +376,7 @@
   "error_timeout": "A solicitação expirou. O servidor não está respondendo, tente novamente mais tarde.",
   "error_server_connection": "Não foi possível conectar ao servidor. Verifique sua conexão com a internet.",
   "error_server_unexpected": "Ocorreu um erro inesperado no servidor. Tente novamente.",
-  "error_technical": "Ocorreu um erro técnico. Entre em contato com o desenvolvedor.",
+  "error_technical": "Algo deu errado. Tente novamente.",
   "link_recipe_fallback_title": "Receita do link",
   "update_dialog_title": "🎉 Nova atualização disponível!",
   "update_dialog_body": "Uma nova versão do {{appName}} está disponível! Atualize agora para aproveitar os recursos mais recentes e melhorias de desempenho.",
@@ -384,5 +384,7 @@
   "update_dialog_button_update": "🚀 Atualizar agora",
   "update_dialog_button_later": "Mais tarde",
   "update_dialog_button_ignore": "Ignorar",
-  "update_dialog_release_notes": "Novidades"
+  "update_dialog_release_notes": "Novidades",
+  "auth_error_user_disabled": "Esta conta foi desativada. Para obter ajuda, fale conosco pelo endereço de contato em Configurações.",
+  "auth_error_apple_failed": "Não foi possível concluir o login com a Apple. Tente novamente."
 }

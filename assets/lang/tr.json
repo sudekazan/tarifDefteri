@@ -75,7 +75,7 @@
   "auth_error_invalid_email": "Geçersiz e-posta formatı.",
   "auth_error_invalid_credential": "E-posta veya şifre hatalı. Bu e-posta kayıtlı değil olabilir.",
   "auth_error_network": "İnternet bağlantınızı kontrol edin.",
-  "auth_error_operation_not_allowed": "E-posta/şifre girişi aktif değil.",
+  "auth_error_operation_not_allowed": "Bu giriş yöntemi şu anda kullanılamıyor. Lütfen başka bir yöntem deneyin.",
   "auth_error_too_many_requests": "Çok fazla deneme yaptınız. Lütfen daha sonra tekrar deneyin.",
   "auth_error_code_prefix": "Hata: ",
   "auth_error_unexpected_prefix": "Beklenmeyen bir hata oluştu: ",
@@ -376,7 +376,7 @@
   "error_timeout": "İşlem zaman aşımına uğradı. Sunucu yanıt vermiyor, lütfen daha sonra tekrar deneyin.",
   "error_server_connection": "Sunucuya bağlanırken bir hata oluştu. Lütfen internet bağlantınızı kontrol edin.",
   "error_server_unexpected": "Beklenmedik bir sunucu hatası oluştu. Lütfen tekrar deneyin.",
-  "error_technical": "Teknik bir hata oluştu. Lütfen geliştirici ile iletişime geçin.",
+  "error_technical": "Beklenmedik bir hata oluştu. Lütfen tekrar deneyin.",
   "link_recipe_fallback_title": "Linkten Tarif",
   "update_dialog_title": "🎉 Yeni Güncelleme Mevcut!",
   "update_dialog_body": "{{appName}} için yeni ve daha gelişmiş bir sürüm hazır! Yeni tarif özellikleri, performans iyileştirmeleri ve kesintisiz deneyim için lütfen uygulamanızı güncelleyin.",
@@ -384,5 +384,7 @@
   "update_dialog_button_update": "🚀 Şimdi Güncelle",
   "update_dialog_button_later": "Daha Sonra",
   "update_dialog_button_ignore": "Yoksay",
-  "update_dialog_release_notes": "Yenilikler"
+  "update_dialog_release_notes": "Yenilikler",
+  "auth_error_user_disabled": "Bu hesap devre dışı bırakılmış. Yardım için Ayarlar'daki iletişim adresinden bize yazabilirsiniz.",
+  "auth_error_apple_failed": "Apple ile giriş tamamlanamadı. Lütfen tekrar deneyin."
 }

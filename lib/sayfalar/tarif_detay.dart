@@ -309,11 +309,12 @@ class _TarifDetayState extends State<TarifDetay> {
                     );
                     AnalyticsService.tarifPaylasildi(kaynak: 'tarif_detay');
                   } catch (e) {
+                    debugPrint('Tarif paylaşma hatası: $e');
                     if (mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(
-                            '${'share_error_with_message_prefix'.tr()}$e',
+                            'share_error_generic'.tr(),
                           ),
                           backgroundColor: Colors.red,
                         ),
