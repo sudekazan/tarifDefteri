@@ -18,6 +18,7 @@ class KilDugme extends StatelessWidget {
     this.tur = KilDugmeTuru.birincil,
     this.ikon,
     this.tamGenislik = false,
+    this.buyuk = false,
   });
 
   const KilDugme.birincil({
@@ -26,6 +27,7 @@ class KilDugme extends StatelessWidget {
     required this.onPressed,
     this.ikon,
     this.tamGenislik = false,
+    this.buyuk = false,
   }) : tur = KilDugmeTuru.birincil;
 
   const KilDugme.ikincil({
@@ -34,6 +36,7 @@ class KilDugme extends StatelessWidget {
     required this.onPressed,
     this.ikon,
     this.tamGenislik = false,
+    this.buyuk = false,
   }) : tur = KilDugmeTuru.ikincil;
 
   const KilDugme.vurgu({
@@ -42,6 +45,7 @@ class KilDugme extends StatelessWidget {
     required this.onPressed,
     this.ikon,
     this.tamGenislik = false,
+    this.buyuk = false,
   }) : tur = KilDugmeTuru.vurgu;
 
   final String etiket;
@@ -50,11 +54,18 @@ class KilDugme extends StatelessWidget {
   final IconData? ikon;
   final bool tamGenislik;
 
+  /// Uzaktan okunacak yerler için (yemek yapma modu): en az 56 yükseklik,
+  /// 18'lik yazı ve 24'lük ikon.
+  final bool buyuk;
+
   /// Açık moddaki sert gölgenin yüksekliği. Düğmenin altında bu kadar yer ayrılır.
   static const double golgeYuksekligi = 4;
 
   /// Görünen en küçük yükseklik (gölge payı hariç).
   static const double enKucukYukseklik = 48;
+
+  /// [buyuk] düğmenin görünen en küçük yüksekliği.
+  static const double buyukYukseklik = 56;
 
   @override
   Widget build(BuildContext context) {
@@ -87,8 +98,12 @@ class KilDugme extends StatelessWidget {
     final yaziRengi = etkin ? yazi : r.solukYazi;
     final kenarRengi = etkin ? kenar : r.kenar;
     final yaziStili =
-        Theme.of(context).textTheme.labelLarge?.copyWith(color: yaziRengi) ??
-            TextStyle(color: yaziRengi);
+        Theme.of(context).textTheme.labelLarge?.copyWith(
+          color: yaziRengi,
+          fontSize: buyuk ? 18 : null,
+        ) ??
+        TextStyle(color: yaziRengi, fontSize: buyuk ? 18 : null);
+    final enKucuk = buyuk ? buyukYukseklik : enKucukYukseklik;
     final sure = KilBasilir.sure(context);
 
     return Semantics(
@@ -103,10 +118,7 @@ class KilDugme extends StatelessWidget {
             duration: sure,
             curve: Curves.easeOut,
             transform: Matrix4.translationValues(0, inis, 0),
-            constraints: const BoxConstraints(
-              minHeight: enKucukYukseklik,
-              minWidth: enKucukYukseklik,
-            ),
+            constraints: BoxConstraints(minHeight: enKucuk, minWidth: enKucuk),
             padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 10),
             decoration: BoxDecoration(
               color: zeminRengi,
@@ -129,7 +141,7 @@ class KilDugme extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 if (ikon != null) ...[
-                  Icon(ikon, size: 20, color: yaziRengi),
+                  Icon(ikon, size: buyuk ? 24 : 20, color: yaziRengi),
                   const SizedBox(width: 8),
                 ],
                 Flexible(

@@ -14,3 +14,17 @@ Gece çalışmasında Sude'ye sorulamayan sorular ve sabah bakılacaklar. Her a�
 - `tarif_detay.dart`'taki klasör adı çevirisi (`_showMoveDialog`) `klasorGorunenAdi` ile aynı işi yapıyor ama `Map` üzerinden çalışıyor; davranışı korumak için olduğu gibi bırakıldı.
 - `flutter analyze`: 74 bulgu, hepsi eski kod (Aşama 3 sonunda 103). Aşama 4 dosyalarında bulgu yok; `tarif_olusturma.dart`'taki eski uyarılar da temizlendi. Tek uyarı (`warning`) `lib/tarifler_data/klasor_data.dart:28` (`IconData(codePoint)` sabit değil, ikon ağacı küçültmesini etkiler; derleme `--no-tree-shake-icons` ile yapıldığı için sorun çıkarmıyor).
 - Test görüntüleri: `build/gecici_test/asama4_ekranlar_test.dart` (commit'e girmez). Tarif detayı gerçek `TarifDetay` sayfasıyla, tarif oluşturma (Firebase istediği için) `build`'in kopyasıyla çizildi. 20 görüntüde taşma yok.
+
+## Aşama 5 (yemek yapma modu)
+
+### Sorular
+- **Zamanlayıcı yok.** Görevde "adımlar, zamanlayıcı ve ekranın açık kalması" geçiyordu, ama yemek yapma modunda hiç zamanlayıcı yoktu (ne kodda ne metinlerde). Yeni bir özellik olduğu için eklenmedi. İstenirse: adım metnindeki "25 dakika" gibi süreleri bulup adımın altına "25 dk zamanlayıcı başlat" düğmesi koymak mı, yoksa elle süre girilen basit bir zamanlayıcı mı?
+- **Üst/alt kısım yazısı en fazla 2 kat.** 3.2 kat yazıda üst kısım, ilerleme ve alt düğmeler adıma yer bırakmıyordu. Bunlar, malzeme özeti ve "Adım 2" başlığı en fazla 2 kat büyüyor (sekme etiketlerindeki 1.3 sınırı gibi); adım ve malzeme yazıları sınırsız. Uygun mu?
+- **En büyük yazıda tek uzun kelime yine bölünüyor** (Aşama 4'teki soruyla aynı): 320 genişlik ve 3.2 kat yazıda 26'lık adım metninde "Patlıcanları", malzemede "patlıcan" satıra sığmıyor. Adım metni bu boyutta küçülsün mü?
+
+### Bilgi
+- Alt düğmeler etiketler sığmazsa alt alta diziliyor; 402 genişlikte Türkçe yan yana, 320 genişlikte (tr, fr, de) alt alta.
+- `KilDugme`'ye `buyuk` seçeneği eklendi (56 yükseklik, 18 yazı, 24 ikon); başka ekran etkilenmedi.
+- `flutter analyze`: 59 bulgu, hepsi eski kod (Aşama 4 sonunda 74; yemek modundaki eski `withOpacity` uyarıları kalktı). Aşama 5 dosyalarında bulgu yok.
+- Test görüntüleri: `build/gecici_test/asama5_ekranlar_test.dart` (commit'e girmez; `--dart-define=DIL=fr --dart-define=EN=320` ile dil ve genişlik). Gerçek `YemekYapmaModu` sayfasıyla çizildi; 28 görüntüde taşma yok.
+- Tüm testler: 165 geçti.

@@ -1,6 +1,6 @@
 # Kil tasarımına geçiş planı (Tarifly)
 
-Tarih: 2026-11-09. Durum: **Aşama 1, 2, 3 ve 4 tamamlandı; ekranlar aşama 5'ten itibaren yenilenecek.**
+Tarih: 2026-11-09. Durum: **Aşama 1–5 tamamlandı; ekranlar aşama 6'dan itibaren yenilenecek.**
 Kaynak: UI UX Pro Max'in "Recipe & Cooking App" önerisi (claymorphism) ve Sude ile yapılan önce/sonra görsel çalışması.
 
 ## Kararlar (Sude, 2026-11-09)
@@ -131,7 +131,18 @@ Her aşamadan sonra: `flutter analyze`, ilgili testler, simülatörde açık ve 
    - Yeni metinler (altı dilde): `recipe_detail_portion_decrease`, `recipe_detail_portion_increase`, `recipe_edit_delete_photo`, `recipe_edit_delete_section`, `recipe_edit_delete_item`, `recipe_edit_add_item`.
    - Dosyalar: `lib/widgets/tarif_detay_parcalari.dart` (`KilIcSayfa`, `TarifBolumKarti`, `TarifBolumBasligi`, `TarifMaddeSatiri`, `TarifMaddeIsareti`, `TarifBaglantisi`, `TarifAciklamaKarti`, `PorsiyonAyari`, `TarifGorseli`, `TarifGorselGalerisi`, `FavoriRozeti`, `tarifBolumIkonu`, `tarifBolumuMalzemeMi`; iki sayfadaki `_getSectionIcon` kopyası kalktı), `lib/widgets/tarif_olusturma_parcalari.dart` (`TarifFotoSeridi`, `TarifBolumDuzenleKarti`, `TarifBolumlerBasligi`), `lib/widgets/kil/kil_secim_listesi.dart` (`KilSecimListesi`, `KilSecenek`; satır en az 56), `lib/sayfalar/tarif_detay.dart`, `lib/sayfalar/tarif_olusturma.dart`.
    - Testler: `test/tarif_detay_parcalari_test.dart`, `test/tarif_olusturma_parcalari_test.dart` (48'lik dokunma alanları, ekran okuyucu başlığı ve düğmeleri, madde ekleme/silme/düzenleme, büyük yazıda üst üste diziliş, açık ve koyu modda 320 genişlik ve 3.2 kat yazıda taşma yok, yeni metinler altı dilde).
-5. **Yemek yapma modu.**
+5. **Yemek yapma modu — tamamlandı (2026-11-10, gece çalışması; simülatör yerine test görüntüleriyle açık/koyu, 402 genişlikte 1x, 320 genişlikte 1x (tr, fr, de) ve 320x640'ta 3.2 kat yazıda bakıldı):**
+   - İşleyiş aynı: malzeme ve adım ayrıştırma (JSON ve eski düz metin), porsiyon çarpanı, malzeme işaretleme (sayfada ve alt pencerede ortak), sayfa sayfa gezinme, ekranın açık kalması (`WakelockPlus` açılışta açılır, kapanışta kapanır), "Tamamla"da değerlendirme isteği ve çift dokunuş koruması. Analitik olay adları aynı (`yemek_modu_acildi`, `yemek_modu_tamamlandi`). Ekranda zamanlayıcı yoktu, eklenmedi (gece notlarında soru).
+   - Üst çubuk yok: yuvarlak geri, sağda "Malzemeler" ikincil düğmesi (alt pencereyi açar), altında Caveat 30 tarif adı (en fazla 2 satır). Altında konum ("Adım 1 / 3"), sayfa sayısı ve terrakota ilerleme çubuğu.
+   - Malzemeler sayfası: özet kartı (ikon kutusu, Caveat başlık, "1 / 5 hazır" hapı, ilerleme çubuğu; hepsi hazırsa hap ve çubuk adaçayı ve onay işaretli) ve her malzeme ayrı satır: en az 64 yükseklik, 20'lik yazı, 32'lik onay dairesi (işaretsizken tanıtan kenar, işaretliyken adaçayı). İşaretli satır soluk yüzey, yazı soluk ve üstü çizili. Ekran okuyucu satırı "işaretli/işaretsiz" okur.
+   - Adım sayfası: Caveat 30 numaralı daire ve Caveat 34 "Adım 2" başlığı, altında kaydırılan kil kartında 26'lık adım metni.
+   - Alt düğmeler 56 yüksekliğinde, 18'lik yazı (`KilDugme`'ye `buyuk` seçeneği eklendi): "Önceki" ikincil, "Sonraki Adım" birincil, son sayfada "Tamamla" vurgu (adaçayı). Etiketler yan yana bölünmeden sığmıyorsa (320 genişlikte tr/fr/de, büyük yazı) düğmeler alt alta dizilir, ileri üstte. "Hareketi azalt" açıkken sayfa geçişi animasyonsuz.
+   - Malzeme alt penceresi `KilAltSayfa`: Caveat başlık, 48'lik kapat düğmesi, aynı malzeme satırları; ekranın en fazla %70'i.
+   - Büyük yazı (1.6 katın üstü): üst kısım tek satır (geri, tek satır başlık, yuvarlak "Malzemeler" düğmesi), konum yazısı gizlenir (aynı bilgi sayfa başlığında), adım başlığı kartın içine girer, onay dairesi metnin üstüne çıkar. Üst kısım, ilerleme, alt düğmeler, malzeme özeti ve "Adım 2" başlığı en fazla 2 kat büyür (`yemekCubukYaziSiniri`; sekme etiketlerindeki 1.3 sınırı gibi); adım ve malzeme yazıları sınırsız büyür. Yoksa 3.2 katta adıma yer kalmıyordu.
+   - Koda sabit renk kalmadı (önce `Colors.green`, `0xFF1A1D2B` vb.).
+   - Dosyalar: `lib/widgets/yemek_modu_parcalari.dart` (`YemekModuBasligi`, `YemekSayfaIlerlemesi`, `YemekIlerlemeCubugu`, `YemekMalzemeOzeti`, `YemekMalzemeSatiri`, `YemekMalzemeListesi`, `YemekAdimSayfasi`, `YemekModuAltCubuk`, `yemekYaziSiniri`), `lib/sayfalar/yemek_yapma_modu.dart`, `lib/widgets/kil/kil_dugme.dart` (`buyuk`).
+   - Yeni metin yok; var olan `cooking_mode_*` anahtarları kullanıldı.
+   - Testler: `test/yemek_modu_parcalari_test.dart` (satır 64, alt düğmeler 56, ekran okuyucu, büyük yazıda düzen; gerçek sayfayla ekranın açık tutulup bırakılması, olay adları, malzeme işaretleme, alt pencere, gezinme ve Tamamla, boş tarif; açık ve koyu modda 320 genişlik, 1x ve 3.2 kat yazıda taşma yok; metinler altı dilde).
 6. **Bugün ne pişirsem:** AI bekleme ekranındaki Lottie animasyonunun yeni renklerle uyumu da kontrol edilir.
 7. **Alışveriş listesi ve arama.**
 8. **Premium:** fiyatlar RevenueCat'ten gelir; metinler Sude onaylamadan değişmez.
