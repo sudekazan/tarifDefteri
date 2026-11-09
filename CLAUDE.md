@@ -40,3 +40,6 @@ cd backend && npm start
 - 2026-11-09: 10 pastel tema kalkıyor, tek palet: terrakota, adaçayı, krem. Başlıklar Caveat (yalnızca 22 pt ve üstü), metinler Quicksand.
 - 2026-11-09: Karanlık modun koyu kil sürümü yapılacak. Gezinme alt sekme çubuğuna geçiyor: Defterim, Ne pişirsem, Alışveriş, Profil.
 - 2026-11-09: Geçiş aşamalı. Her aşama ayrı commit; her aşamadan sonra simülatörde açık ve koyu modda bakılır.
+- 2026-11-09: Xcode derlemesini Claude başlatmaz (bilgisayar ısınıyor). Ekranlar test görüntüleriyle kontrol edilir; gerçek cihaz derlemesini Sude yapar.
+- 2026-11-09: "Yeni tarif" alt sayfasında önce klasör seçilir (klasör içinden açılınca o klasör seçili). "Yeni klasör" düğmesi "Klasörlerim" başlığının yanında. Ana sayfadan eklenen tarif kaydedilince o klasör açılır.
+- 2026-11-10: Eski varsayılan klasör ikonu kodu (0xe2c7) ekranda klasör ikonu olarak gösterilir; kayıtlı veri değişmez.
