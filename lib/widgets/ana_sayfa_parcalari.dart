@@ -35,7 +35,10 @@ class ProRozeti extends StatelessWidget {
     return Semantics(
       button: true,
       label: anlamEtiketi,
+      // excludeSemantics içteki dokunma eylemini de siler; eylem burada
+      // ayrıca verilir, yoksa ekran okuyucu rozeti açamaz.
       excludeSemantics: true,
+      onTap: onPressed,
       child: KilBasilir(
         onTap: onPressed,
         builder: (context, basili, odakli) => ConstrainedBox(
@@ -97,7 +100,10 @@ class AramaKutusu extends StatelessWidget {
     return Semantics(
       button: true,
       label: ipucu,
+      // excludeSemantics içteki dokunma eylemini de siler; eylem burada
+      // ayrıca verilir, yoksa ekran okuyucu kutuyu açamaz.
       excludeSemantics: true,
+      onTap: onTap,
       child: Material(
         color: r.kart,
         clipBehavior: Clip.antiAlias,
@@ -149,78 +155,89 @@ class NePisirsemKarti extends StatelessWidget {
   final String altBaslik;
   final VoidCallback onTap;
 
+  /// Yazı bu ölçeğin üstündeyse daire metnin üstüne çıkar; yoksa metin
+  /// sıkışır ve kelimeler ortasından bölünür.
+  static const double ustUsteOlcegi = 1.6;
+
   @override
   Widget build(BuildContext context) {
     final r = context.kil;
     final yaziTemasi = Theme.of(context).textTheme;
     final yazi = r.oneCikanKartYazi;
+    final olcek = MediaQuery.textScalerOf(context).scale(10) / 10;
+
+    final metinler = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: yazi, width: 1.5),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.auto_awesome_rounded, size: 14, color: yazi),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  rozet,
+                  style: yaziTemasi.labelSmall
+                      ?.copyWith(color: yazi, letterSpacing: 0.8),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        // Caveat (headlineSmall, 26): yalnızca 22 pt ve üstü.
+        Text(
+          baslik,
+          style: yaziTemasi.headlineSmall?.copyWith(color: yazi),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          altBaslik,
+          style: yaziTemasi.bodyMedium?.copyWith(color: yazi),
+        ),
+      ],
+    );
+
+    final daire = ExcludeSemantics(
+      child: Container(
+        width: 60,
+        height: 60,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: r.seciliCipZemin,
+          border: Border.all(color: yazi, width: 2),
+        ),
+        child: const Text(
+          '🍳',
+          style: TextStyle(fontSize: 30),
+          textScaler: TextScaler.noScaling,
+        ),
+      ),
+    );
 
     return KilKart(
       oneCikan: true,
       onTap: onTap,
       padding: const EdgeInsets.fromLTRB(18, 16, 16, 18),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
+      child: olcek > ustUsteOlcegi
+          ? Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              children: [daire, const SizedBox(height: 12), metinler],
+            )
+          : Row(
               children: [
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(999),
-                    border: Border.all(color: yazi, width: 1.5),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.auto_awesome_rounded, size: 14, color: yazi),
-                      const SizedBox(width: 6),
-                      Flexible(
-                        child: Text(
-                          rozet,
-                          style: yaziTemasi.labelSmall
-                              ?.copyWith(color: yazi, letterSpacing: 0.8),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 8),
-                // Caveat (headlineSmall, 26): yalnızca 22 pt ve üstü.
-                Text(
-                  baslik,
-                  style: yaziTemasi.headlineSmall?.copyWith(color: yazi),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  altBaslik,
-                  style: yaziTemasi.bodyMedium?.copyWith(color: yazi),
-                ),
+                Expanded(child: metinler),
+                const SizedBox(width: 12),
+                daire,
               ],
             ),
-          ),
-          const SizedBox(width: 12),
-          ExcludeSemantics(
-            child: Container(
-              width: 60,
-              height: 60,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: r.seciliCipZemin,
-                border: Border.all(color: yazi, width: 2),
-              ),
-              child: const Text(
-                '🍳',
-                style: TextStyle(fontSize: 30),
-                textScaler: TextScaler.noScaling,
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

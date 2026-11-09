@@ -39,16 +39,24 @@ Widget _sar({
       brightness: renkler.sertGolge ? Brightness.light : Brightness.dark,
       extensions: [renkler],
     ),
-    home: MediaQuery(
-      data: MediaQueryData(
-        size: Size(genislik, 800),
-        textScaler: TextScaler.linear(yaziOlcegi),
-      ),
-      child: Scaffold(
-        bottomNavigationBar: KilSekmeCubugu(
-          sekmeler: _sekmeler(etiketler),
-          seciliIndeks: secili,
-          onSecildi: onSecildi ?? (_) {},
+    // Yalnızca MediaQuery'de boyut vermek yerleşimi daraltmaz; SizedBox
+    // genişliği gerçekten [genislik] yapar.
+    home: Align(
+      alignment: Alignment.topLeft,
+      child: SizedBox(
+        width: genislik,
+        child: MediaQuery(
+          data: MediaQueryData(
+            size: Size(genislik, 800),
+            textScaler: TextScaler.linear(yaziOlcegi),
+          ),
+          child: Scaffold(
+            bottomNavigationBar: KilSekmeCubugu(
+              sekmeler: _sekmeler(etiketler),
+              seciliIndeks: secili,
+              onSecildi: onSecildi ?? (_) {},
+            ),
+          ),
         ),
       ),
     ),

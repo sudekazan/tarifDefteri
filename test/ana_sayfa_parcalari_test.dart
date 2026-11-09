@@ -17,15 +17,23 @@ Widget _sar(
       brightness: renkler.sertGolge ? Brightness.light : Brightness.dark,
       extensions: [renkler],
     ),
-    home: MediaQuery(
-      data: MediaQueryData(
-        size: Size(genislik, 900),
-        textScaler: TextScaler.linear(yaziOlcegi),
-      ),
-      child: Scaffold(
-        body: ListView(
-          padding: const EdgeInsets.all(20),
-          children: [child],
+    // Yalnızca MediaQuery'de boyut vermek yerleşimi daraltmaz; SizedBox
+    // genişliği gerçekten [genislik] yapar.
+    home: Align(
+      alignment: Alignment.topLeft,
+      child: SizedBox(
+        width: genislik,
+        child: MediaQuery(
+          data: MediaQueryData(
+            size: Size(genislik, 900),
+            textScaler: TextScaler.linear(yaziOlcegi),
+          ),
+          child: Scaffold(
+            body: ListView(
+              padding: const EdgeInsets.all(20),
+              children: [child],
+            ),
+          ),
         ),
       ),
     ),
@@ -109,6 +117,45 @@ void main() {
     await tester.tap(find.text('Bugün Ne Pişirsem?'));
     await tester.pumpAndSettle();
     expect(sayac, 1);
+  });
+
+  testWidgets('Pro rozeti ve arama kutusu ekran okuyucuyla da açılır',
+      (tester) async {
+    final anlam = tester.ensureSemantics();
+    var rozet = 0;
+    var arama = 0;
+    await tester.pumpWidget(_sar(Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ProRozeti(
+          etiket: 'Pro',
+          anlamEtiketi: "Premium'a Geç",
+          onPressed: () => rozet++,
+        ),
+        AramaKutusu(ipucu: 'Tarif ara...', onTap: () => arama++),
+      ],
+    )));
+    tester.semantics.tap(find.semantics.byLabel("Premium'a Geç"));
+    tester.semantics.tap(find.semantics.byLabel('Tarif ara...'));
+    expect(rozet, 1);
+    expect(arama, 1);
+    anlam.dispose();
+  });
+
+  testWidgets('büyük yazıda Ne pişirsem kartında daire metnin üstüne çıkar',
+      (tester) async {
+    await tester.pumpWidget(_sar(
+      NePisirsemKarti(
+        rozet: 'SİHİRLİ ŞEF',
+        baslik: 'Bugün Ne Pişirsem?',
+        altBaslik: 'Elindeki malzemeleri seç.',
+        onTap: () {},
+      ),
+      yaziOlcegi: 2,
+    ));
+    final daire = tester.getBottomLeft(find.text('🍳'));
+    final baslik = tester.getTopLeft(find.text('Bugün Ne Pişirsem?'));
+    expect(baslik.dy, greaterThan(daire.dy));
   });
 
   testWidgets('klasör izgarası iki sütun; aynı satırdaki kartlar aynı boyda',
