@@ -608,7 +608,6 @@ class _KlasorIciState extends State<KlasorIci> {
           ),
           child: AiChefLoadingAnimation(
             title: 'ai_generating_title'.tr(),
-            color: Theme.of(context).primaryColor,
             messages: [
               'ai_generating_step_1'.tr(),
               'ai_generating_step_2'.tr(),

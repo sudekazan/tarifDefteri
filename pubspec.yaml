@@ -41,6 +41,7 @@ dependencies:
   google_sign_in: ^7.2.0
   sign_in_with_apple: ^8.2.0
   crypto: ^3.0.8
+  lottie: ^3.8.2
 
 
 dev_dependencies:
@@ -71,3 +72,4 @@ flutter:
   assets:
     - assets/logo.png
     - assets/lang/
+    - assets/animations/

@@ -1,47 +1,35 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:lottie/lottie.dart';
 
 /// AI tarif oluşturulurken gösterilen "şef çalışıyor" animasyonu.
 ///
-/// Harici bir animasyon paketi (Lottie vb.) gerektirmez; sade bir tencere +
-/// üstünde sallanan bir kaşık/çatal ikonu (bıçak doğrama hissi) + yükselip
-/// kaybolan buhar baloncukları + belirli aralıklarla değişen eğlenceli
-/// metinlerden oluşur. Tamamı Flutter'ın kendi [AnimationController]'ları ile.
+/// Animasyon: LottieFiles "Cooking" (Aravind Chowdary), Lottie Simple License.
+/// 30 sn'lik çok sahneli bir yemek hikâyesi (wok'ta sote, kâsede çırpma);
+/// altında belirli aralıklarla değişen adım metinleri gösterilir.
 class AiChefLoadingAnimation extends StatefulWidget {
   final String title;
   final List<String> messages;
-  final Color color;
 
   const AiChefLoadingAnimation({
     super.key,
     required this.title,
     required this.messages,
-    this.color = const Color(0xFFE65100),
   });
 
   @override
   State<AiChefLoadingAnimation> createState() => _AiChefLoadingAnimationState();
 }
 
-class _AiChefLoadingAnimationState extends State<AiChefLoadingAnimation>
-    with TickerProviderStateMixin {
-  late final AnimationController _steamController;
-  late final AnimationController _utensilController;
+class _AiChefLoadingAnimationState extends State<AiChefLoadingAnimation> {
+  static const _animasyonDosyasi = 'assets/animations/ai_tarif_hazirlaniyor.lottie';
+
   Timer? _messageTimer;
   int _messageIndex = 0;
 
   @override
   void initState() {
     super.initState();
-    _steamController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1600),
-    )..repeat();
-    _utensilController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 450),
-    )..repeat(reverse: true);
-
     if (widget.messages.length > 1) {
       _messageTimer = Timer.periodic(const Duration(milliseconds: 1900), (_) {
         if (!mounted) return;
@@ -52,74 +40,49 @@ class _AiChefLoadingAnimationState extends State<AiChefLoadingAnimation>
 
   @override
   void dispose() {
-    _steamController.dispose();
-    _utensilController.dispose();
     _messageTimer?.cancel();
     super.dispose();
   }
 
+  /// .lottie dosyası bir zip; içindeki animasyon JSON'unu seçer.
+  static Future<LottieComposition?> _dotLottieCoz(List<int> bytes) {
+    return LottieComposition.decodeZip(
+      bytes,
+      filePicker: (files) => files
+          .where((f) => f.name.startsWith('animations/') && f.name.endsWith('.json'))
+          .firstOrNull,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final color = widget.color;
+    // Sistemde "hareketi azalt" açıksa animasyon ilk karede durur.
+    final hareketAzaltildi = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        SizedBox(
-          height: 76,
-          width: 100,
-          child: Stack(
-            alignment: Alignment.bottomCenter,
-            clipBehavior: Clip.none,
-            children: [
-              // Buhar baloncukları: yukarı doğru yükselip solar.
-              ...List.generate(3, (i) {
-                return AnimatedBuilder(
-                  animation: _steamController,
-                  builder: (context, child) {
-                    final t = (_steamController.value + i / 3) % 1.0;
-                    return Positioned(
-                      bottom: 38 + t * 32,
-                      left: 50 + (i - 1) * 16 - 4,
-                      child: Opacity(
-                        opacity: (1 - t).clamp(0.0, 1.0) * 0.55,
-                        child: Container(
-                          width: 6 + 5 * t,
-                          height: 6 + 5 * t,
-                          decoration: BoxDecoration(
-                            color: color.withOpacity(0.5),
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                      ),
-                    );
-                  },
+        ExcludeSemantics(
+          child: SizedBox(
+            width: 220,
+            height: 127, // Animasyonun 375x216 oranı
+            child: Lottie.asset(
+              _animasyonDosyasi,
+              decoder: _dotLottieCoz,
+              animate: !hareketAzaltildi,
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) {
+                debugPrint('Yükleme animasyonu açılamadı: $error');
+                return Icon(
+                  Icons.restaurant_rounded,
+                  size: 48,
+                  color: Theme.of(context).primaryColor,
                 );
-              }),
-              // Dönen kaşık/çatal: bir bıçağın doğrarken yaptığı küçük açı
-              // salınımını taklit eder.
-              AnimatedBuilder(
-                animation: _utensilController,
-                builder: (context, child) {
-                  final angle = (_utensilController.value - 0.5) * 0.5; // ~ -0.25..0.25 rad
-                  return Positioned(
-                    bottom: 30,
-                    child: Transform.rotate(
-                      angle: angle,
-                      alignment: Alignment.bottomCenter,
-                      child: Icon(Icons.restaurant_rounded, size: 28, color: color),
-                    ),
-                  );
-                },
-              ),
-              // Tencere/kap.
-              Positioned(
-                bottom: 0,
-                child: Icon(Icons.ramen_dining_rounded, size: 40, color: color),
-              ),
-            ],
+              },
+            ),
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
         Text(
           widget.title,
           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
