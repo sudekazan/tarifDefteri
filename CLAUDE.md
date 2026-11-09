@@ -36,3 +36,7 @@ cd backend && npm start
 - 2026-11-03: En küçük yazı 11 pt, yazılarda en az 4.5:1 kontrast (Apple HIG).
 - 2026-11-04: Gerçek abone yok; önce ölçüm (analitik olayları). RevenueCat Experiments ile deneyler gerçek satın almalar başlayınca.
 - 2026-11-04: AB onay formunda (AdMob GDPR mesajı) "İzin vermeyin" düğmesi tüm ülkelerde açık.
+- 2026-11-09: Tüm uygulama UI UX Pro Max'in yumuşak kil tarzına (claymorphism) geçiyor. Plan ve renkler: `docs/tasarim/kil-tasarim-plani.md`.
+- 2026-11-09: 10 pastel tema kalkıyor, tek palet: terrakota, adaçayı, krem. Başlıklar Caveat (yalnızca 22 pt ve üstü), metinler Quicksand.
+- 2026-11-09: Karanlık modun koyu kil sürümü yapılacak. Gezinme alt sekme çubuğuna geçiyor: Defterim, Ne pişirsem, Alışveriş, Profil.
+- 2026-11-09: Geçiş aşamalı. Her aşama ayrı commit; her aşamadan sonra simülatörde açık ve koyu modda bakılır.

@@ -5,7 +5,6 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:in_app_review/in_app_review.dart';
-import '../theme/app_theme.dart';
 import '../auth_screen.dart';
 import '../services/ad_service.dart';
 import '../services/firebase_service.dart';
@@ -16,16 +15,12 @@ import '../utils/error_helper.dart';
 import '../sayfalar/premium_sayfasi.dart';
 
 class SettingsPage extends StatefulWidget {
-  final Function(AppTheme) onThemeChanged;
-  final AppTheme currentTheme;
   final bool isDarkMode;
   final Function(bool) onDarkModeChanged;
-  
+
   const SettingsPage({
-    super.key, 
-    required this.onThemeChanged, 
-    required this.currentTheme, 
-    required this.isDarkMode, 
+    super.key,
+    required this.isDarkMode,
     required this.onDarkModeChanged
   });
 
@@ -373,43 +368,6 @@ class _SettingsPageState extends State<SettingsPage> {
         color: Theme.of(context).scaffoldBackgroundColor,
         child: ListView(
           children: [
-          ListTile(
-            title: Text(
-              'settings_theme_title'.tr(),
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: AppTheme.values.map((theme) {
-                final color = appThemeColors[theme]!;
-                final isSelected = theme == widget.currentTheme;
-                return GestureDetector(
-                  onTap: () => widget.onThemeChanged(theme),
-                  child: Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: color,
-                      shape: BoxShape.circle,
-                      border: isSelected
-                          ? Border.all(color: Colors.black, width: 2)
-                          : null,
-                    ),
-                    child: isSelected
-                        ? const Center(
-                            child: Icon(Icons.check, color: Colors.white, size: 22),
-                          )
-                        : null,
-                  ),
-                );
-              }).toList(),
-            ),
-          ),
-          const Divider(),
           SwitchListTile(
             title: Text('settings_dark_mode'.tr()),
             value: widget.isDarkMode,

@@ -84,6 +84,10 @@ void main() async {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
+  // Tek palet: temalar bir kez kurulur, karanlık mod değişince yeniden kurulmaz.
+  static final ThemeData _acikTema = AppThemeBuilder.buildLightTheme();
+  static final ThemeData _koyuTema = AppThemeBuilder.buildDarkTheme();
+
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
@@ -93,21 +97,17 @@ class MyApp extends StatelessWidget {
           return MaterialApp(
             title: 'app_title'.tr(),
             debugShowCheckedModeBanner: false,
-            theme: AppThemeBuilder.buildLightTheme(appState.currentTheme),
-            darkTheme: AppThemeBuilder.buildDarkTheme(appState.currentTheme),
+            theme: _acikTema,
+            darkTheme: _koyuTema,
             themeMode: appState.isDarkMode ? ThemeMode.dark : ThemeMode.light,
             home: TarifDefteriUpgradeAlert(
               child: KlasorlerWithTheme(
-                onThemeChanged: appState.changeTheme,
-                currentTheme: appState.currentTheme,
                 isDarkMode: appState.isDarkMode,
                 onDarkModeChanged: appState.changeDarkMode,
               ),
             ),
             routes: {
               '/settings': (context) => SettingsPage(
-                onThemeChanged: appState.changeTheme,
-                currentTheme: appState.currentTheme,
                 isDarkMode: appState.isDarkMode,
                 onDarkModeChanged: appState.changeDarkMode,
               ),
