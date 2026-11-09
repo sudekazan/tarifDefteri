@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:upgrader/upgrader.dart';
 
 /// Güncelleme kontrol bileşeni:
@@ -53,51 +54,30 @@ class _TarifDefteriUpgradeAlertState extends State<TarifDefteriUpgradeAlert> {
   }
 }
 
-/// Türkçe ve İngilizce destekli, kullanıcıyı sıcak bir dille güncellemeye teşvik eden mesajlar
+/// Güncelleme penceresi metinleri; uygulamada seçili dilde (6 dil) gösterilir.
+/// Eskiden yalnızca Türkçe/İngilizce vardı ve cihaz diline bakılıyordu:
+/// Almanca, İspanyolca, Fransızca, Portekizce kullanıcılar Türkçe görüyordu.
 class TarifDefteriUpgraderMessages extends UpgraderMessages {
   TarifDefteriUpgraderMessages({super.code});
 
   @override
-  String get title {
-    if (languageCode == 'en') return '🎉 New Update Available!';
-    return '🎉 Yeni Güncelleme Mevcut!';
-  }
+  String get title => 'update_dialog_title'.tr();
 
   @override
-  String get body {
-    if (languageCode == 'en') {
-      return 'A new version of {{appName}} is available! Update now to enjoy the latest features and performance improvements.';
-    }
-    return '{{appName}} için yeni ve daha gelişmiş bir sürüm hazır! Yeni tarif özellikleri, performans iyileştirmeleri ve kesintisiz deneyim için lütfen uygulamanızı güncelleyin.';
-  }
+  String get body => 'update_dialog_body'.tr();
 
   @override
-  String get prompt {
-    if (languageCode == 'en') return 'Would you like to update now?';
-    return 'Şimdi güncellemek ister misiniz?';
-  }
+  String get prompt => 'update_dialog_prompt'.tr();
 
   @override
-  String get buttonTitleUpdate {
-    if (languageCode == 'en') return '🚀 Update Now';
-    return '🚀 Şimdi Güncelle';
-  }
+  String get buttonTitleUpdate => 'update_dialog_button_update'.tr();
 
   @override
-  String get buttonTitleLater {
-    if (languageCode == 'en') return 'Later';
-    return 'Daha Sonra';
-  }
+  String get buttonTitleLater => 'update_dialog_button_later'.tr();
 
   @override
-  String get buttonTitleIgnore {
-    if (languageCode == 'en') return 'Ignore';
-    return 'Yoksay';
-  }
+  String get buttonTitleIgnore => 'update_dialog_button_ignore'.tr();
 
   @override
-  String get releaseNotes {
-    if (languageCode == 'en') return "What's New";
-    return 'Yenilikler';
-  }
+  String get releaseNotes => 'update_dialog_release_notes'.tr();
 }

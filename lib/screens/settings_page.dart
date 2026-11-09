@@ -219,10 +219,15 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
-  /// Hesap silme işlemini başlatır. "requires-recent-login" hatası alınırsa
-  /// (veriler zaten silinmiş olur) kullanıcıdan şifresiyle yeniden giriş
-  /// doğrulaması istenip işlem otomatik olarak tamamlanır.
+  /// Hesap silme işlemini başlatır. Veriler silinmeden ÖNCE kimlik, kullanıcının
+  /// giriş yöntemine göre (şifre / Google / Apple) tazelenir. Eskiden önce
+  /// veriler siliniyor, sonra şifre isteniyordu: Google/Apple kullanıcılarının
+  /// şifresi olmadığı için verileri gitmiş ama hesabı duran bir durumda
+  /// takılıp kalıyorlardı.
   Future<void> _performAccountDeletion() async {
+    final dogrulandi = await _kimligiTazele();
+    if (!dogrulandi || !mounted) return;
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -235,10 +240,52 @@ class _SettingsPageState extends State<SettingsPage> {
       _showAccountDeletedSnackBar();
     } on ReauthRequiredException {
       if (mounted) Navigator.pop(context); // Loading kapat
-      if (mounted) await _promptPasswordAndFinishDeletion();
+      _showAccountDeletionErrorText('settings_delete_account_retry'.tr());
     } catch (e) {
       if (mounted) Navigator.pop(context); // Loading kapat
       _showAccountDeletionErrorSnackBar(e);
+    }
+  }
+
+  /// Kimliği giriş yöntemine göre tazeler. Kullanıcı vazgeçerse ya da
+  /// doğrulama başarısız olursa false döner ve hiçbir veri silinmez.
+  Future<bool> _kimligiTazele() async {
+    try {
+      switch (_firebaseService.reauthYontemi) {
+        case ReauthYontemi.sifre:
+          final sonuc = await showDialog<bool>(
+            context: context,
+            barrierDismissible: false,
+            builder: (_) => _SifreDogrulamaDialog(firebaseService: _firebaseService),
+          );
+          return sonuc == true;
+        case ReauthYontemi.google:
+          await _firebaseService.reauthenticateWithGoogle();
+          return true;
+        case ReauthYontemi.apple:
+          await _firebaseService.reauthenticateWithApple();
+          return true;
+        case null:
+          // Bilinmeyen yöntem: silme denenir; gerekirse ReauthRequired yakalanır.
+          return true;
+      }
+    } on SignInCancelledException {
+      return false;
+    } on ReauthRequiredException {
+      _showAccountDeletionErrorText('settings_delete_account_retry'.tr());
+      return false;
+    } on FirebaseAuthException catch (e) {
+      _showAccountDeletionErrorText(
+        e.code == 'user-mismatch'
+            ? 'settings_reauth_user_mismatch'.tr()
+            : e.code == 'network-request-failed'
+                ? 'auth_error_network'.tr()
+                : '${'auth_error_code_prefix'.tr()}${e.code}',
+      );
+      return false;
+    } catch (e) {
+      _showAccountDeletionErrorSnackBar(e);
+      return false;
     }
   }
 
@@ -260,6 +307,12 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   void _showAccountDeletionErrorSnackBar(Object e) {
+    _showAccountDeletionErrorText(
+      '${'settings_delete_account_error_prefix'.tr()}${ErrorHelper.getFriendlyErrorMessage(e)}',
+    );
+  }
+
+  void _showAccountDeletionErrorText(String mesaj) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -267,94 +320,13 @@ class _SettingsPageState extends State<SettingsPage> {
           children: [
             const Icon(Icons.error, color: Colors.white),
             const SizedBox(width: 12),
-            Expanded(
-              child: Text('${'settings_delete_account_error_prefix'.tr()}${ErrorHelper.getFriendlyErrorMessage(e)}'),
-            ),
+            Expanded(child: Text(mesaj)),
           ],
         ),
         backgroundColor: Colors.red,
         duration: const Duration(seconds: 5),
       ),
     );
-  }
-
-  /// Kullanıcıdan şifresini isteyip yeniden kimlik doğrulaması yapar,
-  /// ardından hesap silme işlemini (yalnızca Authentication adımını) tamamlar.
-  Future<void> _promptPasswordAndFinishDeletion() async {
-    final passwordController = TextEditingController();
-    bool isSubmitting = false;
-    String? errorText;
-
-    final confirmed = await showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (dialogContext, setDialogState) {
-          return AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            title: Text('settings_reauth_dialog_title'.tr()),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('settings_reauth_dialog_message'.tr()),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: passwordController,
-                  obscureText: true,
-                  autofocus: true,
-                  decoration: InputDecoration(
-                    labelText: 'auth_password_label'.tr(),
-                    border: const OutlineInputBorder(),
-                    errorText: errorText,
-                  ),
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: isSubmitting ? null : () => Navigator.pop(dialogContext, false),
-                child: Text('settings_logout_cancel'.tr()),
-              ),
-              ElevatedButton(
-                onPressed: isSubmitting
-                    ? null
-                    : () async {
-                        if (passwordController.text.isEmpty) return;
-                        setDialogState(() {
-                          isSubmitting = true;
-                          errorText = null;
-                        });
-                        try {
-                          await _firebaseService.reauthenticateWithPassword(passwordController.text);
-                          await _firebaseService.finishAccountDeletionAfterReauth();
-                          if (dialogContext.mounted) Navigator.pop(dialogContext, true);
-                        } catch (e) {
-                          setDialogState(() {
-                            isSubmitting = false;
-                            errorText = ErrorHelper.getFriendlyErrorMessage(e);
-                          });
-                        }
-                      },
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                child: isSubmitting
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                      )
-                    : Text('settings_reauth_confirm_button'.tr(), style: const TextStyle(color: Colors.white)),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-    passwordController.dispose();
-
-    if (confirmed == true) {
-      _showAccountDeletedSnackBar();
-    }
   }
 
   Future<void> _manageSubscription() async {
@@ -794,6 +766,103 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
       ),
       bottomNavigationBar: const BannerAdWidget(),
+    );
+  }
+}
+
+/// Hesap silmeden önce şifreyle kimlik doğrulaması isteyen dialog. Doğrulama
+/// başarılıysa `true` ile kapanır. Controller'ı kendi yaşam döngüsünde yönetir
+/// (dialog kapanış animasyonu sürerken dispose edilmiş controller kullanılmasın).
+class _SifreDogrulamaDialog extends StatefulWidget {
+  final FirebaseService firebaseService;
+
+  const _SifreDogrulamaDialog({required this.firebaseService});
+
+  @override
+  State<_SifreDogrulamaDialog> createState() => _SifreDogrulamaDialogState();
+}
+
+class _SifreDogrulamaDialogState extends State<_SifreDogrulamaDialog> {
+  final _passwordController = TextEditingController();
+  bool _isSubmitting = false;
+  String? _errorText;
+
+  @override
+  void dispose() {
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _dogrula() async {
+    if (_passwordController.text.isEmpty) return;
+    setState(() {
+      _isSubmitting = true;
+      _errorText = null;
+    });
+    try {
+      await widget.firebaseService.reauthenticateWithPassword(_passwordController.text);
+      if (mounted) Navigator.pop(context, true);
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isSubmitting = false;
+        _errorText = switch (e.code) {
+          'wrong-password' || 'invalid-credential' => 'auth_error_wrong_password'.tr(),
+          'too-many-requests' => 'auth_error_too_many_requests'.tr(),
+          'network-request-failed' => 'auth_error_network'.tr(),
+          _ => '${'auth_error_code_prefix'.tr()}${e.code}',
+        };
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isSubmitting = false;
+        _errorText = ErrorHelper.getFriendlyErrorMessage(e);
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      title: Text('settings_reauth_dialog_title'.tr()),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('settings_reauth_dialog_message'.tr()),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _passwordController,
+            obscureText: true,
+            autofocus: true,
+            onSubmitted: (_) => _isSubmitting ? null : _dogrula(),
+            decoration: InputDecoration(
+              labelText: 'auth_password_label'.tr(),
+              border: const OutlineInputBorder(),
+              errorText: _errorText,
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: _isSubmitting ? null : () => Navigator.pop(context, false),
+          child: Text('settings_logout_cancel'.tr()),
+        ),
+        ElevatedButton(
+          onPressed: _isSubmitting ? null : _dogrula,
+          style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+          child: _isSubmitting
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                )
+              : Text('settings_reauth_confirm_button'.tr(), style: const TextStyle(color: Colors.white)),
+        ),
+      ],
     );
   }
 }

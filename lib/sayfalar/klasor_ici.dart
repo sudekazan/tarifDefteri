@@ -20,6 +20,7 @@ import 'package:tarif_defteri/sayfalar/premium_sayfasi.dart';
 import '../utils/error_helper.dart';
 import '../services/review_service.dart';
 import '../services/analytics_service.dart';
+import '../utils/arama_metni.dart';
 import '../utils/magaza_linki.dart';
 
 class KlasorIci extends StatefulWidget {
@@ -158,8 +159,8 @@ class _KlasorIciState extends State<KlasorIci> {
         filtreliTarifler = List.from(tarifListesi);
       } else {
         filtreliTarifler = tarifListesi.where((tarif) =>
-          tarif.tarif_adi.toLowerCase().contains(arama.toLowerCase()) ||
-          tarif.tarif_aciklama.toLowerCase().contains(arama.toLowerCase())
+          aramaEslesir(tarif.tarif_adi, arama) ||
+          aramaEslesir(tarif.tarif_aciklama, arama)
         ).toList();
       }
     });
@@ -656,7 +657,7 @@ class _KlasorIciState extends State<KlasorIci> {
       // Create TarifData from JSON
       final yeniTarif = TarifData(
         tarif_id: 0,
-        tarif_adi: recipeData['baslik'] ?? (isUrl ? 'Linkten Tarif' : input),
+        tarif_adi: recipeData['baslik'] ?? (isUrl ? 'link_recipe_fallback_title'.tr() : input),
         tarif_aciklama: '',
         tarif_resimler: [],
         klasor_id: widget.klasorData.klasor_id,

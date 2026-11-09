@@ -1326,6 +1326,10 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
                                   tarif_aciklama_json: tarifAciklamaJson,
                                   tarif_resimler: resimYollari,
                                   klasor_id: widget.tarifData.klasor_id,
+                                  // Düzenleme sırasında favori durumu korunmalı;
+                                  // aksi halde her düzenleme favori işaretini
+                                  // sessizce sıfırlıyordu.
+                                  isFavorite: widget.tarifData.isFavorite,
                                 ),
                               );
                             }

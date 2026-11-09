@@ -260,16 +260,18 @@ class _AuthScreenState extends State<AuthScreen> {
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
       setState(() {
-        if (e.code == 'user-not-found') {
-          _errorMessage = 'auth_error_user_not_found'.tr();
-        } else {
-          _errorMessage = e.message ?? 'Bir hata oluştu.';
-        }
+        _errorMessage = switch (e.code) {
+          'user-not-found' => 'auth_error_user_not_found'.tr(),
+          'invalid-email' => 'auth_error_invalid_email'.tr(),
+          'network-request-failed' => 'auth_error_network'.tr(),
+          'too-many-requests' => 'auth_error_too_many_requests'.tr(),
+          _ => 'auth_error_generic'.tr(),
+        };
       });
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _errorMessage = 'Bilinmeyen bir hata oluştu.';
+        _errorMessage = '${'auth_error_unexpected_prefix'.tr()}${ErrorHelper.getFriendlyErrorMessage(e)}';
       });
     } finally {
       if (mounted) {

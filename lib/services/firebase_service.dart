@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -19,14 +20,18 @@ import 'revenuecat_service.dart';
 class SignInCancelledException implements Exception {}
 
 /// deleteUserAccount() sırasında Firebase Auth hesabını silmek için
-/// yeniden (güncel) kimlik doğrulaması gerektiğinde fırlatılır.
-/// Veriler (Firestore + Storage) bu noktada zaten silinmiş olur;
-/// sadece Authentication kaydının kaldırılması yeniden girişe bağlıdır.
+/// yeniden (güncel) kimlik doğrulaması gerektiğinde fırlatılır. UI, silmeden
+/// önce [FirebaseService.reauthYontemi]'ne göre kimliği tazelediği için
+/// normalde oluşmaz; oluşursa kullanıcı işlemi baştan tekrar dener (silme
+/// adımları tekrar çalıştırılabilir, zararsızdır).
 class ReauthRequiredException implements Exception {
   @override
-  String toString() =>
-      'Bu işlemi tamamlamak için yeniden giriş doğrulaması gerekiyor.';
+  String toString() => 'requires-recent-login';
 }
+
+/// Hesap silme gibi hassas işlemlerden önce kimliğin hangi yöntemle
+/// tazeleneceği. Google/Apple ile giriş yapan kullanıcıların şifresi yoktur.
+enum ReauthYontemi { sifre, google, apple }
 
 class FirebaseService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -460,17 +465,17 @@ class FirebaseService {
     }
   }
 
-  // Google hesabıyla giriş yap
-  Future<UserCredential> signInWithGoogle() async {
+  /// Google hesap seçicisini açıp Firebase kimlik bilgisi üretir; giriş ve
+  /// yeniden doğrulama aynı akışı kullanır.
+  Future<AuthCredential> _googleCredential() async {
     try {
       final GoogleSignInAccount account = await GoogleSignIn.instance
           .authenticate();
       final String? idToken = account.authentication.idToken;
       if (idToken == null) {
-        throw Exception('Google kimlik doğrulama tokenı alınamadı.');
+        throw Exception('auth_error_google_token'.tr());
       }
-      final credential = GoogleAuthProvider.credential(idToken: idToken);
-      return await _auth.signInWithCredential(credential);
+      return GoogleAuthProvider.credential(idToken: idToken);
     } on GoogleSignInException catch (e) {
       if (e.code == GoogleSignInExceptionCode.canceled) {
         throw SignInCancelledException();
@@ -479,8 +484,10 @@ class FirebaseService {
     }
   }
 
-  // Apple ID ile giriş yap
-  Future<UserCredential> signInWithApple() async {
+  /// Apple ile oturum açma penceresini açıp Firebase kimlik bilgisini ve
+  /// (yalnızca ilk girişte dolu gelen) ad/soyad bilgisini döndürür.
+  Future<(OAuthCredential, AuthorizationCredentialAppleID)>
+      _appleCredential() async {
     final rawNonce = _generateNonce();
     final hashedNonce = sha256.convert(utf8.encode(rawNonce)).toString();
 
@@ -498,33 +505,68 @@ class FirebaseService {
         rawNonce: rawNonce,
         accessToken: appleCredential.authorizationCode,
       );
-
-      final userCredential = await _auth.signInWithCredential(
-        oauthCredential,
-      );
-
-      // Apple yalnızca ilk girişte ad/soyad döner; Firebase profilinde yoksa ekle
-      final user = userCredential.user;
-      if (user != null &&
-          (user.displayName == null || user.displayName!.isEmpty) &&
-          (appleCredential.givenName != null ||
-              appleCredential.familyName != null)) {
-        final fullName = [
-          appleCredential.givenName,
-          appleCredential.familyName,
-        ].where((e) => e != null && e.isNotEmpty).join(' ');
-        if (fullName.isNotEmpty) {
-          await user.updateDisplayName(fullName);
-        }
-      }
-
-      return userCredential;
+      return (oauthCredential, appleCredential);
     } on SignInWithAppleAuthorizationException catch (e) {
       if (e.code == AuthorizationErrorCode.canceled) {
         throw SignInCancelledException();
       }
       rethrow;
     }
+  }
+
+  // Google hesabıyla giriş yap
+  Future<UserCredential> signInWithGoogle() async {
+    return _auth.signInWithCredential(await _googleCredential());
+  }
+
+  // Apple ID ile giriş yap
+  Future<UserCredential> signInWithApple() async {
+    final (oauthCredential, appleCredential) = await _appleCredential();
+    final userCredential = await _auth.signInWithCredential(oauthCredential);
+
+    // Apple yalnızca ilk girişte ad/soyad döner; Firebase profilinde yoksa ekle
+    final user = userCredential.user;
+    if (user != null &&
+        (user.displayName == null || user.displayName!.isEmpty) &&
+        (appleCredential.givenName != null ||
+            appleCredential.familyName != null)) {
+      final fullName = [
+        appleCredential.givenName,
+        appleCredential.familyName,
+      ].where((e) => e != null && e.isNotEmpty).join(' ');
+      if (fullName.isNotEmpty) {
+        await user.updateDisplayName(fullName);
+      }
+    }
+
+    return userCredential;
+  }
+
+  /// Mevcut kullanıcının hangi yöntemle yeniden doğrulanması gerektiği.
+  /// Şifresi olan hesapta şifre tercih edilir (en az sürtünmeli yol).
+  ReauthYontemi? get reauthYontemi {
+    final providers =
+        _auth.currentUser?.providerData.map((p) => p.providerId).toSet() ??
+            const <String>{};
+    if (providers.contains('password')) return ReauthYontemi.sifre;
+    if (providers.contains('google.com')) return ReauthYontemi.google;
+    if (providers.contains('apple.com')) return ReauthYontemi.apple;
+    return null;
+  }
+
+  /// Google ile giriş yapmış kullanıcının kimliğini tazeler (hesap silme öncesi).
+  Future<void> reauthenticateWithGoogle() async {
+    final user = _auth.currentUser;
+    if (user == null) throw ReauthRequiredException();
+    await user.reauthenticateWithCredential(await _googleCredential());
+  }
+
+  /// Apple ile giriş yapmış kullanıcının kimliğini tazeler (hesap silme öncesi).
+  Future<void> reauthenticateWithApple() async {
+    final user = _auth.currentUser;
+    if (user == null) throw ReauthRequiredException();
+    final (oauthCredential, _) = await _appleCredential();
+    await user.reauthenticateWithCredential(oauthCredential);
   }
 
   String _generateNonce([int length = 32]) {
@@ -540,6 +582,13 @@ class FirebaseService {
   // Çıkış yap
   Future<void> signOut() async {
     await _auth.signOut();
+    await _oturumKalintilariniTemizle();
+  }
+
+  /// Çıkışta ve hesap silindikten sonra: Google oturumunu, RevenueCat
+  /// kimliğini ve cihazdaki klasör/tarif verilerini temizler (tema gibi
+  /// ayarlar korunur).
+  Future<void> _oturumKalintilariniTemizle() async {
     try {
       await GoogleSignIn.instance.signOut();
     } catch (e) {
@@ -549,16 +598,14 @@ class FirebaseService {
 
     try {
       final prefs = await SharedPreferences.getInstance();
-      // Yalnızca klasör ve tarif verilerini sil, ayarları (tema vb.) koru
       final keys = prefs.getKeys();
       for (String key in keys) {
         if (key == 'klasorler' || key.startsWith('tarifler_')) {
           await prefs.remove(key);
         }
       }
-      debugPrint('Çıkış yapıldı ve yerel kullanıcı verileri temizlendi.');
     } catch (e) {
-      debugPrint('Çıkış yaparken yerel veri temizleme hatası: $e');
+      debugPrint('Yerel kullanıcı verileri temizlenirken hata: $e');
     }
   }
 
@@ -586,7 +633,10 @@ class FirebaseService {
     }
   }
 
-  // Kullanıcı hesabını ve tüm verilerini kalıcı olarak sil
+  /// Kullanıcı hesabını ve tüm verilerini kalıcı olarak siler.
+  /// UI bunu çağırmadan önce [reauthYontemi]'ne göre kimliği tazelemelidir;
+  /// aksi halde veriler silinip son adımda "requires-recent-login" alınabilir.
+  /// Adımlar tekrar çalıştırılabilir: yarıda kalırsa tekrar denemek güvenlidir.
   Future<void> deleteUserAccount() async {
     if (!isUserLoggedIn) throw Exception('Kullanıcı giriş yapmamış');
 
@@ -621,11 +671,6 @@ class FirebaseService {
     await _deleteAllUserStorageFiles(currentUserId);
 
     // 5. Firebase Authentication'dan hesabı sil.
-    // Veriler (Firestore + Storage) zaten silindi; bu adım sadece kimlik
-    // doğrulama kaydını kaldırır. "requires-recent-login" hatası alınırsa
-    // ReauthRequiredException fırlatılır; UI katmanı kullanıcıdan şifresini
-    // isteyip reauthenticateWithPassword() ile doğruladıktan sonra
-    // finishAccountDeletionAfterReauth() ile bu adımı tekrar deneyebilir.
     try {
       await _auth.currentUser?.delete();
     } on FirebaseAuthException catch (e) {
@@ -635,30 +680,30 @@ class FirebaseService {
       rethrow;
     }
 
-    // Hesap silindi; RevenueCat kimliğini de bu cihazda sıfırla ki aynı
-    // cihazda açılacak yeni bir hesap, silinen hesabın abonelik kimliğini
-    // miras almasın.
-    await RevenueCatService.logoutFromRevenueCat();
+    // Hesap silindi: Google oturumunu, RevenueCat kimliğini (aynı cihazda
+    // açılacak yeni hesap eski aboneliği miras almasın) ve cihazdaki
+    // tarif/klasör kopyalarını temizle — kullanıcıya "tüm tarifleriniz
+    // silinecek" dendi, yerel kopyalar kalırsa yeni hesapta geri yüklenirdi.
+    await _oturumKalintilariniTemizle();
+
+    // Alışveriş listesi yalnızca cihazda durur; çıkışta korunur ama hesap
+    // silinince "tüm verileriniz silinir" sözü gereği o da temizlenir.
+    // (Anahtarlar: lib/sayfalar/alisveris_listesi.dart)
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('shopping_list_todo');
+      await prefs.remove('shopping_list_done');
+    } catch (e) {
+      debugPrint('Alışveriş listesi temizlenirken hata: $e');
+    }
   }
 
-  /// Kullanıcının şifresiyle yeniden kimlik doğrulaması yapar.
-  /// deleteUserAccount() ReauthRequiredException fırlattığında UI'dan çağrılır.
+  /// Şifreyle giriş yapmış kullanıcının kimliğini tazeler (hesap silme öncesi).
   Future<void> reauthenticateWithPassword(String password) async {
     final user = _auth.currentUser;
-    if (user == null || user.email == null) {
-      throw Exception('Yeniden kimlik doğrulama için aktif bir oturum bulunamadı.');
-    }
+    if (user == null || user.email == null) throw ReauthRequiredException();
     final credential = EmailAuthProvider.credential(email: user.email!, password: password);
     await user.reauthenticateWithCredential(credential);
-  }
-
-  /// deleteUserAccount() sırasında yalnızca Authentication hesabı silme adımı
-  /// "requires-recent-login" ile başarısız olduysa, reauthenticateWithPassword()
-  /// başarılı olduktan sonra bu metot çağrılarak hesap silme tamamlanır.
-  /// (Firestore/Storage verileri deleteUserAccount() içinde zaten silinmiş olur.)
-  Future<void> finishAccountDeletionAfterReauth() async {
-    await _auth.currentUser?.delete();
-    await RevenueCatService.logoutFromRevenueCat();
   }
 
   // ADIM 4: AI Tarafından Üretilen Tarifi Veritabanına Kaydetme

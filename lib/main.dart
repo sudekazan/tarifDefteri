@@ -42,16 +42,21 @@ void main() async {
     debugPrint('GoogleSignIn init error: $e');
   }
 
+  // Yavaş ağda açılış ekranında uzun süre takılı kalınmasın: RevenueCat en
+  // fazla 6 sn beklenir; süre dolarsa kalan iş arka planda tamamlanır.
   try {
-    await RevenueCatService.init();
-    // Uygulama açılışında zaten giriş yapılmışsa RevenueCat kimliğini
-    // Firebase UID'ye bağla (backend'in Pro durumunu kontrol edebilmesi için).
-    final currentUser = FirebaseAuth.instance.currentUser;
-    if (currentUser != null) {
-      await RevenueCatService.loginWithFirebaseUid(currentUser.uid);
-    }
+    await () async {
+      await RevenueCatService.init();
+      // Uygulama açılışında zaten giriş yapılmışsa RevenueCat kimliğini
+      // Firebase UID'ye bağla (backend'in Pro durumunu kontrol edebilmesi için).
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser != null) {
+        await RevenueCatService.loginWithFirebaseUid(currentUser.uid);
+      }
+    }()
+        .timeout(const Duration(seconds: 6));
   } catch (e) {
-    debugPrint('RevenueCat init error: $e');
+    debugPrint('RevenueCat init error/timeout: $e');
   }
 
   // Reklam SDK'sı, AB onay formu ve ATT izni artık ilk ekran çizildikten

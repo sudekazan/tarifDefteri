@@ -19,6 +19,7 @@ import 'dart:io';
 import 'package:share_plus/share_plus.dart';
 import 'klasor_kayit.dart';
 import '../services/analytics_service.dart';
+import '../utils/arama_metni.dart';
 import '../services/firebase_service.dart';
 import '../utils/magaza_linki.dart';
 import '../services/ad_service.dart';
@@ -171,7 +172,7 @@ class _KlasorlerState extends State<Klasorler> {
         filtrelenmisKlasorler = [
           favorilerKlasor, // Favoriler klasörünü her zaman ekle
           ...klasorListesi.where((klasor) =>
-              klasor.klasor_adi.toLowerCase().contains(aramaKelimesi.toLowerCase())),
+              aramaEslesir(klasor.klasor_adi, aramaKelimesi)),
         ];
       });
     }
@@ -831,11 +832,46 @@ class _FavoriTariflerSayfasiState extends State<FavoriTariflerSayfasi> {
         filtreliTarifler = List.from(tumFavoriler);
       } else {
         filtreliTarifler = tumFavoriler.where((tarif) =>
-          tarif.tarif_adi.toLowerCase().contains(arama.toLowerCase()) ||
-          tarif.tarif_aciklama.toLowerCase().contains(arama.toLowerCase())
+          aramaEslesir(tarif.tarif_adi, arama) ||
+          aramaEslesir(tarif.tarif_aciklama, arama)
         ).toList();
       }
     });
+  }
+
+  /// Favoriler ekranında bir tarif görüntülenip Düzenle ile değiştirildiğinde
+  /// çağrılır. Eskiden burada yanlışlıkla `_favoriDurumunuDegistir` çağrılıyordu;
+  /// o fonksiyon depoya sadece `isFavorite` alanını yazıyor, düzenlemedeki
+  /// diğer tüm değişiklikler (başlık, malzemeler, fotoğraflar) yerelde
+  /// kaybolup sadece Firebase'e gidiyor, cihaz ile bulut kalıcı olarak
+  /// farklılaşıyordu.
+  Future<void> _tarifDuzenlemesiniKaydet(TarifData guncelTarif) async {
+    setState(() {
+      final index = tumFavoriler.indexWhere((t) => t.tarif_id == guncelTarif.tarif_id);
+      if (index != -1) {
+        if (guncelTarif.isFavorite) {
+          tumFavoriler[index] = guncelTarif;
+        } else {
+          tumFavoriler.removeAt(index);
+        }
+      }
+      filtreliTarifler = List.from(tumFavoriler);
+    });
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final key = 'tarifler_${guncelTarif.klasor_id}';
+      final tariflerJson = prefs.getStringList(key) ?? [];
+      final idx = tariflerJson.indexWhere(
+          (e) => json.decode(e)['tarif_id'] == guncelTarif.tarif_id);
+      if (idx != -1) {
+        tariflerJson[idx] = json.encode(guncelTarif.toMap());
+        await prefs.setStringList(key, tariflerJson);
+      }
+      await _firebaseService.updateTarifInFirebase(guncelTarif);
+    } catch (e) {
+      debugPrint('Favori tarif düzenleme kaydı hatası: $e');
+    }
   }
 
   /// Favori durumunu hem UI'da hem de kalıcı depoda günceller
@@ -979,7 +1015,7 @@ class _FavoriTariflerSayfasiState extends State<FavoriTariflerSayfasi> {
                       ),
                     );
                     if (guncelTarif != null && guncelTarif is TarifData) {
-                      _favoriDurumunuDegistir(guncelTarif);
+                      _tarifDuzenlemesiniKaydet(guncelTarif);
                     }
                   },
                   child: Card(

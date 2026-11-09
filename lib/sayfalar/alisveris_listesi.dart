@@ -23,8 +23,15 @@ class _AlisverisListesiState extends State<AlisverisListesi> {
     _yukle();
   }
 
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
   Future<void> _yukle() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
     setState(() {
       _alinacaklar = prefs.getStringList('shopping_list_todo') ?? [];
       _alinanlar = prefs.getStringList('shopping_list_done') ?? [];

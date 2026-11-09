@@ -5,6 +5,18 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:tarif_defteri/tarifler_data/tarif_data.dart';
 import '../services/analytics_service.dart';
 import '../services/review_service.dart';
+import '../utils/porsiyon_olcekleyici.dart';
+
+/// Düz metin (eski) tariflerde malzemeler ile yapılış adımlarını ayıran
+/// başlık kelimeleri; uygulamanın desteklediği 6 dil için, küçük harfle.
+const _adimBasliklari = [
+  'yapılış', 'hazırlanış', 'hazırlanışı', // tr
+  'instructions', 'directions', 'preparation', 'method', // en
+  'zubereitung', 'anleitung', // de
+  'preparación', 'instrucciones', 'elaboración', // es
+  'préparation', 'instructions', // fr
+  'preparo', 'modo de preparo', 'instruções', // pt
+];
 
 class YemekYapmaModu extends StatefulWidget {
   final TarifData tarif;
@@ -19,6 +31,7 @@ class YemekYapmaModu extends StatefulWidget {
 class _YemekYapmaModuState extends State<YemekYapmaModu> {
   final PageController _pageController = PageController();
   int _currentIndex = 0;
+  bool _bitiriliyor = false;
 
   List<String> _malzemeler = [];
   List<String> _adimlar = [];
@@ -39,28 +52,6 @@ class _YemekYapmaModuState extends State<YemekYapmaModu> {
     super.dispose();
   }
 
-  String _scaleIngredient(String ingredient, double multiplier) {
-    if (multiplier == 1.0) return ingredient;
-    final regExp = RegExp(r'(?:^|\s)(\d+(?:[.,]\d+)?(?:\/\d+)?)(?=\s|$)');
-    var match = regExp.firstMatch(ingredient);
-    if (match != null) {
-      String numStr = match.group(1)!;
-      double? val;
-      if (numStr.contains('/')) {
-        var parts = numStr.split('/');
-        val = double.parse(parts[0]) / double.parse(parts[1]);
-      } else {
-        val = double.tryParse(numStr.replaceAll(',', '.'));
-      }
-      if (val != null) {
-        double scaled = val * multiplier;
-        String result = scaled.toStringAsFixed(2).replaceAll(RegExp(r'0*$'), '').replaceAll(RegExp(r'\.$'), '');
-        return ingredient.replaceFirst(numStr, result, match.start);
-      }
-    }
-    return ingredient;
-  }
-
   void _parseRecipeContent() {
     List<String> tempMalzemeler = [];
     List<String> tempAdimlar = [];
@@ -75,7 +66,7 @@ class _YemekYapmaModuState extends State<YemekYapmaModu> {
               section['type'] == 'serbet' ||
               section['type'] == 'sos') {
             for (var item in (section['items'] ?? [])) {
-              tempMalzemeler.add(_scaleIngredient(item.toString(), widget.portionMultiplier));
+              tempMalzemeler.add(olcekleMalzeme(item.toString(), widget.portionMultiplier));
             }
           } else if (section['type'] == 'yapilis') {
             for (var item in (section['items'] ?? [])) {
@@ -96,8 +87,10 @@ class _YemekYapmaModuState extends State<YemekYapmaModu> {
         final trimmed = line.trim();
         if (trimmed.isEmpty) continue;
 
-        String lower = trimmed.toLowerCase();
-        if (lower.contains('yapılış') || lower.contains('hazırlanış') || lower.contains('instructions')) {
+        // Dart'ın toLowerCase'i Türkçe I/İ'yi doğru küçültmez ("YAPILIŞ" ->
+        // "yapiliş"); başlık eşleşmesi için önce Türkçe harfleri düzelt.
+        final lower = trimmed.replaceAll('I', 'ı').replaceAll('İ', 'i').toLowerCase();
+        if (_adimBasliklari.any(lower.contains)) {
           isYapilis = true;
           continue;
         }
@@ -105,7 +98,7 @@ class _YemekYapmaModuState extends State<YemekYapmaModu> {
         if (isYapilis) {
           tempAdimlar.add(trimmed);
         } else {
-          tempMalzemeler.add(_scaleIngredient(trimmed, widget.portionMultiplier));
+          tempMalzemeler.add(olcekleMalzeme(trimmed, widget.portionMultiplier));
         }
       }
     }
@@ -558,7 +551,9 @@ class _YemekYapmaModuState extends State<YemekYapmaModu> {
                   Text(
                     _currentIndex == 0
                         ? 'cooking_mode_ingredients'.tr()
-                        : '${'cooking_mode_step'.tr()} $_currentIndex / ${_adimlar.length}',
+                        : _adimlar.isEmpty
+                            ? ''
+                            : '${'cooking_mode_step'.tr()} $_currentIndex / ${_adimlar.length}',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
@@ -647,13 +642,19 @@ class _YemekYapmaModuState extends State<YemekYapmaModu> {
                                   curve: Curves.easeInOut,
                                 );
                               }
-                            : () async {
-                                // Tarifi bitirmek mutlu bir an olduğu için
-                                // değerlendirme isteği burada sorulur.
-                                AnalyticsService.yemekModuTamamlandi();
-                                await ReviewService.checkAndRequestReview(context);
-                                if (context.mounted) Navigator.pop(context);
-                              },
+                            : _bitiriliyor
+                                ? null
+                                : () async {
+                                    // Değerlendirme beklenirken ikinci dokunuş
+                                    // Navigator.pop'u iki kez çalıştırıp arkadaki
+                                    // tarif sayfasını da kapatıyordu.
+                                    setState(() => _bitiriliyor = true);
+                                    // Tarifi bitirmek mutlu bir an olduğu için
+                                    // değerlendirme isteği burada sorulur.
+                                    AnalyticsService.yemekModuTamamlandi();
+                                    await ReviewService.checkAndRequestReview(context);
+                                    if (context.mounted) Navigator.pop(context);
+                                  },
                         icon: Icon(
                           _currentIndex < totalPages - 1 ? Icons.arrow_forward_ios_rounded : Icons.check_circle_rounded,
                           size: 20,

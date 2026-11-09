@@ -107,9 +107,12 @@ class RevenueCatService {
   static Future<void> logoutFromRevenueCat() async {
     try {
       await Purchases.logOut();
-      _setPro(false);
     } catch (e) {
+      // logOut anonim kullanıcıda ya da ağ hatasında hata fırlatabilir; yine
+      // de çıkış yapan kullanıcı bu cihazda Pro görünmeye devam etmemeli.
       debugPrint('RevenueCat logOut error: $e');
+    } finally {
+      _setPro(false);
     }
   }
 
@@ -203,38 +206,43 @@ class RevenueCatService {
     return [];
   }
 
-  // Ücretsiz AI Kullanım Hakkı Kontrolü
-  static Future<bool> canUseAi() async {
-    if (_isPro) return true; // Pro kullanıcılara sınırsız
+  /// Ücretsiz günlük AI Şef hakkı (backend/server.js FREE_DAILY_AI_LIMIT ile aynı).
+  static const int freeDailyAiLimit = 3;
 
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String today = DateTime.now().toIso8601String().substring(0, 10); // YYYY-MM-DD
-    int usageCount = prefs.getInt('ai_usage_$today') ?? 0;
-    
-    return usageCount < 3; // Günde maksimum 3 ücretsiz hak
+  /// Backend günlük sayacı UTC tarihine göre tutar; yerel anahtar da UTC
+  /// olmalı. Yerel tarih kullanılınca Türkiye'de 00:00-03:00 arasında hakkını
+  /// bitiren kullanıcının ertesi günü yerelde 0 hakla başlıyor, sunucu izin
+  /// verse bile uygulama AI Şef'i engelliyordu.
+  static String _bugununAiAnahtari() =>
+      'ai_remaining_${DateTime.now().toUtc().toIso8601String().substring(0, 10)}';
+
+  /// Yerel hızlı ön kontrol; asıl karar backend'indir.
+  static Future<bool> canUseAi() async {
+    if (_isPro) return true;
+    return await getRemainingAiUses() > 0;
   }
 
-  /// Backend'in döndürdüğü gerçek "kalan hak" sayısıyla yerel sayacı eşitler.
-  /// Yerel sayaç sadece hızlı bir ön kontrol için var (saat dilimi farkı veya
-  /// uygulamanın yeniden kurulması gibi nedenlerle backend'deki Firestore
-  /// sayacından sapabilir); backend her zaman otoritedir, bu metot her AI
-  /// isteğinden sonra yerel değeri ona göre düzeltir.
+  /// Backend'in döndürdüğü gerçek "kalan hak" sayısını yerelde saklar.
+  /// Reklam bonuslarıyla kalan hak 3'ün üstüne çıkabildiği için değer
+  /// kırpılmaz (eskiden 3'e kırpılıyor, rozet yanlış sayı gösteriyordu).
   static Future<void> syncRemainingFromServer(int? remaining) async {
-    if (remaining == null) return; // Pro kullanıcı / sınırsız, senkronize etmeye gerek yok
+    if (remaining == null || _isPro) return;
 
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String today = DateTime.now().toIso8601String().substring(0, 10);
-    final clampedRemaining = remaining.clamp(0, 3);
-    await prefs.setInt('ai_usage_$today', 3 - clampedRemaining);
+    final prefs = await SharedPreferences.getInstance();
+    final bugun = _bugununAiAnahtari();
+    await prefs.setInt(bugun, remaining < 0 ? 0 : remaining);
+
+    // Önceki günlerin sayaçlarını (eski 'ai_usage_' biçimi dahil) temizle.
+    for (final key in prefs.getKeys().toList()) {
+      if (key != bugun && (key.startsWith('ai_remaining_') || key.startsWith('ai_usage_'))) {
+        await prefs.remove(key);
+      }
+    }
   }
 
   static Future<int> getRemainingAiUses() async {
     if (_isPro) return 999;
-    
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String today = DateTime.now().toIso8601String().substring(0, 10);
-    int usageCount = prefs.getInt('ai_usage_$today') ?? 0;
-    
-    return (3 - usageCount).clamp(0, 3);
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt(_bugununAiAnahtari()) ?? freeDailyAiLimit;
   }
 }

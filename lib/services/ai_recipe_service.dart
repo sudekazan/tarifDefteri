@@ -44,7 +44,7 @@ class AiRecipeService {
       return idToken;
     } catch (e) {
       debugPrint('Token error: $e');
-      throw Exception('Oturum doğrulanamadı. Lütfen tekrar giriş yapın.');
+      throw Exception('ai_error_session'.tr());
     }
   }
 
@@ -79,21 +79,29 @@ class AiRecipeService {
       debugPrint('Status Code: ${response.statusCode}');
       debugPrint('Response Body: ${response.body}');
 
+      if (response.statusCode == 401) {
+        throw Exception('ai_error_session'.tr());
+      }
       if (response.statusCode >= 500) {
-        throw Exception('Sunucu Hatası: ${response.statusCode}');
+        throw Exception('ai_error_server'.tr());
       }
 
       final data = jsonDecode(response.body) as Map<String, dynamic>;
       final remaining = data['remaining'] is int ? data['remaining'] as int : null;
 
       if (response.statusCode == 429) {
+        // Saatlik istek sınırı günlük hak bitimiyle karıştırılmamalı; aksi
+        // halde hakkı olan kullanıcıya "reklam izle / Pro'ya geç" gösterilir.
+        if (data['rateLimited'] == true) {
+          throw Exception('ai_error_rate_limited'.tr());
+        }
         throw AiLimitExceededException(data['message'] ?? 'ai_limit_reached'.tr());
       }
 
       if (data['success'] == true) {
         return AiRecipeResult(recipeData: Map<String, dynamic>.from(data['data']), remaining: remaining);
       } else {
-        throw Exception(data['message'] ?? 'Tarif oluşturulurken bir hata oluştu');
+        throw Exception(data['message'] ?? 'ai_error_server'.tr());
       }
 
     } catch (e) {

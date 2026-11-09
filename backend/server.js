@@ -6,11 +6,25 @@ const OpenAI = require('openai');
 const admin = require('firebase-admin');
 const rateLimit = require('express-rate-limit');
 
-// Her kullanıcı/IP için 1 saatte maksimum 15 tarif isteği
-const recipeLimiter = rateLimit({
+// Kimlik doğrulamadan önce: geçersiz token ile yapılan yığın isteklere karşı
+// gevşek bir IP sınırı. Mobil operatörlerde çok sayıda kullanıcı aynı IP'yi
+// paylaştığı (CGNAT) için asıl kullanıcı başı sınır aşağıda UID ile yapılır.
+const ipLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000,
+    max: 200,
+    message: { success: false, rateLimited: true, message: 'Rate limit exceeded. Please try again later.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+// Kimlik doğrulamadan sonra: kullanıcı başına saatte en fazla 15 istek.
+// Eskiden bu sınır IP'ye göreydi; aynı operatör IP'sini paylaşan alakasız
+// kullanıcılar birbirinin hakkını tüketiyordu.
+const userLimiter = rateLimit({
     windowMs: 60 * 60 * 1000,
     max: 15,
-    message: { success: false, message: 'Rate limit exceeded. Please try again later.' },
+    keyGenerator: (req) => req.user.uid,
+    message: { success: false, rateLimited: true, message: 'Rate limit exceeded. Please try again later.' },
     standardHeaders: true,
     legacyHeaders: false,
 });
@@ -24,11 +38,18 @@ if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
     try {
         firebaseCredential = admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON));
     } catch (error) {
-        console.error('FIREBASE_SERVICE_ACCOUNT_JSON ayrıştırılamadı:', error.message);
+        console.error('HATA: FIREBASE_SERVICE_ACCOUNT_JSON tanımlı ama geçerli JSON değil (tek satır mı, eksik kopyalanmış mı?):', error.message);
     }
+} else {
+    console.error('HATA: FIREBASE_SERVICE_ACCOUNT_JSON tanımlı değil; Render gibi GCP dışı ortamlarda Firestore erişimi başarısız olur ve AI istekleri 503 döner.');
 }
-if (!firebaseCredential) {
-    console.warn('FIREBASE_SERVICE_ACCOUNT_JSON tanımlı değil; Application Default Credentials denenecek (GCP dışı ortamlarda Firestore erişimi başarısız olur).');
+
+// Bu anahtarlar eksikse sunucu "sağlıklı" görünür ama özellikler sessizce
+// bozulur; açılışta açıkça logla ki Render loglarında hemen fark edilsin.
+for (const key of ['OPENROUTER_API_KEY', 'REVENUECAT_SECRET_KEY']) {
+    if (!process.env[key]) {
+        console.error(`HATA: ${key} tanımlı değil.`);
+    }
 }
 
 admin.initializeApp({
@@ -69,7 +90,7 @@ const PRO_ENTITLEMENT_IDS = ['recipe_keeper_custom_cookbook_pro', 'pro', 'premiu
  */
 async function isProUserViaRevenueCat(firebaseUid) {
     if (!REVENUECAT_SECRET_KEY) {
-        console.warn('REVENUECAT_SECRET_KEY tanımlı değil; Pro kontrolü atlanıp kullanıcı ücretsiz sayılıyor.');
+        console.error('HATA: REVENUECAT_SECRET_KEY tanımlı değil; Pro aboneler ücretsiz limite düşüyor.');
         return false;
     }
 
@@ -125,7 +146,7 @@ async function checkAndIncrementDailyUsage(firebaseUid, baseLimit, allowBonus) {
                 updatedAt: admin.firestore.FieldValue.serverTimestamp(),
             }, { merge: true });
 
-            return { allowed: true, remaining: effectiveLimit - (currentCount + 1) };
+            return { allowed: true, remaining: effectiveLimit - (currentCount + 1), today };
         });
     } catch (error) {
         console.error('Günlük kullanım kontrolü hatası (Firestore):', error.message);
@@ -134,6 +155,32 @@ async function checkAndIncrementDailyUsage(firebaseUid, baseLimit, allowBonus) {
         // hem free hem pro kullanıcıyı fiilen sınırsız yapıyordu). Güvenli taraf:
         // isteği reddet, UI "limit doldu" değil "geçici sorun" mesajı göstersin.
         return { allowed: false, remaining: null, infraError: true };
+    }
+}
+
+/**
+ * Tarif üretimi teknik bir hata yüzünden (OpenRouter zaman aşımı, bozuk JSON)
+ * başarısız olduğunda, checkAndIncrementDailyUsage'ın düştüğü hakkı geri verir.
+ * Kullanıcı tarif alamadığı bir istek için hak kaybetmemeli.
+ * [today]: hakkın düşüldüğü gün (istek gece yarısını aşarsa yanlış güne iade olmasın).
+ */
+async function refundDailyUsage(firebaseUid, today) {
+    const docRef = admin.firestore().collection('aiUsage').doc(`${firebaseUid}_${today}`);
+    try {
+        await admin.firestore().runTransaction(async (tx) => {
+            const snap = await tx.get(docRef);
+            const currentCount = snap.exists ? (snap.data().count || 0) : 0;
+            if (currentCount > 0) {
+                tx.set(docRef, {
+                    count: currentCount - 1,
+                    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+                }, { merge: true });
+            }
+        });
+        return true;
+    } catch (error) {
+        console.error('AI hakkı iade edilemedi (Firestore):', error.message);
+        return false;
     }
 }
 
@@ -223,7 +270,7 @@ app.get('/health', (req, res) => {
 });
 
 // Ödüllü reklam izlendikten sonra o güne +1 ekstra AI Şef hakkı tanır.
-app.post('/api/grant-bonus-ai-use', recipeLimiter, authenticate, async (req, res) => {
+app.post('/api/grant-bonus-ai-use', ipLimiter, authenticate, userLimiter, async (req, res) => {
     const firebaseUid = req.user.uid;
     const isPro = await isProUserViaRevenueCat(firebaseUid);
 
@@ -244,7 +291,7 @@ app.post('/api/grant-bonus-ai-use', recipeLimiter, authenticate, async (req, res
 });
 
 // Recipe API Endpoint
-app.post('/api/generate-recipe', recipeLimiter, authenticate, async (req, res) => {
+app.post('/api/generate-recipe', ipLimiter, authenticate, userLimiter, async (req, res) => {
     const userPrompt = req.body.prompt;
     const languageCode = req.body.language || 'en';
     // 'dish_name': kullanıcı tek bir yemek adı/link girdi (AI Şef).
@@ -268,7 +315,7 @@ app.post('/api/generate-recipe', recipeLimiter, authenticate, async (req, res) =
             // "geçici sorun" diyoruz; bunu "hakkın bitti" ile karıştırmamalı.
             return res.status(503).json({
                 success: false,
-                message: 'Şu anda isteğiniz kontrol edilemiyor. Lütfen birkaç dakika sonra tekrar deneyin.',
+                message: 'Usage check temporarily unavailable. Please try again in a few minutes.',
                 remaining: null,
             });
         }
@@ -374,7 +421,14 @@ Error:
 
     } catch (error) {
         console.error("API Error:", error);
-        return res.status(500).json({ success: false, message: 'Failed to generate recipe: ' + error.message });
+        // Tarif üretilemedi: düşülen hakkı iade et ve güncel kalan hakkı dön ki
+        // istemcideki sayaç doğru kalsın.
+        const refunded = await refundDailyUsage(firebaseUid, usage.today);
+        return res.status(500).json({
+            success: false,
+            message: 'Failed to generate recipe: ' + error.message,
+            remaining: refunded ? remaining + 1 : remaining,
+        });
     }
 });
 

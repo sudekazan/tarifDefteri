@@ -11,6 +11,7 @@ import 'package:share_plus/share_plus.dart';
 import '../widgets/banner_ad_widget.dart';
 import '../utils/magaza_linki.dart';
 import '../utils/recipe_link_helper.dart';
+import '../utils/porsiyon_olcekleyici.dart';
 import '../services/analytics_service.dart';
 
 class TarifDetay extends StatefulWidget {
@@ -25,32 +26,6 @@ class TarifDetay extends StatefulWidget {
 class _TarifDetayState extends State<TarifDetay> {
   List<Map<String, dynamic>> sections = [];
   double _portionMultiplier = 1.0;
-
-  String _scaleIngredient(String ingredient, double multiplier) {
-    if (multiplier == 1.0) return ingredient;
-    
-    // İlk rakamı veya kesri eşleştir
-    final regExp = RegExp(r'(?:^|\s)(\d+(?:[.,]\d+)?(?:\/\d+)?)(?=\s|$)');
-    
-    var match = regExp.firstMatch(ingredient);
-    if (match != null) {
-      String numStr = match.group(1)!;
-      double? val;
-      if (numStr.contains('/')) {
-        var parts = numStr.split('/');
-        val = double.parse(parts[0]) / double.parse(parts[1]);
-      } else {
-        val = double.tryParse(numStr.replaceAll(',', '.'));
-      }
-      
-      if (val != null) {
-        double scaled = val * multiplier;
-        String result = scaled.toStringAsFixed(2).replaceAll(RegExp(r'0*$'), '').replaceAll(RegExp(r'\.$'), '');
-        return ingredient.replaceFirst(numStr, result, match.start);
-      }
-    }
-    return ingredient;
-  }
 
   @override
   void initState() {
@@ -668,7 +643,7 @@ class _TarifDetayState extends State<TarifDetay> {
                                             padding: const EdgeInsets.only(top: 4),
                                             child: Text(
                                               (section['type'] == 'malzemeler' || section['type'] == 'harc' || section['type'] == 'hamur' || section['type'] == 'serbet' || section['type'] == 'sos')
-                                                  ? _scaleIngredient(section['items'][i], _portionMultiplier)
+                                                  ? olcekleMalzeme(section['items'][i], _portionMultiplier)
                                                   : section['items'][i],
                                               style: TextStyle(
                                                 color: Theme.of(context).textTheme.bodyMedium?.color,
@@ -685,7 +660,7 @@ class _TarifDetayState extends State<TarifDetay> {
                                       padding: EdgeInsets.zero,
                                       constraints: const BoxConstraints(),
                                       onPressed: () {
-                                        String scaled = _scaleIngredient(section['items'][i], _portionMultiplier);
+                                        String scaled = olcekleMalzeme(section['items'][i], _portionMultiplier);
                                         _addToShoppingList(scaled);
                                       },
                                     ),

@@ -6,6 +6,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:tarif_defteri/tarifler_data/tarif_data.dart';
 import 'package:tarif_defteri/sayfalar/tarif_detay.dart';
 import '../services/analytics_service.dart';
+import '../utils/arama_metni.dart';
 
 class AramaSayfasi extends StatefulWidget {
   const AramaSayfasi({Key? key}) : super(key: key);
@@ -45,14 +46,22 @@ class _AramaSayfasiState extends State<AramaSayfasi> {
     List<TarifData> tumTarifler = [];
 
     for (int i = 0; i < klasorJsonList.length; i++) {
-      final map = json.decode(klasorJsonList[i]);
-      int kid = map['klasor_id'] ?? (i + 1);
-      
-      String key = 'tarifler_$kid';
-      List<String> tariflerJson = prefs.getStringList(key) ?? [];
-      for (var e in tariflerJson) {
-        var tarifMap = json.decode(e);
-        tumTarifler.add(TarifData.fromMap(tarifMap));
+      // Tek bir bozuk kayıt tüm aramayı (sonsuz yükleniyor) kilitlemesin.
+      try {
+        final map = json.decode(klasorJsonList[i]);
+        int kid = map['klasor_id'] ?? (i + 1);
+
+        String key = 'tarifler_$kid';
+        List<String> tariflerJson = prefs.getStringList(key) ?? [];
+        for (var e in tariflerJson) {
+          try {
+            tumTarifler.add(TarifData.fromMap(json.decode(e)));
+          } catch (err) {
+            debugPrint('Aramada bozuk tarif kaydı atlandı: $err');
+          }
+        }
+      } catch (err) {
+        debugPrint('Aramada bozuk klasör kaydı atlandı: $err');
       }
     }
 
@@ -72,11 +81,10 @@ class _AramaSayfasiState extends State<AramaSayfasi> {
       return;
     }
 
-    final lowerQuery = query.toLowerCase();
     setState(() {
       _filtrelenmisTarifler = _tumTarifler.where((tarif) {
-        return tarif.tarif_adi.toLowerCase().contains(lowerQuery) || 
-               tarif.tarif_aciklama.toLowerCase().contains(lowerQuery);
+        return aramaEslesir(tarif.tarif_adi, query) ||
+               aramaEslesir(tarif.tarif_aciklama, query);
       }).toList();
     });
     _sonAramaSonucVar = _filtrelenmisTarifler.isNotEmpty;
@@ -136,7 +144,9 @@ class _AramaSayfasiState extends State<AramaSayfasi> {
                               ),
                             );
                             if (guncelTarif == true || (guncelTarif != null && guncelTarif is TarifData)) {
-                              _tumTarifleriYukle().then((_) => _ara(_aramaController.text));
+                              _tumTarifleriYukle().then((_) {
+                                if (mounted) _ara(_aramaController.text);
+                              });
                             }
                           },
                           child: Card(

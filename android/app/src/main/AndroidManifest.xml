@@ -45,6 +45,17 @@
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
         </intent>
+        <!-- Android 11+ paket görünürlüğü: bunlar olmadan url_launcher'ın
+             canLaunchUrl'ü web linkleri için false döner (tarif linkleri,
+             gizlilik/koşullar, abonelik yönetimi açılmaz). -->
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="https"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="http"/>
+        </intent>
     </queries>
     
 </manifest>
