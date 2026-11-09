@@ -8,11 +8,19 @@ class KilSecenek {
     required this.ikon,
     required this.etiket,
     required this.onTap,
+    this.secili = false,
+    this.renk,
   });
 
   final IconData ikon;
   final String etiket;
   final VoidCallback onTap;
+
+  /// Seçili satırda sağda onay işareti çıkar; ekran okuyucu "seçili" der.
+  final bool secili;
+
+  /// İkon kutusunun rengi (ör. klasör rengi). Verilmezse seçili çip rengi.
+  final KlasorRenk? renk;
 }
 
 /// Alt sayfalardaki seçenek listesi (klasöre taşı, bölüm ekle). Her satır en
@@ -37,31 +45,47 @@ class KilSecimListesi extends StatelessWidget {
       separatorBuilder: (_, __) => const SizedBox(height: 4),
       itemBuilder: (context, i) {
         final s = secenekler[i];
-        return Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: s.onTap,
-            borderRadius: BorderRadius.circular(16),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(minHeight: enKucukYukseklik),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                child: Row(
-                  children: [
-                    ExcludeSemantics(
-                      child: Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: r.seciliCipZemin,
-                          borderRadius: BorderRadius.circular(12),
+        return Semantics(
+          selected: s.secili,
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: s.onTap,
+              borderRadius: BorderRadius.circular(16),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: enKucukYukseklik),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 6,
+                  ),
+                  child: Row(
+                    children: [
+                      ExcludeSemantics(
+                        child: Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: s.renk?.zemin ?? r.seciliCipZemin,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(
+                            s.ikon,
+                            size: 22,
+                            color: s.renk?.ikon ?? r.seciliCipYazi,
+                          ),
                         ),
-                        child: Icon(s.ikon, size: 22, color: r.seciliCipYazi),
                       ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(child: Text(s.etiket, style: yazi)),
-                  ],
+                      const SizedBox(width: 14),
+                      Expanded(child: Text(s.etiket, style: yazi)),
+                      if (s.secili) ...[
+                        const SizedBox(width: 8),
+                        ExcludeSemantics(
+                          child: Icon(Icons.check_rounded, color: r.baslik),
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
               ),
             ),

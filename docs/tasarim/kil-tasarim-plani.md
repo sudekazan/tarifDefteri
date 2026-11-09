@@ -1,6 +1,6 @@
 # Kil tasarımına geçiş planı (Tarifly)
 
-Tarih: 2026-11-09. Durum: **Aşama 1–5 tamamlandı; ekranlar aşama 6'dan itibaren yenilenecek.**
+Tarih: 2026-11-09. Durum: **Aşama 1–6 tamamlandı; ekranlar aşama 7'den itibaren yenilenecek.**
 Kaynak: UI UX Pro Max'in "Recipe & Cooking App" önerisi (claymorphism) ve Sude ile yapılan önce/sonra görsel çalışması.
 
 ## Kararlar (Sude, 2026-11-09)
@@ -143,7 +143,18 @@ Her aşamadan sonra: `flutter analyze`, ilgili testler, simülatörde açık ve 
    - Dosyalar: `lib/widgets/yemek_modu_parcalari.dart` (`YemekModuBasligi`, `YemekSayfaIlerlemesi`, `YemekIlerlemeCubugu`, `YemekMalzemeOzeti`, `YemekMalzemeSatiri`, `YemekMalzemeListesi`, `YemekAdimSayfasi`, `YemekModuAltCubuk`, `yemekYaziSiniri`), `lib/sayfalar/yemek_yapma_modu.dart`, `lib/widgets/kil/kil_dugme.dart` (`buyuk`).
    - Yeni metin yok; var olan `cooking_mode_*` anahtarları kullanıldı.
    - Testler: `test/yemek_modu_parcalari_test.dart` (satır 64, alt düğmeler 56, ekran okuyucu, büyük yazıda düzen; gerçek sayfayla ekranın açık tutulup bırakılması, olay adları, malzeme işaretleme, alt pencere, gezinme ve Tamamla, boş tarif; açık ve koyu modda 320 genişlik, 1x ve 3.2 kat yazıda taşma yok; metinler altı dilde).
-6. **Bugün ne pişirsem:** AI bekleme ekranındaki Lottie animasyonunun yeni renklerle uyumu da kontrol edilir.
+6. **Bugün ne pişirsem — tamamlandı (2026-11-10, gece çalışması; test görüntüleriyle açık/koyu, 402 genişlikte 1x ve 320 genişlikte 3.2 kat yazıda bakıldı):**
+   - İşleyiş aynı: yapay zekâ isteği ve metni, giriş ve hak kontrolü, "+1 hak" ödüllü reklam, Premium kaynakları (`ne_pisirsem_ekrani`, `ne_pisirsem_badge`, `ai_limit_choice`), analitik olaylar, kayıt ve form sıfırlama. Tek ek: kayıt klasörü alındıktan sonra `mounted` kontrolü (eski uyarı). `FirebaseService` artık ilk kullanımda kuruluyor (`late final`), böylece sayfa testte açılıyor.
+   - Üst çubuk yok: Caveat 34 başlık ve yanında "Pro" rozeti (büyük yazıda altında); üstüne açılınca `KilSayfaBasligi`. Kiremit tanıtım kartı (rozet, açıklama, şef emojisi), kalan hak kartı ("Daha Fazla Hak" 48'lik düğme). Bölüm başlıkları Caveat 26.
+   - Seçilen malzemeler kil kartında `SeciliMalzemeCipi` (dokununca çıkar, ekran okuyucu "Sil" ipucu). Elle ekleme kutusu tema kenarlı, "Ekle" `KilDugme` (büyük yazıda alta iner). Popüler malzemeler, öğün ve süre `KilCip` (emojiyle; `KilCip`'e `emoji` eklendi); öğün ve süre yatay kaydırma yerine sarılıyor, tüm seçenekler görünür.
+   - Klasör seçimi açılır menü yerine `KlasorSecimKutusu` → `KilAltSayfa` + `KilSecimListesi` (klasör renkleri, seçili klasörde onay işareti; `KilSecenek`'e `secili` ve `renk` eklendi). Klasör adları `klasorGorunenAdi` ile (varsayılan klasörler çevrilir).
+   - "Şefe Sor" tam genişlik büyük birincil düğme.
+   - Bekleme: `AiBeklemeKatmani` (karartma + kil kartı, alttaki sayfaya dokunulamaz). Lottie dosyası değişmedi; çizerken mor tava/saplar terrakota, pembe kâse ve yeşil şişe adaçayı, kulplar ana yazı rengine eşleniyor (`AiChefLoadingAnimation.renkTemsilcileri`). Animasyonun beyaz arka plan katmanı kart rengine boyanıyor: önce koyu modda kartın ortasında beyaz dikdörtgen çıkıyordu. Alev ve baharat renkleri kaldı. Klasör içinden açılan bekleme diyaloğu da aynı renkleri alır.
+   - "+1 hak" diyaloğu kil renklerinde (`KilDugme`, büyük yazıda kaydırılır); dönüş değerleri aynı.
+   - Caveat başlıklar ve bekleme kartı en fazla 2 kat büyür (`nePisirsemBaslikSiniri`, Aşama 5'teki gibi).
+   - Snackbar'lar, Pro limit ve hata diyalogları aşama 9'a bırakıldı.
+   - Dosyalar: `lib/widgets/ne_pisirsem_parcalari.dart`, `lib/sayfalar/bugun_ne_pisisem_sayfasi.dart`, `lib/widgets/ai_chef_loading_animation.dart`, `lib/widgets/ai_hak_doldu_dialog.dart`, `lib/widgets/kil/kil_cip.dart`, `lib/widgets/kil/kil_secim_listesi.dart`. Yeni metin yok.
+   - Testler: `test/ne_pisirsem_parcalari_test.dart` (renk eşlemesi ve koyu/açık modda arka planın kart rengi, 48'lik dokunma alanları, ekran okuyucu, büyük yazıda diziliş, bekleme katmanı, diyalog seçimi, gerçek sayfada seçim/kaldırma/temizleme/klasör değiştirme/uyarı, 320 genişlik 1x ve 3.2 kat yazıda açık ve koyu taşma yok, metinler altı dilde).
 7. **Alışveriş listesi ve arama.**
 8. **Premium:** fiyatlar RevenueCat'ten gelir; metinler Sude onaylamadan değişmez.
 9. **Kalanlar:** giriş ekranı (`auth_screen.dart`), Profil (üstte hesap bilgisi olan yeni profil ekranı; ayarlar onun altında), güncelleme ekranı, diyaloglar ve snackbar'lar.

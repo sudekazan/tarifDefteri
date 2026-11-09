@@ -28,3 +28,18 @@ Gece çalışmasında Sude'ye sorulamayan sorular ve sabah bakılacaklar. Her a�
 - `flutter analyze`: 59 bulgu, hepsi eski kod (Aşama 4 sonunda 74; yemek modundaki eski `withOpacity` uyarıları kalktı). Aşama 5 dosyalarında bulgu yok.
 - Test görüntüleri: `build/gecici_test/asama5_ekranlar_test.dart` (commit'e girmez; `--dart-define=DIL=fr --dart-define=EN=320` ile dil ve genişlik). Gerçek `YemekYapmaModu` sayfasıyla çizildi; 28 görüntüde taşma yok.
 - Tüm testler: 165 geçti.
+
+## Aşama 6 (bugün ne pişirsem)
+
+### Sorular
+- **Lottie renkleri.** Dosya değiştirilmedi; renkler çizerken eşleniyor (mor → terrakota, pembe kâse ve yeşil şişe → adaçayı). Alevler mercan kırmızısı kaldı. Beğenilmezse eşleme `AiChefLoadingAnimation._dolguEslemesi`'nde tek yerden değişir. Gerçek cihazda bir kez bakılmalı.
+- **Başlıklar en fazla 2 kat.** Caveat başlıklar ve bekleme kartı yazısı en fazla 2 kat büyüyor (Aşama 5 ile aynı soru). Uygun mu?
+- **En büyük yazıda uzun kelimeler** (Aşama 4–5'teki soru): "+1 hak" diyaloğunun gövde metni 320 genişlikte 3.2 katta yine bölünüyor.
+
+### Bilgi
+- Önceki sürümde koyu modda bekleme animasyonunun beyaz arka planı kartın ortasında beyaz dikdörtgen olarak görünüyordu; düzeldi.
+- Öğün ve süre seçenekleri yatay kaydırma yerine alt satıra sarılıyor.
+- `flutter analyze`: 53 bulgu, hepsi eski kod (Aşama 5 sonunda 59). Aşama 6 dosyalarında bulgu yok.
+- Test görüntüleri: `build/gecici_test/asama6_ekranlar_test.dart` ve `asama6_lottie_test.dart` (commit'e girmez); 20 görüntüde taşma yok.
+- Tüm testler: 184 geçti.
+

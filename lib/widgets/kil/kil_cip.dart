@@ -14,6 +14,7 @@ class KilCip extends StatelessWidget {
     required this.secili,
     required this.onSelected,
     this.ikon,
+    this.emoji,
   });
 
   final String etiket;
@@ -25,6 +26,10 @@ class KilCip extends StatelessWidget {
   /// Seçili değilken etiketin solunda görünen ikon (isteğe bağlı).
   final IconData? ikon;
 
+  /// Seçili değilken etiketin solunda görünen emoji (isteğe bağlı). Ekran
+  /// okuyucu okumaz; seçiliyken yerini onay işareti alır.
+  final String? emoji;
+
   static const double gorunenYukseklik = 40;
   static const double dokunmaYuksekligi = 48;
 
@@ -35,11 +40,11 @@ class KilCip extends StatelessWidget {
     final yaziRengi = !etkin
         ? r.solukYazi
         : secili
-            ? r.seciliCipYazi
-            : r.anaYazi;
+        ? r.seciliCipYazi
+        : r.anaYazi;
     final yaziStili =
         Theme.of(context).textTheme.titleSmall?.copyWith(color: yaziRengi) ??
-            TextStyle(color: yaziRengi);
+        TextStyle(color: yaziRengi);
     final solIkon = secili ? Icons.check_rounded : ikon;
     final sure = KilBasilir.sure(context);
 
@@ -53,13 +58,13 @@ class KilCip extends StatelessWidget {
           final zemin = !etkin
               ? r.solukYuzey
               : secili
-                  ? r.seciliCipZemin
-                  : r.kart;
+              ? r.seciliCipZemin
+              : r.kart;
           final kenar = odakli
               ? r.anaYazi
               : secili
-                  ? r.seciliCipZemin
-                  : r.kenar;
+              ? r.seciliCipZemin
+              : r.kenar;
           return Padding(
             padding: const EdgeInsets.symmetric(
               vertical: (dokunmaYuksekligi - gorunenYukseklik) / 2,
@@ -82,6 +87,9 @@ class KilCip extends StatelessWidget {
                 children: [
                   if (solIkon != null) ...[
                     Icon(solIkon, size: 18, color: yaziRengi),
+                    const SizedBox(width: 6),
+                  ] else if (emoji != null) ...[
+                    ExcludeSemantics(child: Text(emoji!, style: yaziStili)),
                     const SizedBox(width: 6),
                   ],
                   Flexible(child: Text(etiket, style: yaziStili)),
