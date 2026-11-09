@@ -16,6 +16,7 @@ import '../services/ad_service.dart';
 import '../services/revenuecat_service.dart';
 import '../widgets/banner_ad_widget.dart';
 import '../widgets/ai_chef_loading_animation.dart';
+import '../widgets/ai_hak_doldu_dialog.dart';
 import 'package:tarif_defteri/sayfalar/premium_sayfasi.dart';
 import '../utils/error_helper.dart';
 import '../services/review_service.dart';
@@ -692,7 +693,7 @@ class _KlasorIciState extends State<KlasorIci> {
   /// ya da "Pro'ya geç" seçenekleri anlamsız olduğundan (zaten Pro ve bonus
   /// hakkı yok), onlara sadece günlük tavanın dolduğunu söyleyen basit bir
   /// bilgi gösterilir; free kullanıcıya eski "reklam/Pro" seçim diyaloğu çıkar.
-  void _showAiLimitChoiceDialog(String input, bool isUrl) {
+  Future<void> _showAiLimitChoiceDialog(String input, bool isUrl) async {
     if (RevenueCatService.isProUser) {
       showDialog(
         context: context,
@@ -710,60 +711,21 @@ class _KlasorIciState extends State<KlasorIci> {
       );
       return;
     }
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(
-          children: [
-            const Icon(Icons.stars_rounded, color: Color(0xFFFFA000), size: 28),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                'ai_limit_choice_title'.tr(),
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-              ),
-            ),
-          ],
-        ),
-        content: Text(
-          'ai_limit_choice_body'.tr(),
-          style: const TextStyle(fontSize: 14, height: 1.4),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const PremiumSayfasi(source: 'ai_limit_choice')),
-              ).then((_) {
-                if (mounted) setState(() {});
-              });
-            },
-            child: Text(
-              'ai_limit_choice_go_pro'.tr(),
-              style: const TextStyle(color: Color(0xFFE65100), fontWeight: FontWeight.bold),
-            ),
-          ),
-          ElevatedButton.icon(
-            onPressed: () {
-              Navigator.pop(ctx);
-              _watchAdForBonusUse(input, isUrl);
-            },
-            icon: const Icon(Icons.ondemand_video_rounded, size: 18, color: Colors.white),
-            label: Text(
-              'ai_limit_choice_watch_ad'.tr(),
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Theme.of(context).primaryColor,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-          ),
-        ],
-      ),
-    );
+    final secim = await aiHakDolduDialogGoster(context);
+    if (!mounted) return;
+    switch (secim) {
+      case AiHakDolduSecim.reklamIzle:
+        _watchAdForBonusUse(input, isUrl);
+      case AiHakDolduSecim.proyaGec:
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const PremiumSayfasi(source: 'ai_limit_choice')),
+        ).then((_) {
+          if (mounted) setState(() {});
+        });
+      case null:
+        break;
+    }
   }
 
   /// Kullanıcı "+1 hak" için reklam izlemeyi seçtiğinde çağrılır. Reklam
