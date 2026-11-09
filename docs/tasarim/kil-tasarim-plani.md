@@ -1,6 +1,6 @@
 # Kil tasarımına geçiş planı (Tarifly)
 
-Tarih: 2026-11-09. Durum: **Aşama 1, 2 ve 3 tamamlandı; ekranlar aşama 4'ten itibaren yenilenecek.**
+Tarih: 2026-11-09. Durum: **Aşama 1, 2, 3 ve 4 tamamlandı; ekranlar aşama 5'ten itibaren yenilenecek.**
 Kaynak: UI UX Pro Max'in "Recipe & Cooking App" önerisi (claymorphism) ve Sude ile yapılan önce/sonra görsel çalışması.
 
 ## Kararlar (Sude, 2026-11-09)
@@ -120,7 +120,17 @@ Her aşamadan sonra: `flutter analyze`, ilgili testler, simülatörde açık ve 
    - Diyaloglar ve snackbar'lar aşama 9'a bırakıldı (akışlardaki sabit renkler orada).
    - Klasör ikonu (2026-11-10, Sude onayladı): eski varsayılan kod `0xe2c7` bugünkü ikon fontunda "5 sn ileri" ikonu çıkıyordu (ikon seçmeden açılan klasörler, Ne pişirsem'in "Tariflerim"i dahil). `KlasorData.icon` bu kodu ekranda klasör ikonu (`0xe2a3`) olarak gösterir; kayıtlı değer değişmez. Yeni klasörlerin ve klasör kaydının varsayılanı `KlasorData.varsayilanIkon`. Test: `test/klasor_data_test.dart`.
    - Testler: `test/tarif_listesi_parcalari_test.dart`, `test/tarif_ekle_alt_sayfasi_test.dart` (48'lik dokunma alanları, seçim, girişsiz kilit, 320 genişlik ve 3.2 kat yazıda taşma, ekran okuyucu, klasör kaydı dönüşü, yeni metinler altı dilde). Bu testler ekranı `tester.view.physicalSize` ile gerçekten daraltıyor.
-4. **Tarif detayı ve tarif oluşturma:** `flutter_quill` editörünün araç çubuğu ve renkleri dikkat ister.
+4. **Tarif detayı ve tarif oluşturma — tamamlandı (2026-11-10, gece çalışması; simülatör yerine test görüntüleriyle açık/koyu, 402 genişlikte 1x ve 320 genişlikte 3.2 kat yazıda bakıldı):**
+   - `flutter_quill` (ve `flutter_quill_extensions`) `pubspec.yaml`'da var ama `lib/` içinde hiç kullanılmıyor; tarif oluşturma bölüm ve madde listesiyle çalışıyor. Araç çubuğu olmadığı için bu madde boşa düştü. Paket kaldırılmadı (gece notlarında soru).
+   - İki ekranda da üst çubuk yok: `KilIcSayfa` (yuvarlak geri, sağda yuvarlak eylem düğmeleri, altında Caveat 34 başlık). Tarif detayının başlığı tarifin adı; eylemler Paylaş, Klasöre taşı, Düzenle. Oluşturmada başlık "Tarif Ekleme/Düzenleme", eylem fotoğraf ekle. Oluşturmada geri düğmesi eskisi gibi "değişiklikler kaybolacak" uyarısından geçer (`Navigator.maybePop` → `PopScope`).
+   - Tarif detayı: favori tarifte başlık altında pembe "Favoriler" rozeti; görseller 20 köşeli kil çerçevede, sayaç kart renginde hap; porsiyon kartı (`PorsiyonAyari`, "−" ve "+" 48'lik yuvarlak düğme, en küçük çarpanda "−" pasif); her bölüm bir `KilKart`, başlığı Caveat 26 ve renkli ikon kutusu; yapılışta numaralı daire, malzemede onay dairesi ve 48'lik sepet düğmesi (önce dokunma alanı 22'ydi, etiketi de yoktu). Bağlantılar mavi yerine terrakota. "Yemek Yapma Modu" sağ altta `KilDugme`. Klasöre taşıma alt sayfası `KilAltSayfa` + `KilSecimListesi`.
+   - Tarif oluşturma: "Fotoğraf Ekle" tam genişlik ikincil düğme, eklenen fotoğraflar altında şerit (silme düğmesi 48'lik yuvarlak; önce 24'tü). Tarif adı kartında görünen etiketli metin kutusu (tema kenarı, 3:1). "Tarif Bölümleri" Caveat başlık ve "Bölüm Ekle" düğmesi (sığmazsa alta iner). Bölüm kartlarında sil (hata rengi), madde sil ve "+" düğmeleri 48'lik ve etiketli. "Kaydet" tam genişlik birincil düğme. Bölüm seçimi alt sayfası `KilSecimListesi`.
+   - Yazı 1.6 katın üstündeyse (`tarifUstUsteMi`) bölüm ikonu ve düğmeler başlığın, madde işareti ve düğmeleri maddenin üstüne çıkar; madde kutusu tam genişlik olur, "+" altına iner. Önce 320 genişlikte kelimeler ortasından bölünüyordu.
+   - Mantık değişmedi: bölüm ayrıştırma, porsiyon ölçekleme, alışveriş listesine ekleme, taşıma, paylaşma metni, kaydetme (yalnızca `_kaydet()` metoduna taşındı, içerik aynı) ve analitik (`tarifPaylasildi(kaynak: 'tarif_detay')`) aynı. Diyaloglar (vazgeç uyarısı, madde düzenleme, büyük fotoğraf) ve snackbar'lar aşama 9'a bırakıldı.
+   - Bölüm ikonları yuvarlak sürümlere geçti; hamurun ikonu daireden `bakery_dining`'e. Kayıtlı bölüm türleri aynı.
+   - Yeni metinler (altı dilde): `recipe_detail_portion_decrease`, `recipe_detail_portion_increase`, `recipe_edit_delete_photo`, `recipe_edit_delete_section`, `recipe_edit_delete_item`, `recipe_edit_add_item`.
+   - Dosyalar: `lib/widgets/tarif_detay_parcalari.dart` (`KilIcSayfa`, `TarifBolumKarti`, `TarifBolumBasligi`, `TarifMaddeSatiri`, `TarifMaddeIsareti`, `TarifBaglantisi`, `TarifAciklamaKarti`, `PorsiyonAyari`, `TarifGorseli`, `TarifGorselGalerisi`, `FavoriRozeti`, `tarifBolumIkonu`, `tarifBolumuMalzemeMi`; iki sayfadaki `_getSectionIcon` kopyası kalktı), `lib/widgets/tarif_olusturma_parcalari.dart` (`TarifFotoSeridi`, `TarifBolumDuzenleKarti`, `TarifBolumlerBasligi`), `lib/widgets/kil/kil_secim_listesi.dart` (`KilSecimListesi`, `KilSecenek`; satır en az 56), `lib/sayfalar/tarif_detay.dart`, `lib/sayfalar/tarif_olusturma.dart`.
+   - Testler: `test/tarif_detay_parcalari_test.dart`, `test/tarif_olusturma_parcalari_test.dart` (48'lik dokunma alanları, ekran okuyucu başlığı ve düğmeleri, madde ekleme/silme/düzenleme, büyük yazıda üst üste diziliş, açık ve koyu modda 320 genişlik ve 3.2 kat yazıda taşma yok, yeni metinler altı dilde).
 5. **Yemek yapma modu.**
 6. **Bugün ne pişirsem:** AI bekleme ekranındaki Lottie animasyonunun yeni renklerle uyumu da kontrol edilir.
 7. **Alışveriş listesi ve arama.**

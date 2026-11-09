@@ -1,13 +1,14 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:tarif_defteri/tarifler_data/tarif_data.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
 import '../widgets/banner_ad_widget.dart';
+import '../widgets/kil/kil.dart';
+import '../widgets/tarif_detay_parcalari.dart';
+import '../widgets/tarif_olusturma_parcalari.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../services/firebase_service.dart';
 import '../utils/recipe_link_helper.dart';
@@ -19,7 +20,8 @@ class TarifOlusturma extends StatefulWidget {
   final Map<String, dynamic>? aiResultMap;
   final bool isManual;
 
-  TarifOlusturma({
+  const TarifOlusturma({
+    super.key,
     required this.tarifData,
     this.aiResultMap,
     this.isManual = false,
@@ -127,16 +129,17 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
             // Auto-detect type from AI title
             if (bolumAdi != null) {
               String lower = bolumAdi.toLowerCase();
-              if (lower.contains('sos'))
+              if (lower.contains('sos')) {
                 sectionType = 'sos';
-              else if (lower.contains('hamur'))
+              } else if (lower.contains('hamur')) {
                 sectionType = 'hamur';
-              else if (lower.contains('iç') || lower.contains('harç'))
+              } else if (lower.contains('iç') || lower.contains('harç')) {
                 sectionType = 'harc';
-              else if (lower.contains('şerbet') || lower.contains('serbet'))
+              } else if (lower.contains('şerbet') || lower.contains('serbet')) {
                 sectionType = 'serbet';
-              else if (lower.contains('püf') || lower.contains('ipucu'))
+              } else if (lower.contains('püf') || lower.contains('ipucu')) {
                 sectionType = 'puf_noktasi';
+              }
             }
 
             if (malzemeler != null) {
@@ -445,7 +448,7 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
                   width: 60,
                   height: 60,
                   decoration: BoxDecoration(
-                    color: Colors.amber.withOpacity(0.15),
+                    color: Colors.amber.withValues(alpha: 0.15),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
@@ -534,875 +537,282 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
           Navigator.of(context).pop();
         }
       },
-      child: Scaffold(
-        appBar: AppBar(
-          title: Text(
-            widget.tarifData.tarif_id > 0
-                ? 'recipe_edit_appbar_edit'.tr()
-                : 'recipe_edit_appbar_add'.tr(),
+      child: KilIcSayfa(
+        baslik: widget.tarifData.tarif_id > 0
+            ? 'recipe_edit_appbar_edit'.tr()
+            : 'recipe_edit_appbar_add'.tr(),
+        kaydirma: _scrollController,
+        eylemler: [
+          KilYuvarlakDugme(
+            ikon: Icons.photo_camera_rounded,
+            etiket: 'recipe_edit_add_photo_tooltip'.tr(),
+            onPressed: _fotografSec,
           ),
-          actions: [
-            IconButton(
-              icon: Icon(
-                Icons.photo_camera,
-                color: Theme.of(context).iconTheme.color,
+        ],
+        icerik: [
+          // Fotoğraf ekle düğmesi ve eklenen fotoğraflar
+          TarifFotoSeridi(
+            yollar: [for (final photo in photos) photo.path],
+            ekleEtiketi: 'recipe_edit_add_photo_tooltip'.tr(),
+            silEtiketi: 'recipe_edit_delete_photo'.tr(),
+            yuklenemediMetni: 'image_load_error'.tr(),
+            bulunamadiMetni: 'image_not_found'.tr(),
+            onEkle: _fotografSec,
+            onSil: (i) {
+              setState(() {
+                photos.removeAt(i);
+              });
+            },
+            onBuyut: (i) {
+              if (File(photos[i].path).existsSync()) {
+                _showBigPhoto(File(photos[i].path));
+              }
+            },
+          ),
+
+          // Tarif adı
+          KilKart(
+            padding: const EdgeInsets.all(16),
+            child: TextField(
+              controller: tfTaridAdi,
+              textCapitalization: TextCapitalization.sentences,
+              decoration: InputDecoration(
+                labelText: 'recipe_edit_name_label'.tr(),
+                hintText: 'recipe_edit_name_hint'.tr(),
+                floatingLabelBehavior: FloatingLabelBehavior.always,
               ),
-              onPressed: () async {
-                final picked = await _picker.pickMultiImage(
-                  imageQuality: 70,
-                  maxWidth: 1600,
-                );
-                if (picked.isNotEmpty) {
-                  setState(() {
-                    photos.addAll(picked);
-                  });
-                }
+            ),
+          ),
+
+          TarifBolumlerBasligi(
+            baslik: 'recipe_edit_sections_label'.tr(),
+            ekleEtiketi: 'recipe_edit_add_section_button'.tr(),
+            onEkle: _showSectionMenu,
+          ),
+
+          for (var secIndex = 0; secIndex < sections.length; secIndex++)
+            TarifBolumDuzenleKarti(
+              tur: sections[secIndex]['type'] ?? '',
+              baslik: sections[secIndex]['title'] ?? '',
+              maddeler: [
+                for (final madde in sections[secIndex]['items']) '$madde',
+              ],
+              controller: sectionControllers[secIndex] ??=
+                  TextEditingController(),
+              ipucu: sections[secIndex]['type'] == 'yapilis'
+                  ? 'recipe_edit_step_placeholder'.tr()
+                  : 'recipe_edit_item_placeholder'.tr(),
+              bolumuSilEtiketi: 'recipe_edit_delete_section'.tr(),
+              maddeyiSilEtiketi: 'recipe_edit_delete_item'.tr(),
+              maddeEkleEtiketi: 'recipe_edit_add_item'.tr(),
+              onBolumuSil: () {
+                setState(() {
+                  sections.removeAt(secIndex);
+                });
               },
-              tooltip: 'recipe_edit_add_photo_tooltip'.tr(),
+              onMaddeDuzenle: (i) => _editSectionItem(secIndex, i),
+              onMaddeSil: (i) {
+                setState(() {
+                  sections[secIndex]['items'].removeAt(i);
+                });
+              },
+              onMaddeEkle: (val) => _maddeEkle(secIndex, val),
+              onBaglantiAc: (adres) => launchRecipeUrl(context, adres),
             ),
-          ],
-          backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
-        ),
-        body: SafeArea(
-          top: false,
-          child: Container(
-            color: Theme.of(context).scaffoldBackgroundColor,
-            child: Center(
-              child: SingleChildScrollView(
-                controller: _scrollController,
-                child: Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // Görsel Önizleme Carousel (Yatay Liste)
-                      Container(
-                        height: 140,
-                        margin: const EdgeInsets.only(bottom: 20),
-                        child: ListView(
-                          scrollDirection: Axis.horizontal,
-                          children: [
-                            // Fotoğraf Ekle Butonu (Kart şeklinde)
-                            GestureDetector(
-                              onTap: () async {
-                                final picked = await _picker.pickMultiImage(
-                                  imageQuality: 70,
-                                  maxWidth: 1600,
-                                );
-                                if (picked.isNotEmpty) {
-                                  setState(() {
-                                    photos.addAll(picked);
-                                  });
-                                }
-                              },
-                              child: Container(
-                                width: 120,
-                                margin: const EdgeInsets.only(right: 12),
-                                decoration: BoxDecoration(
-                                  color: Theme.of(
-                                    context,
-                                  ).primaryColor.withOpacity(0.05),
-                                  borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(
-                                    color: Theme.of(
-                                      context,
-                                    ).primaryColor.withOpacity(0.2),
-                                    width: 2,
-                                    style: BorderStyle.solid,
-                                  ),
-                                ),
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      Icons.add_a_photo_rounded,
-                                      size: 32,
-                                      color: Theme.of(context).primaryColor,
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      'recipe_edit_add_photo_tooltip'.tr(),
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600,
-                                        color: Theme.of(context).primaryColor,
-                                      ),
-                                      textAlign: TextAlign.center,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
 
-                            // Eklenen Fotoğraflar
-                            ...photos
-                                .map(
-                                  (photo) => Container(
-                                    width: 120,
-                                    margin: const EdgeInsets.only(right: 12),
-                                    child: Stack(
-                                      children: [
-                                        // Fotoğraf Kartı
-                                        Card(
-                                          elevation: 4,
-                                          margin: EdgeInsets.zero,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              16,
-                                            ),
-                                          ),
-                                          child: ClipRRect(
-                                            borderRadius: BorderRadius.circular(
-                                              16,
-                                            ),
-                                            child: GestureDetector(
-                                              onTap: () {
-                                                if (File(
-                                                  photo.path,
-                                                ).existsSync()) {
-                                                  _showBigPhoto(
-                                                    File(photo.path),
-                                                  );
-                                                }
-                                              },
-                                              child: _isNetworkUrl(photo.path)
-                                                  ? Image.network(
-                                                      photo.path,
-                                                      width: 120,
-                                                      height: 140,
-                                                      fit: BoxFit.cover,
-                                                      loadingBuilder:
-                                                          (
-                                                            context,
-                                                            child,
-                                                            loadingProgress,
-                                                          ) {
-                                                            if (loadingProgress ==
-                                                                null)
-                                                              return child;
-                                                            return Center(
-                                                              child: CircularProgressIndicator(
-                                                                value:
-                                                                    loadingProgress
-                                                                            .expectedTotalBytes !=
-                                                                        null
-                                                                    ? loadingProgress
-                                                                              .cumulativeBytesLoaded /
-                                                                          loadingProgress
-                                                                              .expectedTotalBytes!
-                                                                    : null,
-                                                              ),
-                                                            );
-                                                          },
-                                                      errorBuilder:
-                                                          (
-                                                            context,
-                                                            error,
-                                                            stackTrace,
-                                                          ) {
-                                                            return Container(
-                                                              color: Colors
-                                                                  .grey[200],
-                                                              child: Icon(
-                                                                Icons
-                                                                    .broken_image,
-                                                                color: Colors
-                                                                    .grey[400],
-                                                              ),
-                                                            );
-                                                          },
-                                                    )
-                                                  : File(
-                                                      photo.path,
-                                                    ).existsSync()
-                                                  ? Image.file(
-                                                      File(photo.path),
-                                                      width: 120,
-                                                      height: 140,
-                                                      fit: BoxFit.cover,
-                                                      errorBuilder:
-                                                          (
-                                                            context,
-                                                            error,
-                                                            stackTrace,
-                                                          ) {
-                                                            return Container(
-                                                              color: Colors
-                                                                  .grey[200],
-                                                              child: Icon(
-                                                                Icons
-                                                                    .broken_image,
-                                                                color: Colors
-                                                                    .grey[400],
-                                                              ),
-                                                            );
-                                                          },
-                                                    )
-                                                  : Container(
-                                                      color: Colors.grey[200],
-                                                      child: Icon(
-                                                        Icons
-                                                            .image_not_supported,
-                                                        color: Colors.grey[400],
-                                                      ),
-                                                    ),
-                                            ),
-                                          ),
-                                        ),
-                                        // Silme Butonu (Sağ Üst)
-                                        Positioned(
-                                          top: 4,
-                                          right: 4,
-                                          child: GestureDetector(
-                                            onTap: () {
-                                              setState(() {
-                                                photos.remove(photo);
-                                              });
-                                            },
-                                            child: Container(
-                                              padding: const EdgeInsets.all(4),
-                                              decoration: BoxDecoration(
-                                                color: Colors.black45,
-                                                shape: BoxShape.circle,
-                                              ),
-                                              child: const Icon(
-                                                Icons.close,
-                                                color: Colors.white,
-                                                size: 16,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                )
-                                .toList(),
-                          ],
-                        ),
-                      ),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).cardColor,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.04),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'recipe_edit_name_label'.tr(),
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 16,
-                                color: Theme.of(
-                                  context,
-                                ).textTheme.bodyLarge?.color,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            TextField(
-                              controller: tfTaridAdi,
-                              decoration: InputDecoration(
-                                hintText: 'recipe_edit_name_hint'.tr(),
-                                filled: true,
-                                fillColor: Theme.of(context).cardColor,
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                  borderSide: BorderSide.none,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'recipe_edit_sections_label'.tr(),
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 16,
-                                          color: Theme.of(
-                                            context,
-                                          ).textTheme.bodyLarge?.color,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 8),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(width: 16),
-                                ElevatedButton.icon(
-                                  onPressed: () {
-                                    _showSectionMenu();
-                                  },
-                                  icon: const Icon(Icons.add, size: 20),
-                                  label: Text(
-                                    'recipe_edit_add_section_button'.tr(),
-                                  ),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Theme.of(
-                                      context,
-                                    ).primaryColor,
-                                    foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 16,
-                                      vertical: 8,
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      // Dinamik başlık ve içerik ekleme alanları açıklama kutusunun ALTINA taşındı
-                      ...sections.asMap().entries.map((entry) {
-                        int secIndex = entry.key;
-                        var section = entry.value;
-                        return Card(
-                          margin: const EdgeInsets.symmetric(vertical: 12),
-                          color: Theme.of(context).cardColor,
-                          elevation: 3,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // Başlık ve silme butonu
-                                Row(
-                                  children: [
-                                    Icon(
-                                      _getSectionIcon(section['type']),
-                                      color: Theme.of(context).primaryColor,
-                                      size: 24,
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Text(
-                                        section['title'],
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 18,
-                                          color: Theme.of(
-                                            context,
-                                          ).textTheme.bodyLarge?.color,
-                                        ),
-                                      ),
-                                    ),
-                                    IconButton(
-                                      icon: const Icon(
-                                        Icons.delete,
-                                        color: Colors.red,
-                                      ),
-                                      onPressed: () {
-                                        setState(() {
-                                          sections.removeAt(secIndex);
-                                        });
-                                      },
-                                    ),
-                                  ],
-                                ),
-                                const Divider(height: 24),
-                                // İçerik listesi - daha kompakt tasarım
-                                if (section['items'].isNotEmpty) ...[
-                                  ...List.generate(section['items'].length, (
-                                    i,
-                                  ) {
-                                    return Padding(
-                                      padding: const EdgeInsets.only(bottom: 8),
-                                      child: Row(
-                                        children: [
-                                          // Numaralandırma veya bullet point
-                                          Container(
-                                            width: 28,
-                                            height: 28,
-                                            decoration: BoxDecoration(
-                                              color: Theme.of(
-                                                context,
-                                              ).primaryColor.withOpacity(0.1),
-                                              shape: BoxShape.circle,
-                                            ),
-                                            child: Center(
-                                              child:
-                                                  section['type'] == 'yapilis'
-                                                  ? Text(
-                                                      "${i + 1}",
-                                                      style: TextStyle(
-                                                        fontWeight:
-                                                            FontWeight.bold,
-                                                        color: Theme.of(
-                                                          context,
-                                                        ).primaryColor,
-                                                        fontSize: 14,
-                                                      ),
-                                                    )
-                                                  : Icon(
-                                                      Icons.circle,
-                                                      size: 10,
-                                                      color: Theme.of(context)
-                                                          .primaryColor
-                                                          .withOpacity(0.6),
-                                                    ),
-                                            ),
-                                          ),
-                                          const SizedBox(width: 16),
-                                          // Madde metni
-                                          Expanded(
-                                            child:
-                                                section['type'] == 'linkler' &&
-                                                    isValidRecipeUrl(
-                                                      section['items'][i],
-                                                    )
-                                                ? InkWell(
-                                                    onTap: () =>
-                                                        launchRecipeUrl(
-                                                          context,
-                                                          section['items'][i],
-                                                        ),
-                                                    onLongPress: () =>
-                                                        _editSectionItem(
-                                                          secIndex,
-                                                          i,
-                                                        ),
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                          4,
-                                                        ),
-                                                    child: Padding(
-                                                      padding:
-                                                          const EdgeInsets.symmetric(
-                                                            vertical: 4,
-                                                            horizontal: 8,
-                                                          ),
-                                                      child: Row(
-                                                        children: [
-                                                          Icon(
-                                                            Icons.link,
-                                                            size: 16,
-                                                            color: Theme.of(
-                                                              context,
-                                                            ).primaryColor,
-                                                          ),
-                                                          const SizedBox(
-                                                            width: 8,
-                                                          ),
-                                                          Expanded(
-                                                            child: Text(
-                                                              section['items'][i],
-                                                              style: TextStyle(
-                                                                color: Theme.of(
-                                                                  context,
-                                                                ).primaryColor,
-                                                                fontSize: 16,
-                                                                decoration:
-                                                                    TextDecoration
-                                                                        .underline,
-                                                                decorationColor:
-                                                                    Theme.of(
-                                                                      context,
-                                                                    ).primaryColor,
-                                                              ),
-                                                            ),
-                                                          ),
-                                                        ],
-                                                      ),
-                                                    ),
-                                                  )
-                                                : InkWell(
-                                                    onTap: () =>
-                                                        _editSectionItem(
-                                                          secIndex,
-                                                          i,
-                                                        ),
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                          8,
-                                                        ),
-                                                    child: Padding(
-                                                      padding:
-                                                          const EdgeInsets.symmetric(
-                                                            vertical: 8,
-                                                            horizontal: 4,
-                                                          ),
-                                                      child: Text(
-                                                        section['items'][i],
-                                                        style: TextStyle(
-                                                          color:
-                                                              Theme.of(context)
-                                                                  .textTheme
-                                                                  .bodyMedium
-                                                                  ?.color,
-                                                          fontSize: 16,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ),
-                                          ),
-                                          // Silme butonu
-                                          IconButton(
-                                            icon: Icon(
-                                              Icons.clear,
-                                              size: 20,
-                                              color: Theme.of(
-                                                context,
-                                              ).primaryColor,
-                                            ),
-                                            onPressed: () {
-                                              setState(() {
-                                                section['items'].removeAt(i);
-                                              });
-                                            },
-                                          ),
-                                        ],
-                                      ),
-                                    );
-                                  }),
-                                  const SizedBox(height: 16),
-                                ],
-                                // Tek TextField
-                                Container(
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(
-                                      context,
-                                    ).scaffoldBackgroundColor,
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(
-                                      color: Theme.of(
-                                        context,
-                                      ).dividerColor.withOpacity(0.3),
-                                    ),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Expanded(
-                                        child: TextField(
-                                          controller:
-                                              sectionControllers[secIndex] ??=
-                                                  TextEditingController(),
-                                          decoration: InputDecoration(
-                                            hintText:
-                                                section['type'] == 'yapilis'
-                                                ? 'recipe_edit_step_placeholder'
-                                                      .tr()
-                                                : 'recipe_edit_item_placeholder'
-                                                      .tr(),
-                                            border: InputBorder.none,
-                                            contentPadding:
-                                                const EdgeInsets.all(16),
-                                          ),
-                                          onSubmitted: (val) {
-                                            // Enter'a basınca malzeme ekle
-                                            if (val.trim().isNotEmpty) {
-                                              setState(() {
-                                                section['items'].add(
-                                                  val.trim(),
-                                                );
-                                              });
-                                              // TextField'ı temizle (klavye/focus zaten alanda kalır,
-                                              // böylece art arda madde eklenebilir)
-                                              sectionControllers[secIndex]
-                                                  ?.clear();
-                                            }
-                                          },
-                                        ),
-                                      ),
-                                      Container(
-                                        decoration: BoxDecoration(
-                                          color: Theme.of(
-                                            context,
-                                          ).primaryColor.withOpacity(0.1),
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: IconButton(
-                                          icon: Icon(
-                                            Icons.add_circle,
-                                            color: Theme.of(
-                                              context,
-                                            ).primaryColor,
-                                          ),
-                                          onPressed: () {
-                                            // + butonuna basarak malzeme ekle
-                                            final controller =
-                                                sectionControllers[secIndex];
-                                            if (controller != null &&
-                                                controller.text
-                                                    .trim()
-                                                    .isNotEmpty) {
-                                              setState(() {
-                                                section['items'].add(
-                                                  controller.text.trim(),
-                                                );
-                                              });
-                                              // TextField'ı temizle
-                                              controller.clear();
-                                            }
-                                          },
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      }),
-                      const SizedBox(height: 24),
-                      ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Theme.of(context).primaryColor,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            elevation: 2,
-                          ),
-                          onPressed: () async {
-                            // Tarif adı kontrolü
-                            if (tfTaridAdi.text.trim().isEmpty) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    'recipe_edit_error_no_name'.tr(),
-                                  ),
-                                  backgroundColor: Colors.red,
-                                ),
-                              );
-                              return;
-                            }
-
-                            // En az bir section olmalı
-                            if (sections.isEmpty) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    'recipe_edit_error_no_section'.tr(),
-                                  ),
-                                  backgroundColor: Colors.red,
-                                ),
-                              );
-                              return;
-                            }
-
-                            // En az bir madde olmalı
-                            bool hasItems = false;
-                            for (var section in sections) {
-                              if (section['items'].isNotEmpty) {
-                                hasItems = true;
-                                break;
-                              }
-                            }
-
-                            if (!hasItems) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    'recipe_edit_error_no_item'.tr(),
-                                  ),
-                                  backgroundColor: Colors.red,
-                                ),
-                              );
-                              return;
-                            }
-
-                            // Sections verilerini tarif açıklamasına dönüştür
-                            String tarifAciklama = '';
-                            for (var section in sections) {
-                              tarifAciklama += '\n${section['title']}\n';
-                              if (section['type'] == 'yapilis') {
-                                for (
-                                  int i = 0;
-                                  i < section['items'].length;
-                                  i++
-                                ) {
-                                  tarifAciklama +=
-                                      '${i + 1}. ${section['items'][i]}\n';
-                                }
-                              } else if (section['type'] == 'linkler') {
-                                for (String item in section['items']) {
-                                  tarifAciklama += '🔗 $item\n';
-                                }
-                              } else {
-                                for (String item in section['items']) {
-                                  tarifAciklama += '* $item\n';
-                                }
-                              }
-                            }
-
-                            // Görselleri işle ve kaydet
-                            List<String> resimYollari = [];
-
-                            if (photos.isNotEmpty) {
-                              // Loading göster
-                              showDialog(
-                                context: context,
-                                barrierDismissible: false,
-                                builder: (context) => const Center(
-                                  child: CircularProgressIndicator(),
-                                ),
-                              );
-
-                              try {
-                                for (var photo in photos) {
-                                  if (_isNetworkUrl(photo.path)) {
-                                    // Zaten bulutta olan görsel
-                                    resimYollari.add(photo.path);
-                                  } else {
-                                    // Yeni yerel görsel - önce yerel hafızaya kopyala
-                                    String localPath =
-                                        await _copyImageToPermanentLocation(
-                                          photo.path,
-                                        );
-
-                                    // Eğer kullanıcı giriş yapmışsa buluta yükle
-                                    if (_firebaseService.isUserLoggedIn &&
-                                        localPath.isNotEmpty) {
-                                      String? cloudUrl = await _firebaseService
-                                          .uploadImage(File(localPath));
-                                      if (cloudUrl != null) {
-                                        resimYollari.add(cloudUrl);
-                                      } else {
-                                        resimYollari.add(
-                                          localPath,
-                                        ); // Yükleme başarısızsa yerel yolu tut
-                                      }
-                                    } else {
-                                      resimYollari.add(localPath);
-                                    }
-                                  }
-                                }
-                              } catch (e) {
-                                debugPrint('Görsel işleme hatası: $e');
-                              } finally {
-                                // Loading kapat
-                                if (mounted) Navigator.pop(context);
-                              }
-                            }
-
-                            debugPrint(
-                              'Kaydedilecek görsel sayısı: ${resimYollari.length}',
-                            );
-                            debugPrint('Görsel yolları: $resimYollari');
-
-                            String tarifAciklamaJson = '';
-                            try {
-                              tarifAciklamaJson = json.encode(sections);
-                            } catch (e) {
-                              debugPrint('Error encoding JSON: $e');
-                            }
-
-                            if (mounted) {
-                              Navigator.pop(
-                                context,
-                                TarifData(
-                                  tarif_id: widget.tarifData.tarif_id,
-                                  tarif_adi: tfTaridAdi.text.trim(),
-                                  tarif_aciklama: tarifAciklama.trim(),
-                                  tarif_aciklama_json: tarifAciklamaJson,
-                                  tarif_resimler: resimYollari,
-                                  klasor_id: widget.tarifData.klasor_id,
-                                  // Düzenleme sırasında favori durumu korunmalı;
-                                  // aksi halde her düzenleme favori işaretini
-                                  // sessizce sıfırlıyordu.
-                                  isFavorite: widget.tarifData.isFavorite,
-                                ),
-                              );
-                            }
-                          },
-                          child: Text(
-                            'recipe_edit_save_button'.tr(),
-                            style: TextStyle(
-                              fontSize: 18,
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
+          const SizedBox(height: 8),
+          KilDugme.birincil(
+            etiket: 'recipe_edit_save_button'.tr(),
+            ikon: Icons.check_rounded,
+            tamGenislik: true,
+            onPressed: _kaydet,
           ),
-        ),
-        bottomNavigationBar: const BannerAdWidget(),
+        ],
+        altCubuk: const BannerAdWidget(),
       ),
     );
   }
 
+  Future<void> _fotografSec() async {
+    final picked = await _picker.pickMultiImage(
+      imageQuality: 70,
+      maxWidth: 1600,
+    );
+    if (picked.isNotEmpty) {
+      setState(() {
+        photos.addAll(picked);
+      });
+    }
+  }
+
+  /// Enter'a ya da "+" düğmesine basınca maddeyi ekler ve kutuyu temizler
+  /// (klavye açık kalırsa art arda madde eklenebilir).
+  void _maddeEkle(int secIndex, String val) {
+    if (val.trim().isEmpty) return;
+    setState(() {
+      sections[secIndex]['items'].add(val.trim());
+    });
+    sectionControllers[secIndex]?.clear();
+  }
+
+  Future<void> _kaydet() async {
+    // Tarif adı kontrolü
+    if (tfTaridAdi.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'recipe_edit_error_no_name'.tr(),
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // En az bir section olmalı
+    if (sections.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'recipe_edit_error_no_section'.tr(),
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // En az bir madde olmalı
+    bool hasItems = false;
+    for (var section in sections) {
+      if (section['items'].isNotEmpty) {
+        hasItems = true;
+        break;
+      }
+    }
+
+    if (!hasItems) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'recipe_edit_error_no_item'.tr(),
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // Sections verilerini tarif açıklamasına dönüştür
+    String tarifAciklama = '';
+    for (var section in sections) {
+      tarifAciklama += '\n${section['title']}\n';
+      if (section['type'] == 'yapilis') {
+        for (int i = 0; i < section['items'].length; i++) {
+          tarifAciklama += '${i + 1}. ${section['items'][i]}\n';
+        }
+      } else if (section['type'] == 'linkler') {
+        for (String item in section['items']) {
+          tarifAciklama += '🔗 $item\n';
+        }
+      } else {
+        for (String item in section['items']) {
+          tarifAciklama += '* $item\n';
+        }
+      }
+    }
+
+    // Görselleri işle ve kaydet
+    List<String> resimYollari = [];
+
+    if (photos.isNotEmpty) {
+      // Loading göster
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+
+      try {
+        for (var photo in photos) {
+          if (_isNetworkUrl(photo.path)) {
+            // Zaten bulutta olan görsel
+            resimYollari.add(photo.path);
+          } else {
+            // Yeni yerel görsel - önce yerel hafızaya kopyala
+            String localPath = await _copyImageToPermanentLocation(photo.path);
+
+            // Eğer kullanıcı giriş yapmışsa buluta yükle
+            if (_firebaseService.isUserLoggedIn && localPath.isNotEmpty) {
+              String? cloudUrl =
+                  await _firebaseService.uploadImage(File(localPath));
+              if (cloudUrl != null) {
+                resimYollari.add(cloudUrl);
+              } else {
+                resimYollari.add(
+                  localPath,
+                ); // Yükleme başarısızsa yerel yolu tut
+              }
+            } else {
+              resimYollari.add(localPath);
+            }
+          }
+        }
+      } catch (e) {
+        debugPrint('Görsel işleme hatası: $e');
+      } finally {
+        // Loading kapat
+        if (mounted) Navigator.pop(context);
+      }
+    }
+
+    debugPrint('Kaydedilecek görsel sayısı: ${resimYollari.length}');
+    debugPrint('Görsel yolları: $resimYollari');
+
+    String tarifAciklamaJson = '';
+    try {
+      tarifAciklamaJson = json.encode(sections);
+    } catch (e) {
+      debugPrint('Error encoding JSON: $e');
+    }
+
+    if (mounted) {
+      Navigator.pop(
+        context,
+        TarifData(
+          tarif_id: widget.tarifData.tarif_id,
+          tarif_adi: tfTaridAdi.text.trim(),
+          tarif_aciklama: tarifAciklama.trim(),
+          tarif_aciklama_json: tarifAciklamaJson,
+          tarif_resimler: resimYollari,
+          klasor_id: widget.tarifData.klasor_id,
+          // Düzenleme sırasında favori durumu korunmalı;
+          // aksi halde her düzenleme favori işaretini
+          // sessizce sıfırlıyordu.
+          isFavorite: widget.tarifData.isFavorite,
+        ),
+      );
+    }
+  }
+
   void _showSectionMenu() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => Container(
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.7,
-        ),
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'recipe_edit_select_section_title'.tr(),
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).textTheme.bodyLarge?.color,
-              ),
+    KilAltSayfa.goster<void>(
+      context,
+      baslik: 'recipe_edit_select_section_title'.tr(),
+      builder: (sayfaContext) => KilSecimListesi(
+        secenekler: [
+          for (final section in _getAvailableSections())
+            KilSecenek(
+              ikon: tarifBolumIkonu(section['type']),
+              etiket: section['title'],
+              onTap: () {
+                Navigator.pop(sayfaContext);
+                _addSection(section['type']);
+              },
             ),
-            const SizedBox(height: 16),
-            Flexible(
-              child: ListView(
-                shrinkWrap: true,
-                children: _getAvailableSections()
-                    .map(
-                      (section) => ListTile(
-                        leading: Icon(
-                          _getSectionIcon(section['type']),
-                          color: Theme.of(context).primaryColor,
-                        ),
-                        title: Text(section['title']),
-                        onTap: () {
-                          Navigator.pop(context);
-                          _addSection(section['type']);
-                        },
-                      ),
-                    )
-                    .toList(),
-              ),
-            ),
-            const SizedBox(height: 16),
-          ],
-        ),
+        ],
       ),
     );
   }
@@ -1473,29 +883,6 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
         return 'recipe_section_tips'.tr();
       default:
         return '';
-    }
-  }
-
-  IconData _getSectionIcon(String type) {
-    switch (type) {
-      case 'malzemeler':
-        return Icons.shopping_basket;
-      case 'harc':
-        return Icons.blender;
-      case 'yapilis':
-        return Icons.format_list_numbered;
-      case 'hamur':
-        return Icons.circle;
-      case 'serbet':
-        return Icons.water_drop;
-      case 'linkler':
-        return Icons.link;
-      case 'sos':
-        return Icons.soup_kitchen;
-      case 'puf_noktasi':
-        return Icons.lightbulb;
-      default:
-        return Icons.category;
     }
   }
 }

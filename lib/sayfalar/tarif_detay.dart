@@ -9,6 +9,8 @@ import 'package:tarif_defteri/sayfalar/tarif_olusturma.dart';
 import 'package:tarif_defteri/sayfalar/yemek_yapma_modu.dart';
 import 'package:share_plus/share_plus.dart';
 import '../widgets/banner_ad_widget.dart';
+import '../widgets/kil/kil.dart';
+import '../widgets/tarif_detay_parcalari.dart';
 import '../utils/magaza_linki.dart';
 import '../utils/recipe_link_helper.dart';
 import '../utils/porsiyon_olcekleyici.dart';
@@ -195,30 +197,6 @@ class _TarifDetayState extends State<TarifDetay> {
     }
   }
 
-  IconData _getSectionIcon(String type) {
-    switch (type) {
-      case 'malzemeler':
-        return Icons.shopping_basket;
-      case 'harc':
-        return Icons.blender;
-      case 'yapilis':
-        return Icons.format_list_numbered;
-      case 'hamur':
-        return Icons.circle;
-      case 'serbet':
-        return Icons.water_drop;
-      case 'sos':
-        return Icons.soup_kitchen;
-      case 'puf_noktasi':
-        return Icons.lightbulb;
-      case 'linkler':
-        return Icons.link;
-      default:
-        return Icons.category;
-    }
-  }
-
-
   void _showBigPhoto(String imagePath) {
     showDialog(
       context: context,
@@ -244,481 +222,153 @@ class _TarifDetayState extends State<TarifDetay> {
     );
   }
 
-  Widget _buildErrorWidget(IconData icon, String message) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(icon, size: 64, color: Colors.grey[600]),
-        const SizedBox(height: 8),
-        Text(message, style: TextStyle(color: Colors.grey[600])),
-      ],
+  Future<void> _paylas(BuildContext dugmeContext) async {
+    try {
+      // Tarif bilgilerini düzenli formatta hazırla
+      String shareText = '📖 ${widget.tarif.tarif_adi}\n\n';
+
+      // Sections varsa onları kullan, yoksa ham açıklamayı kullan
+      if (sections.isNotEmpty) {
+        for (var section in sections) {
+          shareText += '${section['title']}\n';
+          shareText += '${'─' * 20}\n';
+          for (int i = 0; i < section['items'].length; i++) {
+            if (section['type'] == 'yapilis') {
+              shareText += '${i + 1}. ${section['items'][i]}\n';
+            } else {
+              shareText += '• ${section['items'][i]}\n';
+            }
+          }
+          shareText += '\n';
+        }
+      } else {
+        shareText += widget.tarif.tarif_aciklama;
+      }
+
+      shareText += '\n━━━━━━━━━━━━━━━━━━\n';
+      shareText += 'share_from_app'.tr();
+      shareText += '\n${'share_download_cta'.tr()} $magazaLinki';
+
+      // iOS için butonun konumunu al
+      final box = dugmeContext.findRenderObject() as RenderBox?;
+      final sharePositionOrigin =
+          box != null ? box.localToGlobal(Offset.zero) & box.size : null;
+
+      await Share.share(
+        shareText,
+        subject: widget.tarif.tarif_adi,
+        sharePositionOrigin: sharePositionOrigin,
+      );
+      AnalyticsService.tarifPaylasildi(kaynak: 'tarif_detay');
+    } catch (e) {
+      debugPrint('Tarif paylaşma hatası: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'share_error_generic'.tr(),
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _duzenle() async {
+    final guncelTarif = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => TarifOlusturma(tarifData: widget.tarif),
+      ),
     );
+    if (guncelTarif != null && guncelTarif is TarifData && mounted) {
+      Navigator.pop(context, guncelTarif);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          widget.tarif.tarif_adi,
-          style: const TextStyle(fontWeight: FontWeight.bold),
+    final porsiyonVar =
+        sections.any((s) => s['type'] == 'malzemeler' || s['type'] == 'harc' || s['type'] == 'hamur');
+
+    return KilIcSayfa(
+      baslik: widget.tarif.tarif_adi,
+      eylemler: [
+        // Paylaş düğmesi (iOS'ta paylaşım penceresi bu düğmenin konumundan açılır)
+        Builder(
+          builder: (dugmeContext) => KilYuvarlakDugme(
+            ikon: Icons.ios_share_rounded,
+            etiket: 'recipe_detail_share_tooltip'.tr(),
+            onPressed: () => _paylas(dugmeContext),
+          ),
         ),
-        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
-        actions: [
-          // Paylaş butonu
-          Builder(
-            builder: (BuildContext context) {
-              return IconButton(
-                icon: Icon(Icons.share, color: Theme.of(context).iconTheme.color),
-                onPressed: () async {
-                  try {
-                    // Tarif bilgilerini düzenli formatta hazırla
-                    String shareText = '📖 ${widget.tarif.tarif_adi}\n\n';
-                    
-                    // Sections varsa onları kullan, yoksa ham açıklamayı kullan
-                    if (sections.isNotEmpty) {
-                      for (var section in sections) {
-                        shareText += '${section['title']}\n';
-                        shareText += '${'─' * 20}\n';
-                        for (int i = 0; i < section['items'].length; i++) {
-                          if (section['type'] == 'yapilis') {
-                            shareText += '${i + 1}. ${section['items'][i]}\n';
-                          } else {
-                            shareText += '• ${section['items'][i]}\n';
-                          }
-                        }
-                        shareText += '\n';
-                      }
-                    } else {
-                      shareText += widget.tarif.tarif_aciklama;
-                    }
-                    
-                    shareText += '\n━━━━━━━━━━━━━━━━━━\n';
-                    shareText += 'share_from_app'.tr();
-                    shareText += '\n${'share_download_cta'.tr()} $magazaLinki';
+        KilYuvarlakDugme(
+          ikon: Icons.drive_file_move_outline,
+          etiket: 'folders_move'.tr(),
+          onPressed: () => _showMoveDialog(context),
+        ),
+        KilYuvarlakDugme(
+          ikon: Icons.edit_rounded,
+          etiket: 'recipe_detail_edit_tooltip'.tr(),
+          onPressed: _duzenle,
+        ),
+      ],
+      icerik: [
+        if (widget.tarif.isFavorite)
+          FavoriRozeti(etiket: 'folders_favorites'.tr()),
 
-                    // iOS için butonun konumunu al
-                    final box = context.findRenderObject() as RenderBox?;
-                    final sharePositionOrigin =
-                        box != null ? box.localToGlobal(Offset.zero) & box.size : null;
-                    
-                    await Share.share(
-                      shareText,
-                      subject: widget.tarif.tarif_adi,
-                      sharePositionOrigin: sharePositionOrigin,
-                    );
-                    AnalyticsService.tarifPaylasildi(kaynak: 'tarif_detay');
-                  } catch (e) {
-                    debugPrint('Tarif paylaşma hatası: $e');
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            'share_error_generic'.tr(),
-                          ),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                    }
-                  }
-                },
-                tooltip: 'recipe_detail_share_tooltip'.tr(),
-              );
-            },
+        // Görseller
+        if (widget.tarif.tarif_resimler.isNotEmpty)
+          TarifGorselGalerisi(
+            yollar: widget.tarif.tarif_resimler,
+            onTap: _showBigPhoto,
+            yuklenemediMetni: 'image_load_error'.tr(),
+            bulunamadiMetni: 'image_not_found'.tr(),
           ),
-          // Taşı Butonu
-          IconButton(
-            icon: Icon(Icons.drive_file_move_outline, color: Theme.of(context).iconTheme.color),
-            onPressed: () => _showMoveDialog(context),
-            tooltip: 'folders_move'.tr(),
+
+        // Porsiyon ayarlama
+        if (porsiyonVar)
+          PorsiyonAyari(
+            etiket: 'recipe_detail_portions'.tr(),
+            carpanMetni: '${_portionMultiplier}x',
+            azaltEtiketi: 'recipe_detail_portion_decrease'.tr(),
+            artirEtiketi: 'recipe_detail_portion_increase'.tr(),
+            onAzalt: _portionMultiplier > 0.5
+                ? () => setState(() => _portionMultiplier -= 0.5)
+                : null,
+            onArtir: () => setState(() => _portionMultiplier += 0.5),
           ),
-          // Düzenle butonu
-          IconButton(
-            icon: Icon(Icons.edit, color: Theme.of(context).iconTheme.color),
-            onPressed: () async {
-              final guncelTarif = await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => TarifOlusturma(tarifData: widget.tarif),
-                ),
-              );
-              if (guncelTarif != null && guncelTarif is TarifData) {
-                Navigator.pop(context, guncelTarif);
-              }
-            },
-            tooltip: 'recipe_detail_edit_tooltip'.tr(),
-          ),
-        ],
-      ),
-      body: Container(
-        color: Theme.of(context).scaffoldBackgroundColor,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Görseller
-              if (widget.tarif.tarif_resimler.isNotEmpty)
-                Container(
-                  height: 280,
-                  margin: const EdgeInsets.only(bottom: 20),
-                  child: PageView.builder(
-                    itemCount: widget.tarif.tarif_resimler.length,
-                    itemBuilder: (context, index) {
-                      final imagePath = widget.tarif.tarif_resimler[index];
-                      return GestureDetector(
-                        onTap: () => _showBigPhoto(imagePath),
-                        child: Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 4),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(16),
-                            child: Stack(
-                              fit: StackFit.expand,
-                              children: [
-                                // Görseli göster
-                                imagePath.startsWith('http')
-                                    ? Image.network(
-                                        imagePath,
-                                        fit: BoxFit.cover,
-                                        loadingBuilder: (context, child, loadingProgress) {
-                                          if (loadingProgress == null) return child;
-                                          return Center(
-                                            child: CircularProgressIndicator(
-                                              value: loadingProgress.expectedTotalBytes != null
-                                                  ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
-                                                  : null,
-                                            ),
-                                          );
-                                        },
-                                        errorBuilder: (context, error, stackTrace) {
-                                          return Container(
-                                            color: Colors.grey[300],
-                                            child: _buildErrorWidget(Icons.broken_image, 'image_load_error'.tr()),
-                                          );
-                                        },
-                                      )
-                                    : File(imagePath).existsSync()
-                                        ? Image.file(
-                                            File(imagePath),
-                                            fit: BoxFit.cover,
-                                            errorBuilder: (context, error, stackTrace) {
-                                              return Container(
-                                                color: Colors.grey[300],
-                                                child: _buildErrorWidget(Icons.broken_image, 'image_load_error'.tr()),
-                                              );
-                                            },
-                                          )
-                                        : Container(
-                                            color: Colors.grey[300],
-                                            child: _buildErrorWidget(Icons.image_not_supported, 'image_not_found'.tr()),
-                                          ),
-                                // Görsel sayısını göster
-                                if (widget.tarif.tarif_resimler.length > 1)
-                                  Positioned(
-                                    bottom: 12,
-                                    right: 12,
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                      decoration: BoxDecoration(
-                                        color: Colors.black.withOpacity(0.6),
-                                        borderRadius: BorderRadius.circular(20),
-                                      ),
-                                      child: Text(
-                                        '${index + 1} / ${widget.tarif.tarif_resimler.length}',
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 14,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
 
-              // Tarif adı ve favori durumu
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Text(
-                      widget.tarif.tarif_adi,
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).textTheme.headlineMedium?.color,
-                      ),
-                    ),
-                  ),
-                  if (widget.tarif.isFavorite)
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.red.withOpacity(0.1),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.favorite,
-                        color: Colors.red,
-                        size: 24,
-                      ),
-                    ),
-                ],
-              ),
-
-              const SizedBox(height: 24),
-
-              // Porsiyon Ayarlama
-              if (sections.any((s) => s['type'] == 'malzemeler' || s['type'] == 'harc' || s['type'] == 'hamur'))
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'recipe_detail_portions'.tr(),
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).textTheme.bodyLarge?.color,
-                        ),
-                      ),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).cardColor,
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
-                              blurRadius: 4,
-                            )
-                          ]
-                        ),
-                        child: Row(
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.remove),
-                              onPressed: _portionMultiplier > 0.5 ? () {
-                                setState(() {
-                                  _portionMultiplier -= 0.5;
-                                });
-                              } : null,
-                            ),
-                            Text(
-                              '${_portionMultiplier}x',
-                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.add),
-                              onPressed: () {
-                                setState(() {
-                                  _portionMultiplier += 0.5;
-                                });
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 12),
-
-              // Bölümleri göster
-              if (sections.isNotEmpty)
-                ...sections.map((section) {
-                  return Card(
-                    margin: const EdgeInsets.only(bottom: 20),
-                    elevation: 3,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    color: Theme.of(context).cardColor,
-                    child: Padding(
-                      padding: const EdgeInsets.all(20.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Başlık
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(10),
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context).primaryColor.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Icon(
-                                  _getSectionIcon(section['type']),
-                                  color: Theme.of(context).primaryColor,
-                                  size: 24,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Text(
-                                  section['title'],
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 20,
-                                    color: Theme.of(context).textTheme.bodyLarge?.color,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          const Divider(),
-                          const SizedBox(height: 8),
-                          // İçerik listesi
-                          ...List.generate(section['items'].length, (i) {
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 12),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  // Numaralandırma veya bullet point
-                                  Container(
-                                    width: 32,
-                                    height: 32,
-                                    decoration: BoxDecoration(
-                                      color: Theme.of(context).primaryColor.withOpacity(0.15),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Center(
-                                      child: section['type'] == 'yapilis'
-                                          ? Text(
-                                              "${i + 1}",
-                                              style: TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                                color: Theme.of(context).primaryColor,
-                                                fontSize: 16,
-                                              ),
-                                            )
-                                          : Icon(
-                                              Icons.check,
-                                              size: 18,
-                                              color: Theme.of(context).primaryColor,
-                                            ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 16),
-                                  // Madde metni
-                                  Expanded(
-                                    child: section['type'] == 'linkler' && isValidRecipeUrl(section['items'][i])
-                                        ? InkWell(
-                                            onTap: () => launchRecipeUrl(context, section['items'][i]),
-                                            borderRadius: BorderRadius.circular(4),
-                                            child: Padding(
-                                              padding: const EdgeInsets.symmetric(vertical: 4),
-                                              child: Row(
-                                                children: [
-                                                  const Icon(
-                                                    Icons.link,
-                                                    size: 18,
-                                                    color: Colors.blue,
-                                                  ),
-                                                  const SizedBox(width: 8),
-                                                  Expanded(
-                                                    child: Text(
-                                                      section['items'][i],
-                                                      style: const TextStyle(
-                                                        color: Colors.blue,
-                                                        fontSize: 16,
-                                                        decoration: TextDecoration.underline,
-                                                        decorationColor: Colors.blue,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          )
-                                        : Padding(
-                                            padding: const EdgeInsets.only(top: 4),
-                                            child: Text(
-                                              (section['type'] == 'malzemeler' || section['type'] == 'harc' || section['type'] == 'hamur' || section['type'] == 'serbet' || section['type'] == 'sos')
-                                                  ? olcekleMalzeme(section['items'][i], _portionMultiplier)
-                                                  : section['items'][i],
-                                              style: TextStyle(
-                                                color: Theme.of(context).textTheme.bodyMedium?.color,
-                                                fontSize: 16,
-                                                height: 1.4,
-                                              ),
-                                            ),
-                                          ),
-                                  ),
-                                  if (section['type'] == 'malzemeler' || section['type'] == 'harc' || section['type'] == 'hamur' || section['type'] == 'serbet' || section['type'] == 'sos')
-                                    IconButton(
-                                      icon: const Icon(Icons.add_shopping_cart, size: 22),
-                                      color: Colors.grey,
-                                      padding: EdgeInsets.zero,
-                                      constraints: const BoxConstraints(),
-                                      onPressed: () {
-                                        String scaled = olcekleMalzeme(section['items'][i], _portionMultiplier);
-                                        _addToShoppingList(scaled);
-                                      },
-                                    ),
-                                ],
-                              ),
-                            );
-                          }),
-                        ],
-                      ),
-                    ),
-                  );
-                }),
-
-              // Eğer section yoksa (eski format) açıklamayı göster
-              if (sections.isEmpty && widget.tarif.tarif_aciklama.isNotEmpty)
-                Card(
-                  margin: const EdgeInsets.only(bottom: 20),
-                  elevation: 3,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  color: Theme.of(context).cardColor,
-                  child: Padding(
-                    padding: const EdgeInsets.all(20.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'recipe_detail_description_title'.tr(),
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).textTheme.bodyLarge?.color,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        const Divider(),
-                        const SizedBox(height: 12),
-                        Text(
-                          widget.tarif.tarif_aciklama,
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Theme.of(context).textTheme.bodyMedium?.color,
-                            height: 1.5,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-              const SizedBox(height: 20),
+        // Bölümler
+        for (final section in sections)
+          TarifBolumKarti(
+            tur: section['type'] ?? '',
+            baslik: section['title'] ?? '',
+            maddeler: [
+              for (final String madde in section['items'])
+                tarifBolumuMalzemeMi(section['type'] ?? '')
+                    ? olcekleMalzeme(madde, _portionMultiplier)
+                    : madde,
             ],
+            sepeteEkleEtiketi: 'recipe_detail_add_to_cart'.tr(),
+            onSepeteEkle: (i) {
+              String scaled = olcekleMalzeme(section['items'][i], _portionMultiplier);
+              _addToShoppingList(scaled);
+            },
+            onBaglantiAc: (adres) => launchRecipeUrl(context, adres),
           ),
-        ),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
+
+        // Eğer section yoksa (eski format) açıklamayı göster
+        if (sections.isEmpty && widget.tarif.tarif_aciklama.isNotEmpty)
+          TarifAciklamaKarti(
+            baslik: 'recipe_detail_description_title'.tr(),
+            metin: widget.tarif.tarif_aciklama,
+          ),
+      ],
+      altDugme: KilDugme.birincil(
+        etiket: 'recipe_detail_cooking_mode'.tr(),
+        ikon: Icons.restaurant_rounded,
         onPressed: () {
           Navigator.push(
             context,
@@ -727,14 +377,8 @@ class _TarifDetayState extends State<TarifDetay> {
             ),
           );
         },
-        backgroundColor: Theme.of(context).primaryColor,
-        icon: const Icon(Icons.restaurant, color: Colors.white),
-        label: Text(
-          'recipe_detail_cooking_mode'.tr(),
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
       ),
-      bottomNavigationBar: const BannerAdWidget(),
+      altCubuk: const BannerAdWidget(),
     );
   }
 
@@ -745,62 +389,47 @@ class _TarifDetayState extends State<TarifDetay> {
     for (String j in klasorJsonList) {
       klasorler.add(json.decode(j));
     }
-    
+
     if (!mounted) return;
-    
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+
+    // Bu tarifin zaten bulunduğu klasör listede gösterilmez.
+    final secenekler = <({int id, String ad})>[];
+    for (var index = 0; index < klasorler.length; index++) {
+      final klasorMap = klasorler[index];
+      int kId = klasorMap['klasor_id'] ?? (index + 1);
+      if (kId == widget.tarif.klasor_id) continue; // Zaten bu klasörde
+
+      String displayName = klasorMap['klasor_adi'] ?? '';
+      if (kId == 1 && (displayName == 'default_folder_desserts'.tr() || displayName == 'Tatlılar' || displayName == 'Desserts')) {
+        displayName = 'default_folder_desserts'.tr();
+      } else if (kId == 2 && (displayName == 'default_folder_soups'.tr() || displayName == 'Çorbalar' || displayName == 'Soups')) {
+        displayName = 'default_folder_soups'.tr();
+      } else if (kId == 3 && (displayName == 'default_folder_main_dishes'.tr() || displayName == 'Ana Yemekler' || displayName == 'Main Dishes')) {
+        displayName = 'default_folder_main_dishes'.tr();
+      } else if (kId == 4 && (displayName == 'default_folder_breakfast'.tr() || displayName == 'Kahvaltılıklar' || displayName == 'Breakfast')) {
+        displayName = 'default_folder_breakfast'.tr();
+      }
+      secenekler.add((id: kId, ad: displayName));
+    }
+
+    if (!context.mounted) return;
+
+    KilAltSayfa.goster<void>(
+      context,
+      baslik: 'folders_select_move'.tr(),
+      builder: (sayfaContext) => KilSecimListesi(
+        secenekler: [
+          for (final s in secenekler)
+            KilSecenek(
+              ikon: Icons.folder_rounded,
+              etiket: s.ad,
+              onTap: () async {
+                Navigator.pop(sayfaContext);
+                await _moveTarif(s.id);
+              },
+            ),
+        ],
       ),
-      builder: (context) {
-        return Container(
-          padding: const EdgeInsets.symmetric(vertical: 20),
-          constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.7),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'folders_select_move'.tr(),
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 10),
-              Expanded(
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: klasorler.length,
-                  itemBuilder: (context, index) {
-                    final klasorMap = klasorler[index];
-                    int kId = klasorMap['klasor_id'] ?? (index + 1);
-                    if (kId == widget.tarif.klasor_id) return const SizedBox.shrink(); // Zaten bu klasörde
-                    
-                    String displayName = klasorMap['klasor_adi'] ?? '';
-                    if (kId == 1 && (displayName == 'default_folder_desserts'.tr() || displayName == 'Tatlılar' || displayName == 'Desserts')) {
-                      displayName = 'default_folder_desserts'.tr();
-                    } else if (kId == 2 && (displayName == 'default_folder_soups'.tr() || displayName == 'Çorbalar' || displayName == 'Soups')) {
-                      displayName = 'default_folder_soups'.tr();
-                    } else if (kId == 3 && (displayName == 'default_folder_main_dishes'.tr() || displayName == 'Ana Yemekler' || displayName == 'Main Dishes')) {
-                      displayName = 'default_folder_main_dishes'.tr();
-                    } else if (kId == 4 && (displayName == 'default_folder_breakfast'.tr() || displayName == 'Kahvaltılıklar' || displayName == 'Breakfast')) {
-                      displayName = 'default_folder_breakfast'.tr();
-                    }
-                    
-                    return ListTile(
-                      leading: Icon(Icons.folder, color: Theme.of(context).primaryColor),
-                      title: Text(displayName),
-                      onTap: () async {
-                        Navigator.pop(context);
-                        await _moveTarif(kId);
-                      },
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        );
-      },
     );
   }
 
@@ -843,5 +472,3 @@ class _TarifDetayState extends State<TarifDetay> {
     Navigator.pop(context, true); // Pop the screen and return true to indicate change
   }
 }
-
-
