@@ -380,7 +380,7 @@ class _KlasorlerState extends State<Klasorler> {
         backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
         actions: [
           IconButton(
-            icon: Icon(Icons.search, color: Theme.of(context).iconTheme.color ?? Colors.black),
+            icon: const Icon(Icons.search),
             onPressed: () {
               Navigator.push(
                 context,
@@ -391,7 +391,7 @@ class _KlasorlerState extends State<Klasorler> {
             },
           ),
           IconButton(
-            icon: Icon(Icons.shopping_cart, color: Theme.of(context).iconTheme.color ?? Colors.black),
+            icon: const Icon(Icons.shopping_cart),
             onPressed: () {
               Navigator.push(
                 context,
@@ -401,7 +401,16 @@ class _KlasorlerState extends State<Klasorler> {
           ),
           if (!RevenueCatService.isProUser)
             IconButton(
-              icon: Icon(Icons.workspace_premium, color: Colors.amber[700]),
+              // Altın ikon pastel zeminde kayboluyordu (1.1–1.9:1); koyu daire içinde öne çıkar.
+              icon: Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: isDark ? Colors.white12 : theme.appBarTheme.foregroundColor,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.workspace_premium, size: 20, color: Colors.amber[700]),
+              ),
               onPressed: () {
                 Navigator.push(
                   context,
@@ -410,7 +419,7 @@ class _KlasorlerState extends State<Klasorler> {
               },
             ),
           IconButton(
-            icon: Icon(Icons.settings, color: Theme.of(context).iconTheme.color ?? Colors.black),
+            icon: const Icon(Icons.settings),
             onPressed: () async {
               await Navigator.pushNamed(context, '/settings');
               _klasorleriYukle().then((_) => _filtreleKlasorler(''));
@@ -975,9 +984,14 @@ class _FavoriTariflerSayfasiState extends State<FavoriTariflerSayfasi> {
                 decoration: InputDecoration(
                   hintText: 'favorites_search_hint'.tr(),
                   border: InputBorder.none,
-                  hintStyle: const TextStyle(color: Colors.white70),
+                  hintStyle: TextStyle(
+                    color: Theme.of(context).appBarTheme.foregroundColor?.withValues(alpha: 0.7),
+                  ),
                 ),
-                style: const TextStyle(color: Colors.white, fontSize: 18),
+                style: TextStyle(
+                  color: Theme.of(context).appBarTheme.foregroundColor,
+                  fontSize: 18,
+                ),
                 onChanged: _filtreleTarifler,
               )
             : Text('favorites_title'.tr()),

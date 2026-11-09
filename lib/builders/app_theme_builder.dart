@@ -56,11 +56,12 @@ class AppThemeBuilder {
         elevation: 0,
         centerTitle: true,
         backgroundColor: swatch,
-        foregroundColor: Colors.white,
+        // Pastel zeminde beyaz yazı okunmuyor (1.1–2.4:1); koyu renk 7.5:1 üstü.
+        foregroundColor: Colors.black87,
         titleTextStyle: GoogleFonts.poppins(
           fontSize: 20,
           fontWeight: FontWeight.w600,
-          color: Colors.white,
+          color: Colors.black87,
         ),
       ),
       textTheme: GoogleFonts.poppinsTextTheme(ThemeData.light().textTheme),
