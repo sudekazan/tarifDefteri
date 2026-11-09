@@ -8,6 +8,8 @@
 		<string>$(DEVELOPMENT_LANGUAGE)</string>
 		<key>CFBundleDisplayName</key>
 		<string>Tarifly</string>
+		<key>GIDClientID</key>
+		<string>919442709959-q66kgmt0592j799g8kgndt8skpge8fce.apps.googleusercontent.com</string>
 		<key>CFBundleURLTypes</key>
 		<array>
 			<dict>
