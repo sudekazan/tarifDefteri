@@ -1,6 +1,6 @@
 # Kil tasarımına geçiş planı (Tarifly)
 
-Tarih: 2026-11-09. Durum: **Aşama 1 tamamlandı; ekranlar aşama 2'den itibaren yenilenecek.**
+Tarih: 2026-11-09. Durum: **Aşama 1 ve 2 tamamlandı; ekranlar aşama 3'ten itibaren yenilenecek.**
 Kaynak: UI UX Pro Max'in "Recipe & Cooking App" önerisi (claymorphism) ve Sude ile yapılan önce/sonra görsel çalışması.
 
 ## Kararlar (Sude, 2026-11-09)
@@ -10,6 +10,9 @@ Kaynak: UI UX Pro Max'in "Recipe & Cooking App" önerisi (claymorphism) ve Sude 
 - Gezinme alt sekme çubuğuna geçer: **Defterim, Ne pişirsem, Alışveriş, Profil**. Arama, ana sayfada bir kutu olur. Premium, başlığın yanında küçük bir "Pro" rozeti olur.
 - Geçiş aşamalı yapılır: her aşama ayrı commit, her aşamadan sonra simülatörde açık ve koyu modda bakılır.
 - 2026-11-09'daki "üst çubuk siyah" kararı bu tasarımla geçersiz kalır, çünkü renkli üst çubuk kalkıyor.
+- Profil sekmesi Ayarlar ekranı olarak kalmaz: üstte hesap bilgisi olan ayrı bir profil ekranı olur (aşama 9).
+- Ana sayfadaki düğme aşama 3'te "Yeni tarif" olur ve tarif ekleme alt sayfasını açar; aşama 2'de eskisi gibi "Yeni klasör ekle".
+- Sekme adları: tr Defterim / Ne pişirsem / Alışveriş / Profil; en Cookbook / What to cook / Shopping / Profile; de Kochbuch / Was kochen / Einkauf / Profil; es Recetario / Qué cocinar / Compras / Perfil; fr Carnet / Que cuisiner / Courses / Profil; pt Caderno / O que cozinhar / Compras / Perfil.
 
 ## Renkler
 Ekranlarda renk koda sabit yazılmaz. Hepsi bir `ThemeExtension`'dan (aşağıda `KilRenkleri`) okunur.
@@ -95,14 +98,26 @@ Her aşamadan sonra: `flutter analyze`, ilgili testler, simülatörde açık ve 
    - Malzeme `Checkbox` da `KilOnayKutusu` gibi adaçayı; `Switch` ve `Radio` birincil renk.
    - `NavigationBar` teması hazır, ama üst kenar çizgisini aşama 2'deki kabuk ekranı çizecek (`NavigationBar`'ın kenar ayarı yok).
    - Testler: `test/kil_renkleri_test.dart` (kontrastlar), `test/kil_bilesenler_test.dart` (48'lik dokunma alanı, "hareketi azalt"), `test/app_theme_builder_test.dart` (en küçük yazı 11, Caveat yalnızca 22 ve üstü).
-2. **Gezinme ve ana sayfa:** alt sekme kabuğu, yeni ana sayfa (başlık, arama kutusu, "Bugün ne pişirsem" kartı, iki sütunlu klasör kartları, "Yeni tarif" düğmesi).
-3. **Klasör içi:** tarif listesi, tarif ekleme alt sayfası (kendim yazacağım, Şefe sor, linkten tarif), klasör kaydı.
+2. **Gezinme ve ana sayfa — tamamlandı (2026-11-09; simülatörde açık/koyu mod ve en büyük yazı kontrolü Sude'nin isteğiyle sona bırakıldı):** alt sekme kabuğu, yeni ana sayfa (başlık ve Pro rozeti, arama kutusu, "Bugün ne pişirsem" kartı, iki sütunlu klasör kartları, yeni klasör düğmesi).
+   - Dosyalar: `lib/sayfalar/ana_kabuk.dart` (`AnaKabuk`), `lib/widgets/kil/kil_sekme_cubugu.dart` (`KilSekmeCubugu`, üst süs kenarını çizer), `lib/widgets/ana_sayfa_parcalari.dart` (`ProRozeti`, `AramaKutusu`, `NePisirsemKarti`, `KlasorKarti`, `KlasorIzgarasi`).
+   - Sekmeler ilk seçildiğinde kurulur; açılışta dört ekran birden yüklenmez. Kurulmuş bir sekme yeniden seçilince sayfaya sinyal gider, sayfa verisini tazeler (Defterim klasörleri, Ne pişirsem klasörleri ve kalan hakkı, Alışveriş listeyi, Profil Pro durumunu).
+   - Analitik: olay adları aynı. `alisveris_listesi_acildi` eskisi gibi her açılışta, yani Alışveriş sekmesi her seçildiğinde gönderilir; açılışta gönderilmez.
+   - Banner kabukta bir kez, sekme çubuğunun hemen üstünde. Kabuğun üstündeki bir sayfa (ör. Premium) kapanınca kabuk yeniden çizilir; Pro olunca banner kalkar (`AnaKabuk.rotaGozlemcisi`). Ayarlar'daki ayrı banner kalktı.
+   - "Bugün ne pişirsem" kartı sekmeye geçer. Ne pişirsem sekmesinde geri düğmesi yok; tarif kaydedilince form boşalır ve Defterim'e dönülür.
+   - Ana sayfada üst çubuk yok; başlık Caveat 34, "Klasörlerim" Caveat 26. Üst çubuktaki alışveriş ve ayarlar ikonları kalktı. Arama bir kutu, premium başlığın yanında "Pro" rozeti.
+   - Klasör renkleri: Favoriler pembe, diğerleri tatlı / çorba / kahvaltı renkleri arasında sırayla döner. Yazı 1.6 katın üstündeyse klasörler tek sütuna geçer.
+   - Sekme etiketleri en fazla 1.3 kat büyür (Apple'ın sekme çubukları da büyümez).
+   - Android geri tuşu: Defterim dışındaki sekmede önce Defterim'e döner.
+   - `/settings` rotası ve kullanılmayan `KlasorlerWithTheme` (`lib/widgets/klasorler_with_theme.dart`) kaldırıldı.
+   - `test/widget_test.dart`: Flutter'ın sayaç şablonu duruyordu (uygulamada sayaç yok, hep kalıyordu). Yerine kabuğun duman testi geldi: sekme geçişi, sekmelerin ilk seçilince kurulması, yeniden seçilince sinyal, geri tuşu. Testte sekmeler `AnaKabuk.sekmeKurucu` ile sahte sayfalarla değiştirilir (Firebase gerekmesin).
+   - Testler: `test/kil_sekme_cubugu_test.dart` (48'lik dokunma alanı, altı dilde 320 genişlikte ve en büyük yazıda taşma yok, yeni metinler altı dilde), `test/ana_sayfa_parcalari_test.dart` (48'lik dokunma alanı, iki sütun / tek sütun, açık ve koyu modda 3.2 kat yazıda taşma yok).
+3. **Klasör içi:** tarif listesi, tarif ekleme alt sayfası (kendim yazacağım, Şefe sor, linkten tarif), klasör kaydı. Ana sayfadaki "Yeni klasör ekle" düğmesi "Yeni tarif" olur ve bu alt sayfayı açar (tarifin hangi klasöre gideceği seçilir).
 4. **Tarif detayı ve tarif oluşturma:** `flutter_quill` editörünün araç çubuğu ve renkleri dikkat ister.
 5. **Yemek yapma modu.**
 6. **Bugün ne pişirsem:** AI bekleme ekranındaki Lottie animasyonunun yeni renklerle uyumu da kontrol edilir.
 7. **Alışveriş listesi ve arama.**
 8. **Premium:** fiyatlar RevenueCat'ten gelir; metinler Sude onaylamadan değişmez.
-9. **Kalanlar:** giriş ekranı (`auth_screen.dart`), Profil/Ayarlar, güncelleme ekranı, diyaloglar ve snackbar'lar.
+9. **Kalanlar:** giriş ekranı (`auth_screen.dart`), Profil (üstte hesap bilgisi olan yeni profil ekranı; ayarlar onun altında), güncelleme ekranı, diyaloglar ve snackbar'lar.
 10. **Son tarama:** elle yazılmış renkler (`grep "Color(0x\|Colors\."`; başlangıçta yaklaşık 660 kullanım var), karanlık mod turu, en büyük yazı boyutu, tüm testler.
 
 ## Her ekranda kontrol listesi
@@ -116,4 +131,4 @@ Her aşamadan sonra: `flutter analyze`, ilgili testler, simülatörde açık ve 
 ## Açık sorular (Sude)
 - Premium satın alma düğmesinin metni.
 - Mağaza ekran görüntüleri ve uygulama ikonu yeni tarza göre yenilenecek mi?
-- Profil sekmesi: şimdiki Ayarlar ekranı olduğu gibi mi kalsın, yoksa üstte hesap bilgisi olan bir profil ekranı mı olsun?
+- Profil ekranında hesap bilgisinin altında neler olacak (ör. tarif ve klasör sayısı)? Aşama 9'dan önce konuşulacak.

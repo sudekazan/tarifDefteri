@@ -1,0 +1,335 @@
+import 'package:flutter/material.dart';
+
+import 'kil/kil.dart';
+
+// Ana sayfanın (Defterim) kil parçaları. Metinleri çağıran sayfa çevirip
+// verir; böylece parçalar çeviri olmadan da test edilebilir.
+
+/// Başlığın yanındaki küçük "Pro" rozeti. Görünen boyu küçük, dokunma alanı
+/// en az 48x48.
+class ProRozeti extends StatelessWidget {
+  const ProRozeti({
+    super.key,
+    required this.etiket,
+    required this.anlamEtiketi,
+    required this.onPressed,
+  });
+
+  final String etiket;
+
+  /// Ekran okuyucunun okuyacağı tam ad (ör. "Premium'a Geç").
+  final String anlamEtiketi;
+  final VoidCallback onPressed;
+
+  static const double dokunmaBoyutu = 48;
+
+  @override
+  Widget build(BuildContext context) {
+    final r = context.kil;
+    final yazi = Theme.of(context)
+        .textTheme
+        .labelMedium
+        ?.copyWith(color: r.seciliCipYazi);
+    final sure = KilBasilir.sure(context);
+
+    return Semantics(
+      button: true,
+      label: anlamEtiketi,
+      excludeSemantics: true,
+      child: KilBasilir(
+        onTap: onPressed,
+        builder: (context, basili, odakli) => ConstrainedBox(
+          constraints: const BoxConstraints(
+            minWidth: dokunmaBoyutu,
+            minHeight: dokunmaBoyutu,
+          ),
+          child: Center(
+            widthFactor: 1,
+            heightFactor: 1,
+            child: AnimatedContainer(
+              duration: sure,
+              curve: Curves.easeOut,
+              transform: Matrix4.translationValues(0, basili ? 2 : 0, 0),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: r.seciliCipZemin,
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(
+                  color: odakli ? r.anaYazi : r.seciliCipZemin,
+                  width: 2,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.workspace_premium_rounded,
+                    size: 16,
+                    color: r.seciliCipYazi,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(etiket, style: yazi),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Ana sayfadaki arama kutusu. Yazı yazılmaz; dokununca arama sayfası açılır.
+class AramaKutusu extends StatelessWidget {
+  const AramaKutusu({super.key, required this.ipucu, required this.onTap});
+
+  final String ipucu;
+  final VoidCallback onTap;
+
+  static const double enKucukYukseklik = 52;
+
+  @override
+  Widget build(BuildContext context) {
+    final r = context.kil;
+    final yazi =
+        Theme.of(context).textTheme.bodyLarge?.copyWith(color: r.solukYazi);
+
+    return Semantics(
+      button: true,
+      label: ipucu,
+      excludeSemantics: true,
+      child: Material(
+        color: r.kart,
+        clipBehavior: Clip.antiAlias,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          // Öğeyi tanıtan kenar (en az 3:1), metin kutusuyla aynı.
+          side: BorderSide(color: r.tanitanKenar, width: 1.5),
+        ),
+        child: InkWell(
+          onTap: onTap,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: enKucukYukseklik),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(
+                children: [
+                  Icon(Icons.search_rounded, color: r.solukYazi),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      ipucu,
+                      style: yazi,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// "Bugün ne pişirsem" kahraman kartı: kiremit zeminli öne çıkan kil kartı.
+class NePisirsemKarti extends StatelessWidget {
+  const NePisirsemKarti({
+    super.key,
+    required this.rozet,
+    required this.baslik,
+    required this.altBaslik,
+    required this.onTap,
+  });
+
+  final String rozet;
+  final String baslik;
+  final String altBaslik;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final r = context.kil;
+    final yaziTemasi = Theme.of(context).textTheme;
+    final yazi = r.oneCikanKartYazi;
+
+    return KilKart(
+      oneCikan: true,
+      onTap: onTap,
+      padding: const EdgeInsets.fromLTRB(18, 16, 16, 18),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(color: yazi, width: 1.5),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.auto_awesome_rounded, size: 14, color: yazi),
+                      const SizedBox(width: 6),
+                      Flexible(
+                        child: Text(
+                          rozet,
+                          style: yaziTemasi.labelSmall
+                              ?.copyWith(color: yazi, letterSpacing: 0.8),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                // Caveat (headlineSmall, 26): yalnızca 22 pt ve üstü.
+                Text(
+                  baslik,
+                  style: yaziTemasi.headlineSmall?.copyWith(color: yazi),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  altBaslik,
+                  style: yaziTemasi.bodyMedium?.copyWith(color: yazi),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          ExcludeSemantics(
+            child: Container(
+              width: 60,
+              height: 60,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: r.seciliCipZemin,
+                border: Border.all(color: yazi, width: 2),
+              ),
+              child: const Text(
+                '🍳',
+                style: TextStyle(fontSize: 30),
+                textScaler: TextScaler.noScaling,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Klasör kartı: renkli ikon kutusu, sağ üstte isteğe bağlı menü, altta ad.
+class KlasorKarti extends StatelessWidget {
+  const KlasorKarti({
+    super.key,
+    required this.ad,
+    required this.ikon,
+    required this.renk,
+    required this.onTap,
+    this.menu,
+  });
+
+  final String ad;
+  final IconData ikon;
+  final KlasorRenk renk;
+  final VoidCallback onTap;
+
+  /// Sağ üstteki düğme (ör. yeniden adlandır / sil menüsü). En az 48x48.
+  final Widget? menu;
+
+  static const double ikonKutusu = 48;
+
+  @override
+  Widget build(BuildContext context) {
+    return KilKart(
+      onTap: onTap,
+      padding: const EdgeInsets.fromLTRB(16, 14, 4, 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ExcludeSemantics(
+                child: Container(
+                  width: ikonKutusu,
+                  height: ikonKutusu,
+                  decoration: BoxDecoration(
+                    color: renk.zemin,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Icon(ikon, color: renk.ikon, size: 26),
+                ),
+              ),
+              const Spacer(),
+              menu ?? const SizedBox(height: ikonKutusu),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: Text(
+              ad,
+              style: Theme.of(context).textTheme.titleMedium,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Klasör kartlarını iki sütunda dizer; bir satırdaki kartlar aynı boydadır.
+/// Yazı [tekSutunOlcegi]'nin üstüne büyütülmüşse tek sütuna geçer.
+class KlasorIzgarasi extends StatelessWidget {
+  const KlasorIzgarasi({super.key, required this.kartlar});
+
+  final List<Widget> kartlar;
+
+  static const double tekSutunOlcegi = 1.6;
+  static const double aralik = 14;
+
+  @override
+  Widget build(BuildContext context) {
+    final olcek = MediaQuery.textScalerOf(context).scale(10) / 10;
+    final satirlar = <Widget>[];
+    if (olcek > tekSutunOlcegi) {
+      satirlar.addAll(kartlar);
+    } else {
+      for (var i = 0; i < kartlar.length; i += 2) {
+        satirlar.add(IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(child: kartlar[i]),
+              const SizedBox(width: aralik),
+              Expanded(
+                child: i + 1 < kartlar.length
+                    ? kartlar[i + 1]
+                    : const SizedBox.shrink(),
+              ),
+            ],
+          ),
+        ));
+      }
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (var i = 0; i < satirlar.length; i++) ...[
+          if (i > 0) const SizedBox(height: aralik),
+          satirlar[i],
+        ],
+      ],
+    );
+  }
+}

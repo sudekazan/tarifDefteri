@@ -386,5 +386,11 @@
   "update_dialog_button_ignore": "Ignorar",
   "update_dialog_release_notes": "Novedades",
   "auth_error_user_disabled": "Esta cuenta ha sido deshabilitada. Para obtener ayuda, escríbenos desde la dirección de contacto en Configuración.",
-  "auth_error_apple_failed": "No se pudo completar el inicio de sesión con Apple. Inténtalo de nuevo."
+  "auth_error_apple_failed": "No se pudo completar el inicio de sesión con Apple. Inténtalo de nuevo.",
+  "tab_notebook": "Recetario",
+  "tab_what_to_cook": "Qué cocinar",
+  "tab_shopping": "Compras",
+  "tab_profile": "Perfil",
+  "home_pro_badge": "Pro",
+  "home_folders_title": "Mis carpetas"
 }

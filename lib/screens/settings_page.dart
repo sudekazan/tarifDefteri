@@ -10,7 +10,6 @@ import '../services/ad_service.dart';
 import '../services/firebase_service.dart';
 import '../services/revenuecat_service.dart';
 import '../services/review_service.dart';
-import '../widgets/banner_ad_widget.dart';
 import '../utils/error_helper.dart';
 import '../sayfalar/premium_sayfasi.dart';
 
@@ -18,10 +17,15 @@ class SettingsPage extends StatefulWidget {
   final bool isDarkMode;
   final Function(bool) onDarkModeChanged;
 
+  /// Kabukta Profil sekmesi yeniden seçilince haber verir; Pro durumu başka
+  /// bir ekranda değişmiş olabileceği için sayfa yeniden çizilir.
+  final Listenable? gorunduSinyali;
+
   const SettingsPage({
     super.key,
     required this.isDarkMode,
-    required this.onDarkModeChanged
+    required this.onDarkModeChanged,
+    this.gorunduSinyali,
   });
 
   @override
@@ -42,6 +46,7 @@ class _SettingsPageState extends State<SettingsPage> {
   @override
   void initState() {
     super.initState();
+    widget.gorunduSinyali?.addListener(_sekmeGorundu);
     _getAppInfo();
     _getCurrentUser();
     AdService.gizlilikSecenekleriGerekli().then((gerekli) {
@@ -55,6 +60,16 @@ class _SettingsPageState extends State<SettingsPage> {
         });
       }
     });
+  }
+
+  @override
+  void dispose() {
+    widget.gorunduSinyali?.removeListener(_sekmeGorundu);
+    super.dispose();
+  }
+
+  void _sekmeGorundu() {
+    if (mounted) setState(() {});
   }
 
   void _getCurrentUser() {
@@ -717,7 +732,6 @@ class _SettingsPageState extends State<SettingsPage> {
         ],
         ),
       ),
-      bottomNavigationBar: const BannerAdWidget(),
     );
   }
 }

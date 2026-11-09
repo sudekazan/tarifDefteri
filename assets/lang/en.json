@@ -386,5 +386,11 @@
   "update_dialog_button_ignore": "Ignore",
   "update_dialog_release_notes": "What's New",
   "auth_error_user_disabled": "This account has been disabled. For help, contact us via the address in Settings.",
-  "auth_error_apple_failed": "Sign in with Apple could not be completed. Please try again."
+  "auth_error_apple_failed": "Sign in with Apple could not be completed. Please try again.",
+  "tab_notebook": "Cookbook",
+  "tab_what_to_cook": "What to cook",
+  "tab_shopping": "Shopping",
+  "tab_profile": "Profile",
+  "home_pro_badge": "Pro",
+  "home_folders_title": "My folders"
 }

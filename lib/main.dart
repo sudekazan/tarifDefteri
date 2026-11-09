@@ -7,8 +7,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'firebase_options.dart';
 import 'managers/app_state_manager.dart';
 import 'builders/app_theme_builder.dart';
-import 'widgets/klasorler_with_theme.dart';
-import 'screens/settings_page.dart';
+import 'sayfalar/ana_kabuk.dart';
 
 import 'services/revenuecat_service.dart';
 import 'screens/update_screen.dart';
@@ -101,17 +100,12 @@ class MyApp extends StatelessWidget {
             darkTheme: _koyuTema,
             themeMode: appState.isDarkMode ? ThemeMode.dark : ThemeMode.light,
             home: TarifDefteriUpgradeAlert(
-              child: KlasorlerWithTheme(
+              child: AnaKabuk(
                 isDarkMode: appState.isDarkMode,
                 onDarkModeChanged: appState.changeDarkMode,
               ),
             ),
-            routes: {
-              '/settings': (context) => SettingsPage(
-                isDarkMode: appState.isDarkMode,
-                onDarkModeChanged: appState.changeDarkMode,
-              ),
-            },
+            navigatorObservers: [AnaKabuk.rotaGozlemcisi],
             localizationsDelegates: context.localizationDelegates,
             supportedLocales: context.supportedLocales,
             locale: context.locale,

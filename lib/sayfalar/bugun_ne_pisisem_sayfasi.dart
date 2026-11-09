@@ -19,7 +19,19 @@ import '../widgets/ai_chef_loading_animation.dart';
 import '../widgets/ai_hak_doldu_dialog.dart';
 
 class BugunNePisisemSayfasi extends StatefulWidget {
-  const BugunNePisisemSayfasi({super.key});
+  const BugunNePisisemSayfasi({
+    super.key,
+    this.gorunduSinyali,
+    this.tarifKaydedilince,
+  });
+
+  /// Kabukta bu sekme yeniden seçilince haber verir; klasörler ve kalan hak
+  /// yeniden okunur.
+  final Listenable? gorunduSinyali;
+
+  /// Sekme olarak kullanılırken tarif kaydedilince çağrılır (kabuk Defterim'e
+  /// geçer). Verilmezse sayfa eskisi gibi kapanır.
+  final VoidCallback? tarifKaydedilince;
 
   @override
   State<BugunNePisisemSayfasi> createState() => _BugunNePisisemSayfasiState();
@@ -51,6 +63,17 @@ class _BugunNePisisemSayfasiState extends State<BugunNePisisemSayfasi> {
     super.initState();
     _initLocalizedOptions();
     _verileriYukle();
+    widget.gorunduSinyali?.addListener(_verileriYukle);
+  }
+
+  /// Sekmede kalan sayfa, kayıttan sonra yeni açılmış gibi boş başlar.
+  void _formuSifirla() {
+    _customMalzemeController.clear();
+    setState(() {
+      _secilenMalzemeler.clear();
+      _secilenOgun = _ogunSecenekleri.first;
+      _secilenSure = _sureSecenekleri.first;
+    });
   }
 
   void _initLocalizedOptions() {
@@ -96,6 +119,7 @@ class _BugunNePisisemSayfasiState extends State<BugunNePisisemSayfasi> {
 
   @override
   void dispose() {
+    widget.gorunduSinyali?.removeListener(_verileriYukle);
     _customMalzemeController.dispose();
     super.dispose();
   }
@@ -117,9 +141,12 @@ class _BugunNePisisemSayfasiState extends State<BugunNePisisemSayfasi> {
       setState(() {
         _kalanHak = remaining;
         _klasorListesi = list;
-        if (_klasorListesi.isNotEmpty) {
-          _hedefKlasor = _klasorListesi.first;
-        }
+        // Sekme yeniden açılınca seçili klasör korunur; silinmişse ilk klasör.
+        final seciliId = _hedefKlasor?.klasor_id;
+        _hedefKlasor = list.isEmpty
+            ? null
+            : list.firstWhere((k) => k.klasor_id == seciliId,
+                orElse: () => list.first);
       });
     }
   }
@@ -294,7 +321,13 @@ class _BugunNePisisemSayfasiState extends State<BugunNePisisemSayfasi> {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
           );
-          Navigator.pop(context, true);
+          final kaydedilince = widget.tarifKaydedilince;
+          if (kaydedilince != null) {
+            _formuSifirla();
+            kaydedilince();
+          } else {
+            Navigator.pop(context, true);
+          }
         }
       }
     } catch (e) {
@@ -412,10 +445,14 @@ class _BugunNePisisemSayfasiState extends State<BugunNePisisemSayfasi> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new_rounded, color: isDark ? Colors.white : const Color(0xFF3E2723)),
-          onPressed: () => Navigator.pop(context),
-        ),
+        // Sekmedeyken geri düğmesi yok; üstüne açıldıysa var. (Rotanın
+        // altında sayfa var mı diye bakılır; üstte açık sayfa sayılmaz.)
+        leading: (ModalRoute.of(context)?.canPop ?? false)
+            ? IconButton(
+                icon: Icon(Icons.arrow_back_ios_new_rounded, color: isDark ? Colors.white : const Color(0xFF3E2723)),
+                onPressed: () => Navigator.pop(context),
+              )
+            : null,
         title: Text(
           'what_to_cook_title'.tr(),
           style: TextStyle(

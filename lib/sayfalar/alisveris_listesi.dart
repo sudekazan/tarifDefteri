@@ -4,7 +4,12 @@ import 'package:easy_localization/easy_localization.dart';
 import '../services/analytics_service.dart';
 
 class AlisverisListesi extends StatefulWidget {
-  const AlisverisListesi({Key? key}) : super(key: key);
+  const AlisverisListesi({super.key, this.gorunduSinyali});
+
+  /// Kabukta bu sekme yeniden seçilince haber verir. Sekme açık kaldığı için
+  /// "açıldı" olayı ve liste tazeleme o an tekrarlanır (tarif detayından
+  /// eklenen malzemeler görünsün).
+  final Listenable? gorunduSinyali;
 
   @override
   State<AlisverisListesi> createState() => _AlisverisListesiState();
@@ -21,12 +26,19 @@ class _AlisverisListesiState extends State<AlisverisListesi> {
     super.initState();
     AnalyticsService.alisverisListesiAcildi();
     _yukle();
+    widget.gorunduSinyali?.addListener(_sekmeGorundu);
   }
 
   @override
   void dispose() {
+    widget.gorunduSinyali?.removeListener(_sekmeGorundu);
     _controller.dispose();
     super.dispose();
+  }
+
+  void _sekmeGorundu() {
+    AnalyticsService.alisverisListesiAcildi();
+    _yukle();
   }
 
   Future<void> _yukle() async {

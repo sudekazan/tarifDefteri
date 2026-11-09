@@ -70,12 +70,18 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
       return SizedBox(height: MediaQuery.of(context).padding.bottom);
     }
 
+    final boyut = _bannerAd!.size;
     return SafeArea(
       top: false,
       child: Container(
         color: Theme.of(context).scaffoldBackgroundColor,
-        height: _bannerAd!.size.height.toDouble(),
-        child: AdWidget(ad: _bannerAd!),
+        height: boyut.height.toDouble(),
+        alignment: Alignment.center,
+        child: SizedBox(
+          width: boyut.width.toDouble(),
+          height: boyut.height.toDouble(),
+          child: AdWidget(ad: _bannerAd!),
+        ),
       ),
     );
   }

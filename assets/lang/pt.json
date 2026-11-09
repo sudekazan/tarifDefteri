@@ -386,5 +386,11 @@
   "update_dialog_button_ignore": "Ignorar",
   "update_dialog_release_notes": "Novidades",
   "auth_error_user_disabled": "Esta conta foi desativada. Para obter ajuda, fale conosco pelo endereço de contato em Configurações.",
-  "auth_error_apple_failed": "Não foi possível concluir o login com a Apple. Tente novamente."
+  "auth_error_apple_failed": "Não foi possível concluir o login com a Apple. Tente novamente.",
+  "tab_notebook": "Caderno",
+  "tab_what_to_cook": "O que cozinhar",
+  "tab_shopping": "Compras",
+  "tab_profile": "Perfil",
+  "home_pro_badge": "Pro",
+  "home_folders_title": "Minhas pastas"
 }

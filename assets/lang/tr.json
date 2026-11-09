@@ -386,5 +386,11 @@
   "update_dialog_button_ignore": "Yoksay",
   "update_dialog_release_notes": "Yenilikler",
   "auth_error_user_disabled": "Bu hesap devre dışı bırakılmış. Yardım için Ayarlar'daki iletişim adresinden bize yazabilirsiniz.",
-  "auth_error_apple_failed": "Apple ile giriş tamamlanamadı. Lütfen tekrar deneyin."
+  "auth_error_apple_failed": "Apple ile giriş tamamlanamadı. Lütfen tekrar deneyin.",
+  "tab_notebook": "Defterim",
+  "tab_what_to_cook": "Ne pişirsem",
+  "tab_shopping": "Alışveriş",
+  "tab_profile": "Profil",
+  "home_pro_badge": "Pro",
+  "home_folders_title": "Klasörlerim"
 }

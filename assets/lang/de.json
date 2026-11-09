@@ -386,5 +386,11 @@
   "update_dialog_button_ignore": "Ignorieren",
   "update_dialog_release_notes": "Neuigkeiten",
   "auth_error_user_disabled": "Dieses Konto wurde deaktiviert. Hilfe erhalten Sie über die Kontaktadresse in den Einstellungen.",
-  "auth_error_apple_failed": "Die Anmeldung mit Apple konnte nicht abgeschlossen werden. Bitte versuchen Sie es erneut."
+  "auth_error_apple_failed": "Die Anmeldung mit Apple konnte nicht abgeschlossen werden. Bitte versuchen Sie es erneut.",
+  "tab_notebook": "Kochbuch",
+  "tab_what_to_cook": "Was kochen",
+  "tab_shopping": "Einkauf",
+  "tab_profile": "Profil",
+  "home_pro_badge": "Pro",
+  "home_folders_title": "Meine Ordner"
 }

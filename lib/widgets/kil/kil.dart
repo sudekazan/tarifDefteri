@@ -9,4 +9,5 @@ export 'kil_cip.dart';
 export 'kil_dugme.dart';
 export 'kil_kart.dart';
 export 'kil_onay_kutusu.dart';
+export 'kil_sekme_cubugu.dart';
 export 'kil_yuvarlak_dugme.dart';

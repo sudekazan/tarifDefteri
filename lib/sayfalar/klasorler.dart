@@ -1,12 +1,9 @@
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart'; // kDebugMode için
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:tarif_defteri/sayfalar/klasor_ici.dart';
 import 'package:tarif_defteri/sayfalar/tarif_detay.dart';
 import 'package:tarif_defteri/sayfalar/arama_sayfasi.dart';
-import 'package:tarif_defteri/sayfalar/alisveris_listesi.dart';
 import 'package:tarif_defteri/sayfalar/premium_sayfasi.dart';
 import 'package:tarif_defteri/sayfalar/bugun_ne_pisisem_sayfasi.dart';
 import 'package:tarif_defteri/services/revenuecat_service.dart';
@@ -23,32 +20,40 @@ import '../utils/arama_metni.dart';
 import '../services/firebase_service.dart';
 import '../utils/magaza_linki.dart';
 import '../services/ad_service.dart';
+import '../widgets/ana_sayfa_parcalari.dart';
+import '../widgets/kil/kil.dart';
 
+/// Ana sayfa (Defterim sekmesi): başlık ve Pro rozeti, arama kutusu,
+/// "Bugün ne pişirsem" kartı ve iki sütunlu klasör kartları.
 class Klasorler extends StatefulWidget {
+  const Klasorler({super.key, this.nePisirsemAc, this.gorunduSinyali});
+
+  /// "Bugün ne pişirsem" kartına dokununca çağrılır; kabukta o sekmeye geçer.
+  /// Verilmezse sayfa üstüne açılır.
+  final VoidCallback? nePisirsemAc;
+
+  /// Kabukta Defterim sekmesi yeniden seçilince haber verir; klasörler yeniden
+  /// okunur (Ne pişirsem varsayılan klasör açmış ya da Profil'de çıkış
+  /// yapılmış olabilir).
+  final Listenable? gorunduSinyali;
+
   @override
   State<Klasorler> createState() => _KlasorlerState();
 }
 
 class _KlasorlerState extends State<Klasorler> {
-  bool aramaYapiliyorMu = false;
   List<KlasorData> klasorListesi = [];
   List<KlasorData> filtrelenmisKlasorler = [];
   TextEditingController aramaController = TextEditingController();
 
-  BannerAd? _bannerAd;
-  bool _isBannerAdReady = false;
-
-  // Interstitial ad kaldırıldı, yerine App Open Ad kullanılacak.
-  
   final FirebaseService _firebaseService = FirebaseService();
 
   @override
   void initState() {
     super.initState();
-    AdService.reklamlarHazir.addListener(_reklamlarHazirOlunca);
-    _reklamlarHazirOlunca();
+    widget.gorunduSinyali?.addListener(_klasorleriSadeceyukle);
     // AB onay formu ve ATT izni ekran çizildikten sonra istenir; reklamlar
-    // ancak bunlardan sonra yüklenir.
+    // ancak bunlardan sonra yüklenir. Banner kabukta (AnaKabuk) durur.
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await AdService.izinleriIsteVeReklamlariBaslat();
       // App Open Ad - İlk açılışlarda kullanıcıyı ve Apple incelemesini rahatsız etmemek için kontrol
@@ -77,9 +82,8 @@ class _KlasorlerState extends State<Klasorler> {
 
   @override
   void dispose() {
-    AdService.reklamlarHazir.removeListener(_reklamlarHazirOlunca);
-    aramaController.dispose(); // Controller'ı dispose etmeyi unutmayın
-    _bannerAd?.dispose();
+    widget.gorunduSinyali?.removeListener(_klasorleriSadeceyukle);
+    aramaController.dispose();
     super.dispose();
   }
 
@@ -101,19 +105,19 @@ class _KlasorlerState extends State<Klasorler> {
 
   Future<void> _klasorleriYukle() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    
+
     // Mevcut klasörleri kontrol et
     List<String> mevcutKlasorler = prefs.getStringList('klasorler') ?? [];
-    
+
     // SADECE klasör listesi boşsa VE daha önce varsayılanlar eklenmemişse ekle
     // Bu sayede güncelleme yapan kullanıcıların mevcut klasörleri korunur
     bool defaultsAdded = prefs.getBool('defaultFoldersAdded') ?? false;
-    
+
     if (!defaultsAdded) {
       // Yeni kullanıcı veya mevcut kullanıcı - sadece flag'i ayarla, varsayılan klasör ekleme
       await prefs.setBool('defaultFoldersAdded', true);
     }
-    
+
     setState(() {
       klasorListesi = mevcutKlasorler.asMap().entries.map((e) {
         final map = json.decode(e.value);
@@ -153,7 +157,7 @@ class _KlasorlerState extends State<Klasorler> {
       _filtreleKlasorler(aramaController.text);
     }
   }
-  
+
   // Klasörleri filtreleme metodu
   void _filtreleKlasorler(String aramaKelimesi) {
     // Favoriler klasörü için özel KlasorData
@@ -182,8 +186,8 @@ class _KlasorlerState extends State<Klasorler> {
   Future<void> _klasorEkle(String klasorAdi, int iconCode) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     List<String> klasorJsonList = prefs.getStringList('klasorler') ?? [];
-    
-    // Silme sonrası eski klasör ID'leri ile (özellikle 1,2,3,4 gibi varsayılanlarla) 
+
+    // Silme sonrası eski klasör ID'leri ile (özellikle 1,2,3,4 gibi varsayılanlarla)
     // veya silinmiş farklı klasörlerle çakışmayı önlemek için zaman damgası kullanarak eşsiz ID oluşturuyoruz.
     int yeniKlasorId = DateTime.now().millisecondsSinceEpoch;
 
@@ -199,28 +203,28 @@ class _KlasorlerState extends State<Klasorler> {
 
     await _firebaseService.saveKlasorToFirebase(yeniKlasor);
     AnalyticsService.klasorOlusturuldu(klasorSayisi: klasorJsonList.length);
-    
+
     _klasorleriYukle().then((_) {
       _filtreleKlasorler(aramaController.text); // Yeni klasör eklendiğinde filtreyi güncelle
     });
   }
 
   // Mevcut sil metodunuzun güncellenmiş hali
-  Future<void> sil(int klasor_id) async {
+  Future<void> sil(int klasorId) async {
     SharedPreferences prefs = await SharedPreferences.getInstance(); // prefs'i burada tanımla
     List<String> klasorJsonList = prefs.getStringList('klasorler') ?? []; // klasorJsonList'i burada tanımla
     int indexToRemove = -1;
     for (int i = 0; i < klasorJsonList.length; i++) {
       final map = json.decode(klasorJsonList[i]);
       final int storedId = map['klasor_id'] ?? (i + 1);
-      if (storedId == klasor_id) {
+      if (storedId == klasorId) {
         indexToRemove = i;
         break;
       }
     }
     if (indexToRemove != -1) {
       // Klasörün içindeki tariflerin görsellerini (yerel + bulut) de sil
-      String tarifKey = 'tarifler_$klasor_id';
+      String tarifKey = 'tarifler_$klasorId';
       final tariflerJson = prefs.getStringList(tarifKey) ?? [];
       for (final tarifStr in tariflerJson) {
         try {
@@ -232,10 +236,10 @@ class _KlasorlerState extends State<Klasorler> {
       await prefs.remove(tarifKey);
       klasorJsonList.removeAt(indexToRemove);
       await prefs.setStringList('klasorler', klasorJsonList);
-      
+
       // Firebase'den de sil
-      await _firebaseService.deleteKlasorFromFirebase(klasor_id);
-      
+      await _firebaseService.deleteKlasorFromFirebase(klasorId);
+
       _klasorleriYukle().then((_) {
         _filtreleKlasorler(aramaController.text); // Silme işleminden sonra filtreyi güncelle
       });
@@ -244,7 +248,7 @@ class _KlasorlerState extends State<Klasorler> {
 
   Future<void> _klasorYenidenAdlandirDialog(KlasorData klasor) async {
     final TextEditingController nameController = TextEditingController(text: klasor.klasor_adi);
-    
+
     await showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -253,7 +257,6 @@ class _KlasorlerState extends State<Klasorler> {
           controller: nameController,
           decoration: InputDecoration(
             labelText: 'folders_new_name'.tr(),
-            border: const OutlineInputBorder(),
           ),
           autofocus: true,
         ),
@@ -270,10 +273,7 @@ class _KlasorlerState extends State<Klasorler> {
                 await _klasorYenidenAdlandir(klasor, yeniAd);
               }
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Theme.of(context).primaryColor,
-            ),
-            child: Text('common_save'.tr(), style: const TextStyle(color: Colors.white)),
+            child: Text('common_save'.tr()),
           ),
         ],
       ),
@@ -283,7 +283,7 @@ class _KlasorlerState extends State<Klasorler> {
   Future<void> _klasorYenidenAdlandir(KlasorData klasor, String yeniAd) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     List<String> klasorJsonList = prefs.getStringList('klasorler') ?? [];
-    
+
     for (int i = 0; i < klasorJsonList.length; i++) {
       final map = json.decode(klasorJsonList[i]);
       final int storedId = map['klasor_id'] ?? (i + 1);
@@ -294,13 +294,13 @@ class _KlasorlerState extends State<Klasorler> {
         break;
       }
     }
-    
+
     await prefs.setStringList('klasorler', klasorJsonList);
-    
+
     klasor.klasor_adi = yeniAd;
     klasor.updatedAt = DateTime.now().millisecondsSinceEpoch;
     await _firebaseService.saveKlasorToFirebase(klasor);
-    
+
     _klasorleriYukle().then((_) {
       _filtreleKlasorler(aramaController.text);
     });
@@ -311,7 +311,6 @@ class _KlasorlerState extends State<Klasorler> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('klasor_limit_reached'.tr(args: ['${RevenueCatService.freeKlasorLimit}'])),
-          backgroundColor: Colors.orange,
         ),
       );
       Navigator.push(
@@ -332,481 +331,293 @@ class _KlasorlerState extends State<Klasorler> {
     }
   }
 
-  // _interstitialAdUnitId kaldırıldı.
-
-
-  /// Banner, onay ve izin adımları bitince bir kez yüklenir.
-  void _reklamlarHazirOlunca() {
-    if (!AdService.reklamlarHazir.value || _bannerAd != null) return;
-    AdService.reklamlarHazir.removeListener(_reklamlarHazirOlunca);
-    _loadBannerAd();
+  void _nePisirsemAc() {
+    final ac = widget.nePisirsemAc;
+    if (ac != null) {
+      ac();
+      return;
+    }
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const BugunNePisisemSayfasi()),
+    ).then((_) {
+      _klasorleriYukle().then((_) => _filtreleKlasorler(''));
+    });
   }
 
-  void _loadBannerAd() {
-    if (RevenueCatService.isProUser) return; // Pro kullanıcılara reklam gösterilmez
+  void _aramayiAc() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const AramaSayfasi()),
+    ).then((_) {
+      _klasorleriYukle().then((_) => _filtreleKlasorler(''));
+    });
+  }
 
-    _bannerAd = BannerAd(
-      adUnitId: AdService.bannerAdUnitId,
-      size: AdSize.banner,
-      request: const AdRequest(),
-      listener: BannerAdListener(
-        onAdLoaded: (ad) {
-          setState(() {
-            _isBannerAdReady = true;
-          });
-        },
-        onAdFailedToLoad: (ad, error) {
-          _isBannerAdReady = false;
-          ad.dispose();
-        },
+  void _premiumAc() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const PremiumSayfasi(source: 'ana_ekran')),
+    ).then((_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  Future<void> _klasoruAc(KlasorData klasor) async {
+    if (klasor.klasor_id != -1) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => KlasorIci(klasorData: klasor)),
+      );
+      return;
+    }
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    List<TarifData> favoriTarifler = [];
+    List<String> klasorJsonList = prefs.getStringList('klasorler') ?? [];
+    for (int i = 0; i < klasorJsonList.length; i++) {
+      final map = json.decode(klasorJsonList[i]);
+      int kid = map['klasor_id'] ?? (i + 1);
+      String key = 'tarifler_$kid';
+      List<String> tariflerJson = prefs.getStringList(key) ?? [];
+      for (var e in tariflerJson) {
+        var map = json.decode(e);
+        if (map['isFavorite'] == true) {
+          favoriTarifler.add(TarifData.fromMap(map));
+        }
+      }
+    }
+    if (!mounted) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => FavoriTariflerSayfasi(favoriTarifler: favoriTarifler),
       ),
     );
-    _bannerAd?.load();
   }
 
-  // _loadInterstitialAd kaldırıldı.
+  /// Ekranda görünen klasör adı. Eski varsayılan klasörlerin adı dile göre çevrilir.
+  String _klasorAdi(KlasorData klasor) {
+    if (klasor.klasor_id == -1) return 'folders_favorites'.tr();
+    final ad = klasor.klasor_adi;
+    if (klasor.klasor_id == 1 && (ad == 'default_folder_desserts'.tr() || ad == 'Tatlılar' || ad == 'Desserts')) {
+      return 'default_folder_desserts'.tr();
+    } else if (klasor.klasor_id == 2 && (ad == 'default_folder_soups'.tr() || ad == 'Çorbalar' || ad == 'Soups')) {
+      return 'default_folder_soups'.tr();
+    } else if (klasor.klasor_id == 3 && (ad == 'default_folder_main_dishes'.tr() || ad == 'Ana Yemekler' || ad == 'Main Dishes')) {
+      return 'default_folder_main_dishes'.tr();
+    } else if (klasor.klasor_id == 4 && (ad == 'default_folder_breakfast'.tr() || ad == 'Kahvaltılıklar' || ad == 'Breakfast')) {
+      return 'default_folder_breakfast'.tr();
+    }
+    return ad;
+  }
+
+  void _silmeOnayi(KlasorData klasor) {
+    final r = context.kil;
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('folders_delete_title'.tr()),
+        content: Text('${_klasorAdi(klasor)}${'folders_delete_confirm_suffix'.tr()}'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('common_no'.tr()),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              sil(klasor.klasor_id);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: r.hata,
+              foregroundColor: r.hataUstuYazi,
+              side: BorderSide.none,
+            ),
+            child: Text('common_yes'.tr()),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _klasorMenusu(KilRenkleri r, KlasorData klasor) {
+    return PopupMenuButton<String>(
+      icon: Icon(Icons.more_vert_rounded, color: r.solukYazi),
+      onSelected: (value) {
+        if (value == 'rename') {
+          _klasorYenidenAdlandirDialog(klasor);
+        } else if (value == 'delete') {
+          _silmeOnayi(klasor);
+        }
+      },
+      itemBuilder: (context) => [
+        PopupMenuItem(
+          value: 'rename',
+          child: Row(
+            children: [
+              Icon(Icons.edit_rounded, size: 20, color: r.baslik),
+              const SizedBox(width: 8),
+              Text('folders_rename'.tr()),
+            ],
+          ),
+        ),
+        PopupMenuItem(
+          value: 'delete',
+          child: Row(
+            children: [
+              Icon(Icons.delete_rounded, size: 20, color: r.hata),
+              const SizedBox(width: 8),
+              Text('folders_delete_title'.tr()),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// [sira]: kartın listedeki yeri (0 Favoriler). Diğer klasörler üç renk
+  /// arasında sırayla döner.
+  Widget _klasorKarti(KilRenkleri r, KlasorData klasor, int sira) {
+    final favori = klasor.klasor_id == -1;
+    final renkler = [r.klasorTatli, r.klasorCorba, r.klasorKahvalti];
+    return KlasorKarti(
+      ad: _klasorAdi(klasor),
+      ikon: favori ? Icons.favorite_rounded : klasor.icon,
+      renk: favori ? r.klasorFavori : renkler[(sira - 1) % renkler.length],
+      onTap: () => _klasoruAc(klasor),
+      menu: favori ? null : _klasorMenusu(r, klasor),
+    );
+  }
+
+  Widget _baslik() {
+    return Row(
+      children: [
+        Flexible(
+          child: Semantics(
+            header: true,
+            // Caveat (headlineLarge, 34).
+            child: Text(
+              'app_title'.tr(),
+              style: Theme.of(context).textTheme.headlineLarge,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ),
+        if (!RevenueCatService.isProUser) ...[
+          const SizedBox(width: 8),
+          ProRozeti(
+            etiket: 'home_pro_badge'.tr(),
+            anlamEtiketi: 'premium_title'.tr(),
+            onPressed: _premiumAc,
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _bosDurum(KilRenkleri r, TextTheme yaziTemasi) {
+    return KilKart(
+      padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
+      child: Column(
+        children: [
+          ExcludeSemantics(
+            child: Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: r.klasorTatli.zemin,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Icon(Icons.menu_book_rounded, size: 38, color: r.klasorTatli.ikon),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'folders_empty_title'.tr(),
+            style: yaziTemasi.titleLarge,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'folders_empty_subtitle'.tr(),
+            style: yaziTemasi.bodyMedium?.copyWith(color: r.solukYazi),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 20),
+          KilDugme.birincil(
+            etiket: 'folders_empty_add_button'.tr(),
+            ikon: Icons.add_rounded,
+            onPressed: _yeniKlasorEkle,
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          'app_title'.tr(),
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
-        ),
-        centerTitle: false,
-        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.search),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const AramaSayfasi()),
-              ).then((_) {
-                _klasorleriYukle().then((_) => _filtreleKlasorler(''));
-              });
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.shopping_cart),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const AlisverisListesi()),
-              );
-            },
-          ),
-          if (!RevenueCatService.isProUser)
-            IconButton(
-              // Altın ikon pastel zeminde kayboluyordu (1.1–1.9:1); koyu daire içinde öne çıkar.
-              icon: Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: isDark ? Colors.white12 : theme.appBarTheme.foregroundColor,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(Icons.workspace_premium, size: 20, color: Colors.amber[700]),
-              ),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const PremiumSayfasi(source: 'ana_ekran')),
-                ).then((_) => setState(() {}));
-              },
-            ),
-          IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: () async {
-              await Navigator.pushNamed(context, '/settings');
-              _klasorleriYukle().then((_) => _filtreleKlasorler(''));
-            },
-          ),
-        ],
+    final r = context.kil;
+    final yaziTemasi = Theme.of(context).textTheme;
+    final koyu = Theme.of(context).brightness == Brightness.dark;
+    final klasorVar = klasorListesi.isNotEmpty;
+
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      // Üst çubuk yok; durum çubuğu ikonları zemine göre seçilir.
+      value: SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: koyu ? Brightness.light : Brightness.dark,
+        statusBarBrightness: koyu ? Brightness.dark : Brightness.light,
       ),
-      body: Container(
-        color: Theme.of(context).scaffoldBackgroundColor,
-        child: klasorListesi.isEmpty
-            ? SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-                child: Column(
-                  children: [
-                    _buildBugunNePisisemHeroCard(context, isDark),
-                    const SizedBox(height: 36),
-                    Icon(
-                      Icons.menu_book_rounded,
-                      size: 80,
-                      color: theme.primaryColor,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'folders_empty_title'.tr(),
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w600,
-                        color: Theme.of(context).textTheme.bodyLarge?.color,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'folders_empty_subtitle'.tr(),
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Theme.of(context)
-                            .textTheme
-                            .bodyMedium
-                            ?.color
-                            ?.withOpacity(0.7),
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 24),
-                    ElevatedButton.icon(
-                      onPressed: _yeniKlasorEkle,
-                      icon: const Icon(Icons.add),
-                      label: Text('folders_empty_add_button'.tr()),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: theme.primaryColor,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 24, vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 2,
-                      ),
-                    ),
+      child: Scaffold(
+        backgroundColor: r.zemin,
+        body: SafeArea(
+          bottom: false,
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 112),
+            children: [
+              _baslik(),
+              const SizedBox(height: 8),
+              AramaKutusu(
+                ipucu: 'recipes_search_hint'.tr(),
+                onTap: _aramayiAc,
+              ),
+              const SizedBox(height: 20),
+              NePisirsemKarti(
+                rozet: 'what_to_cook_hero_badge'.tr(),
+                baslik: 'what_to_cook_title'.tr(),
+                altBaslik: 'what_to_cook_subtitle'.tr(),
+                onTap: _nePisirsemAc,
+              ),
+              const SizedBox(height: 28),
+              if (klasorVar) ...[
+                Semantics(
+                  header: true,
+                  // Caveat (headlineSmall, 26).
+                  child: Text(
+                    'home_folders_title'.tr(),
+                    style: yaziTemasi.headlineSmall,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                KlasorIzgarasi(
+                  kartlar: [
+                    for (var i = 0; i < filtrelenmisKlasorler.length; i++)
+                      _klasorKarti(r, filtrelenmisKlasorler[i], i),
                   ],
                 ),
+              ] else
+                _bosDurum(r, yaziTemasi),
+            ],
+          ),
+        ),
+        floatingActionButton: klasorVar
+            ? KilDugme.birincil(
+                etiket: 'folders_empty_add_button'.tr(),
+                ikon: Icons.add_rounded,
+                onPressed: _yeniKlasorEkle,
               )
-            : ListView.separated(
-                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-                itemCount: aramaYapiliyorMu
-                    ? filtrelenmisKlasorler.length
-                    : filtrelenmisKlasorler.length + 1,
-                separatorBuilder: (context, index) => const SizedBox(height: 8),
-                itemBuilder: (context, index) {
-                  if (!aramaYapiliyorMu && index == 0) {
-                    return _buildBugunNePisisemHeroCard(context, isDark);
-                  }
-                  final actualIndex = aramaYapiliyorMu ? index : index - 1;
-                  var klasor = filtrelenmisKlasorler[actualIndex];
-                  return Container(
-              margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-              decoration: BoxDecoration(
-                color: klasor.klasor_id == -1
-                    ? (isDark ? const Color(0xFF2A1A1E) : const Color(0xFFFFF4F2))
-                    : Theme.of(context).cardColor,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: klasor.klasor_id == -1
-                      ? (isDark ? Colors.redAccent.withOpacity(0.3) : Colors.red.withOpacity(0.2))
-                      : (isDark ? const Color(0xFF2C3044) : Colors.grey.withOpacity(0.15)),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(isDark ? 0.2 : 0.04),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () async {
-                    if (klasor.klasor_id == -1) {
-                      SharedPreferences prefs = await SharedPreferences.getInstance();
-                      List<TarifData> favoriTarifler = [];
-                      List<String> klasorJsonList = prefs.getStringList('klasorler') ?? [];
-                      for (int i = 0; i < klasorJsonList.length; i++) {
-                        final map = json.decode(klasorJsonList[i]);
-                        int kid = map['klasor_id'] ?? (i + 1);
-                        String key = 'tarifler_$kid';
-                        List<String> tariflerJson = prefs.getStringList(key) ?? [];
-                        for (var e in tariflerJson) {
-                          var map = json.decode(e);
-                          if (map['isFavorite'] == true) {
-                            favoriTarifler.add(TarifData.fromMap(map));
-                          }
-                        }
-                      }
-                      Navigator.push(context, MaterialPageRoute(
-                        builder: (context) => FavoriTariflerSayfasi(favoriTarifler: favoriTarifler),
-                      ));
-                    } else {
-                      Navigator.push(context, MaterialPageRoute(builder: (context) => KlasorIci(klasorData: klasor)))
-                          .then((value){
-                        debugPrint("Klasör içeriği açıldı.");
-                      });
-                    }
-                  },
-                  borderRadius: BorderRadius.circular(20),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
-                    child: Row(
-                      children: [
-                        // Icon Squircle Container
-                        Container(
-                          width: 52,
-                          height: 52,
-                          decoration: BoxDecoration(
-                            color: klasor.klasor_id == -1
-                                ? (isDark ? Colors.redAccent.withOpacity(0.2) : Colors.red.withOpacity(0.1))
-                                : Theme.of(context).primaryColor.withOpacity(isDark ? 0.2 : 0.1),
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Icon(
-                            klasor.icon,
-                            color: klasor.klasor_id == -1
-                                ? (isDark ? Colors.redAccent : Colors.red)
-                                : Theme.of(context).primaryColor,
-                            size: 28,
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Builder(
-                            builder: (context) {
-                              String displayName = klasor.klasor_adi;
-                              if (klasor.klasor_id == 1 && (displayName == 'default_folder_desserts'.tr() || displayName == 'Tatlılar' || displayName == 'Desserts')) {
-                                displayName = 'default_folder_desserts'.tr();
-                              } else if (klasor.klasor_id == 2 && (displayName == 'default_folder_soups'.tr() || displayName == 'Çorbalar' || displayName == 'Soups')) {
-                                displayName = 'default_folder_soups'.tr();
-                              } else if (klasor.klasor_id == 3 && (displayName == 'default_folder_main_dishes'.tr() || displayName == 'Ana Yemekler' || displayName == 'Main Dishes')) {
-                                displayName = 'default_folder_main_dishes'.tr();
-                              } else if (klasor.klasor_id == 4 && (displayName == 'default_folder_breakfast'.tr() || displayName == 'Kahvaltılıklar' || displayName == 'Breakfast')) {
-                                displayName = 'default_folder_breakfast'.tr();
-                              }
-
-                              return Text(
-                                klasor.klasor_id == -1 ? 'folders_favorites'.tr() : displayName,
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: klasor.klasor_id == -1
-                                      ? (isDark ? Colors.redAccent : Colors.red[700])
-                                      : Theme.of(context).textTheme.bodyLarge?.color,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              );
-                            }
-                          ),
-                        ),
-
-                        if (klasor.klasor_id != -1)
-                          PopupMenuButton<String>(
-                            icon: Icon(
-                              Icons.more_vert_rounded,
-                              color: isDark ? Colors.white54 : Colors.grey[600],
-                            ),
-                            onSelected: (value) {
-                              if (value == 'rename') {
-                                _klasorYenidenAdlandirDialog(klasor);
-                              } else if (value == 'delete') {
-                                showDialog(
-                                  context: context,
-                                  builder: (context) => AlertDialog(
-                                    title: Text('folders_delete_title'.tr()),
-                                    content: Text(
-                                      '${klasor.klasor_adi}${'folders_delete_confirm_suffix'.tr()}',
-                                    ),
-                                    actions: [
-                                      TextButton(
-                                        onPressed: () => Navigator.pop(context),
-                                        child: Text('common_no'.tr()),
-                                      ),
-                                      ElevatedButton(
-                                        onPressed: () {
-                                          Navigator.pop(context);
-                                          sil(klasor.klasor_id);
-                                        },
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: Theme.of(context).primaryColor,
-                                        ),
-                                        child: Text(
-                                          'common_yes'.tr(),
-                                          style: const TextStyle(color: Colors.white),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              }
-                            },
-                            itemBuilder: (context) => [
-                              PopupMenuItem(
-                                value: 'rename',
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.edit_rounded, size: 20, color: Theme.of(context).primaryColor),
-                                    const SizedBox(width: 8),
-                                    Text('folders_rename'.tr()),
-                                  ],
-                                ),
-                              ),
-                              PopupMenuItem(
-                                value: 'delete',
-                                child: Row(
-                                  children: [
-                                    const Icon(Icons.delete_rounded, size: 20, color: Colors.red),
-                                    const SizedBox(width: 8),
-                                    Text('folders_delete_title'.tr()),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          )
-                        else
-                          Icon(
-                            Icons.chevron_right_rounded,
-                            color: isDark ? Colors.redAccent.withOpacity(0.5) : Colors.red.withOpacity(0.5),
-                          ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            );
-          },
-        ),
-      ),
-      bottomNavigationBar: (_isBannerAdReady && !RevenueCatService.isProUser)
-          ? SafeArea(
-              child: Container(
-                color: Theme.of(context).scaffoldBackgroundColor,
-                height: _bannerAd!.size.height.toDouble(),
-                child: Center(
-                  child: AdWidget(ad: _bannerAd!),
-                ),
-              ),
-            )
-          : null,
-      floatingActionButton: klasorListesi.isEmpty && !aramaYapiliyorMu
-          ? const SizedBox.shrink()
-          : FloatingActionButton(
-              onPressed: _yeniKlasorEkle,
-              backgroundColor: Theme.of(context).floatingActionButtonTheme.backgroundColor,
-              child: const Icon(Icons.add, color: Colors.black),
-            ),
-    );
-  }
-
-  Widget _buildBugunNePisisemHeroCard(BuildContext context, bool isDark) {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(4, 4, 4, 10),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: isDark
-              ? const [Color(0xFF2C1810), Color(0xFF1E1410)]
-              : const [Color(0xFFE65100), Color(0xFFFF8F00)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: isDark ? const Color(0xFFFF7043).withOpacity(0.3) : Colors.transparent,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFFE65100).withOpacity(isDark ? 0.25 : 0.35),
-            blurRadius: 14,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const BugunNePisisemSayfasi()),
-            ).then((_) {
-              _klasorleriYukle().then((_) => _filtreleKlasorler(''));
-            });
-          },
-          borderRadius: BorderRadius.circular(22),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 18.0, vertical: 16.0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.22),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.auto_awesome, color: Colors.white, size: 13),
-                            const SizedBox(width: 5),
-                            Text(
-                              'what_to_cook_hero_badge'.tr(),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 0.8,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'what_to_cook_title'.tr(),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 19,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: -0.3,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'what_to_cook_subtitle'.tr(),
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.9),
-                          fontSize: 12.5,
-                          height: 1.25,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Container(
-                  width: 54,
-                  height: 54,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white.withOpacity(0.35), width: 1.5),
-                  ),
-                  child: const Center(
-                    child: Text(
-                      '🍳',
-                      style: TextStyle(fontSize: 28),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
+            : null,
       ),
     );
   }
