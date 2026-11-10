@@ -18,6 +18,7 @@ class KilDugme extends StatelessWidget {
     required this.onPressed,
     this.tur = KilDugmeTuru.birincil,
     this.ikon,
+    this.ikonGorseli,
     this.tamGenislik = false,
     this.buyuk = false,
   });
@@ -27,6 +28,7 @@ class KilDugme extends StatelessWidget {
     required this.etiket,
     required this.onPressed,
     this.ikon,
+    this.ikonGorseli,
     this.tamGenislik = false,
     this.buyuk = false,
   }) : tur = KilDugmeTuru.birincil;
@@ -36,6 +38,7 @@ class KilDugme extends StatelessWidget {
     required this.etiket,
     required this.onPressed,
     this.ikon,
+    this.ikonGorseli,
     this.tamGenislik = false,
     this.buyuk = false,
   }) : tur = KilDugmeTuru.ikincil;
@@ -45,6 +48,7 @@ class KilDugme extends StatelessWidget {
     required this.etiket,
     required this.onPressed,
     this.ikon,
+    this.ikonGorseli,
     this.tamGenislik = false,
     this.buyuk = false,
   }) : tur = KilDugmeTuru.vurgu;
@@ -54,6 +58,7 @@ class KilDugme extends StatelessWidget {
     required this.etiket,
     required this.onPressed,
     this.ikon,
+    this.ikonGorseli,
     this.tamGenislik = false,
     this.buyuk = false,
   }) : tur = KilDugmeTuru.hata;
@@ -62,6 +67,10 @@ class KilDugme extends StatelessWidget {
   final VoidCallback? onPressed;
   final KilDugmeTuru tur;
   final IconData? ikon;
+
+  /// [ikon] yerine renkli bir görsel (ör. Google logosu). Yazı rengiyle
+  /// boyanmaz; ikonla aynı boyda çizilir.
+  final Widget? ikonGorseli;
   final bool tamGenislik;
 
   /// Uzaktan okunacak yerler için (yemek yapma modu): en az 56 yükseklik,
@@ -155,7 +164,13 @@ class KilDugme extends StatelessWidget {
               mainAxisSize: tamGenislik ? MainAxisSize.max : MainAxisSize.min,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                if (ikon != null) ...[
+                if (ikonGorseli != null) ...[
+                  SizedBox.square(
+                    dimension: buyuk ? 24 : 20,
+                    child: ikonGorseli,
+                  ),
+                  const SizedBox(width: 8),
+                ] else if (ikon != null) ...[
                   Icon(ikon, size: buyuk ? 24 : 20, color: yaziRengi),
                   const SizedBox(width: 8),
                 ],

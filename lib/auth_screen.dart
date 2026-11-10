@@ -383,7 +383,13 @@ class _AuthScreenState extends State<AuthScreen> {
                             const SizedBox(height: 16),
                             KilDugme.ikincil(
                               etiket: 'auth_continue_with_google'.tr(),
-                              ikon: Icons.g_mobiledata_rounded,
+                              // Google'ın resmi renkli "G" logosu (marka
+                              // paketinden, assets/google_g.png).
+                              ikonGorseli: const ExcludeSemantics(
+                                child: Image(
+                                  image: AssetImage('assets/google_g.png'),
+                                ),
+                              ),
                               tamGenislik: true,
                               onPressed: _isLoading ? null : _signInWithGoogle,
                             ),
