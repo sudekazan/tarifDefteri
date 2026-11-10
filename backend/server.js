@@ -79,6 +79,8 @@ const PRO_DAILY_AI_LIMIT = 20;
 // Ücretsiz kullanıcının ödüllü reklam izleyerek günde kazanabileceği
 // azami ekstra hak sayısı (reklam "vergi" değil, isteğe bağlı ödül olsun diye).
 const MAX_BONUS_USES_PER_DAY = 3;
+// İstek metninin (yemek adı, link ya da malzeme listesi) en fazla uzunluğu.
+const MAX_PROMPT_LENGTH = 1000;
 
 // Flutter tarafındaki RevenueCatService._entitlementID ile aynı kimlikler.
 const PRO_ENTITLEMENT_IDS = ['recipe_keeper_custom_cookbook_pro', 'pro', 'premium'];
@@ -301,6 +303,10 @@ app.post('/api/generate-recipe', ipLimiter, authenticate, userLimiter, async (re
     if (!userPrompt || typeof userPrompt !== 'string' || userPrompt.trim().length === 0) {
         return res.status(400).json({ success: false, message: 'Please enter a valid food name.' });
     }
+    // Uzunluk sınırı: çok uzun metinle maliyet şişirilmesin (hak düşülmeden önce).
+    if (userPrompt.length > MAX_PROMPT_LENGTH) {
+        return res.status(400).json({ success: false, message: 'The request text is too long.' });
+    }
 
     // Hem free hem pro kullanıcı artık günlük bir tavana tabi (free: düşük +
     // reklamla bonus, pro: cömert ama sınırsız değil — maliyet güvenliği).
@@ -428,7 +434,8 @@ Error:
         const refunded = await refundDailyUsage(firebaseUid, usage.today);
         return res.status(500).json({
             success: false,
-            message: 'Failed to generate recipe: ' + error.message,
+            // İç hata metni istemciye gitmez; ayrıntı yalnızca sunucu günlüğünde.
+            message: 'Failed to generate recipe. Please try again.',
             remaining: refunded ? remaining + 1 : remaining,
         });
     }
