@@ -490,11 +490,7 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
               bolumuSilEtiketi: 'recipe_edit_delete_section'.tr(),
               maddeyiSilEtiketi: 'recipe_edit_delete_item'.tr(),
               maddeEkleEtiketi: 'recipe_edit_add_item'.tr(),
-              onBolumuSil: () {
-                setState(() {
-                  sections.removeAt(secIndex);
-                });
-              },
+              onBolumuSil: () => _bolumuSil(secIndex),
               onMaddeDuzenle: (i) => _editSectionItem(secIndex, i),
               onMaddeSil: (i) {
                 setState(() {
@@ -540,7 +536,36 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
     sectionControllers[secIndex]?.clear();
   }
 
+  /// Bölümü siler. Yazı kutuları bölümün sırasıyla tutulduğu için alttaki
+  /// bölümlerin kutuları bir yukarı kaydırılır; yoksa silinen bölümün
+  /// kutusundaki yazı bir alttaki bölüme geçerdi.
+  void _bolumuSil(int secIndex) {
+    final silinen = sectionControllers[secIndex];
+    final kaydirilmis = <int, TextEditingController>{};
+    sectionControllers.forEach((i, c) {
+      if (i < secIndex) kaydirilmis[i] = c;
+      if (i > secIndex) kaydirilmis[i - 1] = c;
+    });
+    setState(() {
+      sections.removeAt(secIndex);
+      sectionControllers = kaydirilmis;
+    });
+    // Kutu ekrandan kalktıktan sonra bırakılır.
+    WidgetsBinding.instance.addPostFrameCallback((_) => silinen?.dispose());
+  }
+
+  /// Kutuya yazılıp "+"ya basılmamış metinleri kendi bölümlerine madde
+  /// olarak ekler; yoksa "Kaydet"e basınca o satır kaybolurdu.
+  void _bekleyenMaddeleriEkle() {
+    for (var i = 0; i < sections.length; i++) {
+      final bekleyen = sectionControllers[i]?.text ?? '';
+      if (bekleyen.trim().isNotEmpty) _maddeEkle(i, bekleyen);
+    }
+  }
+
   Future<void> _kaydet() async {
+    _bekleyenMaddeleriEkle();
+
     // Tarif adı kontrolü
     if (tfTaridAdi.text.trim().isEmpty) {
       KilBildirim.goster(
