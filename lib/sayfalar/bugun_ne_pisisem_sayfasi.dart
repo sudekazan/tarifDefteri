@@ -49,16 +49,51 @@ class _BugunNePisisemSayfasiState extends State<BugunNePisisemSayfasi> {
   // açılabilir (testler).
   late final FirebaseService _firebaseService = FirebaseService();
 
+  /// Seçilen malzemeler. Hazır çipten seçilen malzeme çeviri anahtarıyla
+  /// (ör. `ingredient_egg`), elle yazılan olduğu gibi tutulur; böylece dil
+  /// değişince hazır malzemeler yeni dilde görünür.
   final List<String> _secilenMalzemeler = [];
 
-  // Popüler Malzemeler (başlangıç değerleri initState'te çevrilir)
-  List<Map<String, String>> _populerMalzemeler = [];
+  // Çipler çeviri anahtarıyla tutulur, metin ekrana çizilirken çevrilir;
+  // çevrilmiş metin saklansaydı dil değişince eski dilde kalırdı.
+  static const List<({String anahtar, String emoji})> _populerMalzemeler = [
+    (anahtar: 'ingredient_egg', emoji: '🥚'),
+    (anahtar: 'ingredient_potato', emoji: '🥔'),
+    (anahtar: 'ingredient_chicken', emoji: '🍗'),
+    (anahtar: 'ingredient_ground_meat', emoji: '🥩'),
+    (anahtar: 'ingredient_cheese', emoji: '🧀'),
+    (anahtar: 'ingredient_onion', emoji: '🧅'),
+    (anahtar: 'ingredient_tomato', emoji: '🍅'),
+    (anahtar: 'ingredient_pasta', emoji: '🍝'),
+    (anahtar: 'ingredient_rice', emoji: '🍚'),
+    (anahtar: 'ingredient_mushroom', emoji: '🍄'),
+    (anahtar: 'ingredient_milk_yogurt', emoji: '🥛'),
+    (anahtar: 'ingredient_bread', emoji: '🥖'),
+    (anahtar: 'ingredient_garlic', emoji: '🧄'),
+    (anahtar: 'ingredient_pepper', emoji: '🫑'),
+    (anahtar: 'ingredient_carrot', emoji: '🥕'),
+    (anahtar: 'ingredient_tomato_paste', emoji: '🥫'),
+    (anahtar: 'ingredient_tuna', emoji: '🐟'),
+    (anahtar: 'ingredient_butter', emoji: '🧈'),
+  ];
 
-  String? _secilenOgun;
-  List<String> _ogunSecenekleri = [];
+  static const List<String> _ogunSecenekleri = [
+    'what_to_cook_meal_any',
+    'what_to_cook_meal_breakfast',
+    'what_to_cook_meal_lunch_dinner',
+    'what_to_cook_meal_light',
+    'what_to_cook_meal_dessert',
+    'what_to_cook_meal_soup',
+  ];
+  String _secilenOgun = _ogunSecenekleri.first;
 
-  String? _secilenSure;
-  List<String> _sureSecenekleri = [];
+  static const List<String> _sureSecenekleri = [
+    'what_to_cook_time_any',
+    'what_to_cook_time_quick',
+    'what_to_cook_time_oven',
+    'what_to_cook_time_pot',
+  ];
+  String _secilenSure = _sureSecenekleri.first;
 
   List<KlasorData> _klasorListesi = [];
   KlasorData? _hedefKlasor;
@@ -68,7 +103,6 @@ class _BugunNePisisemSayfasiState extends State<BugunNePisisemSayfasi> {
   @override
   void initState() {
     super.initState();
-    _initLocalizedOptions();
     _verileriYukle();
     widget.gorunduSinyali?.addListener(_verileriYukle);
   }
@@ -83,46 +117,12 @@ class _BugunNePisisemSayfasiState extends State<BugunNePisisemSayfasi> {
     });
   }
 
-  void _initLocalizedOptions() {
-    _populerMalzemeler = [
-      {'name': 'ingredient_egg'.tr(), 'emoji': '🥚'},
-      {'name': 'ingredient_potato'.tr(), 'emoji': '🥔'},
-      {'name': 'ingredient_chicken'.tr(), 'emoji': '🍗'},
-      {'name': 'ingredient_ground_meat'.tr(), 'emoji': '🥩'},
-      {'name': 'ingredient_cheese'.tr(), 'emoji': '🧀'},
-      {'name': 'ingredient_onion'.tr(), 'emoji': '🧅'},
-      {'name': 'ingredient_tomato'.tr(), 'emoji': '🍅'},
-      {'name': 'ingredient_pasta'.tr(), 'emoji': '🍝'},
-      {'name': 'ingredient_rice'.tr(), 'emoji': '🍚'},
-      {'name': 'ingredient_mushroom'.tr(), 'emoji': '🍄'},
-      {'name': 'ingredient_milk_yogurt'.tr(), 'emoji': '🥛'},
-      {'name': 'ingredient_bread'.tr(), 'emoji': '🥖'},
-      {'name': 'ingredient_garlic'.tr(), 'emoji': '🧄'},
-      {'name': 'ingredient_pepper'.tr(), 'emoji': '🫑'},
-      {'name': 'ingredient_carrot'.tr(), 'emoji': '🥕'},
-      {'name': 'ingredient_tomato_paste'.tr(), 'emoji': '🥫'},
-      {'name': 'ingredient_tuna'.tr(), 'emoji': '🐟'},
-      {'name': 'ingredient_butter'.tr(), 'emoji': '🧈'},
-    ];
+  bool _hazirMalzemeMi(String malzeme) =>
+      _populerMalzemeler.any((m) => m.anahtar == malzeme);
 
-    _ogunSecenekleri = [
-      'what_to_cook_meal_any'.tr(),
-      'what_to_cook_meal_breakfast'.tr(),
-      'what_to_cook_meal_lunch_dinner'.tr(),
-      'what_to_cook_meal_light'.tr(),
-      'what_to_cook_meal_dessert'.tr(),
-      'what_to_cook_meal_soup'.tr(),
-    ];
-    _secilenOgun = _ogunSecenekleri.first;
-
-    _sureSecenekleri = [
-      'what_to_cook_time_any'.tr(),
-      'what_to_cook_time_quick'.tr(),
-      'what_to_cook_time_oven'.tr(),
-      'what_to_cook_time_pot'.tr(),
-    ];
-    _secilenSure = _sureSecenekleri.first;
-  }
+  /// Malzemenin ekranda ve istekte görünen adı (hazır malzeme o anki dilde).
+  String _malzemeAdi(String malzeme) =>
+      _hazirMalzemeMi(malzeme) ? malzeme.tr() : malzeme;
 
   @override
   void dispose() {
@@ -188,8 +188,16 @@ class _BugunNePisisemSayfasiState extends State<BugunNePisisemSayfasi> {
   }
 
   void _malzemeEkle(String malzeme) {
-    final temiz = malzeme.trim();
+    var temiz = malzeme.trim();
     if (temiz.isEmpty) return;
+    // Elle yazılan ad hazır bir malzemeyle aynıysa onun yerine geçer; yoksa
+    // aynı malzeme iki kez eklenirdi.
+    for (final m in _populerMalzemeler) {
+      if (m.anahtar.tr().toLowerCase() == temiz.toLowerCase()) {
+        temiz = m.anahtar;
+        break;
+      }
+    }
     if (!_secilenMalzemeler.contains(temiz)) {
       setState(() {
         _secilenMalzemeler.add(temiz);
@@ -260,12 +268,12 @@ class _BugunNePisisemSayfasiState extends State<BugunNePisisemSayfasi> {
     setState(() => _isLoading = true);
 
     // Prompt Oluştur
-    String prompt = '${'what_to_cook_prompt_ingredients_prefix'.tr()}${_secilenMalzemeler.join(', ')}. ';
+    String prompt = '${'what_to_cook_prompt_ingredients_prefix'.tr()}${_secilenMalzemeler.map(_malzemeAdi).join(', ')}. ';
     if (_secilenOgun != _ogunSecenekleri.first) {
-      prompt += '${'what_to_cook_prompt_meal_prefix'.tr()}$_secilenOgun. ';
+      prompt += '${'what_to_cook_prompt_meal_prefix'.tr()}${_secilenOgun.tr()}. ';
     }
     if (_secilenSure != _sureSecenekleri.first) {
-      prompt += '${'what_to_cook_prompt_time_prefix'.tr()}$_secilenSure. ';
+      prompt += '${'what_to_cook_prompt_time_prefix'.tr()}${_secilenSure.tr()}. ';
     }
     prompt += 'what_to_cook_prompt_instruction'.tr();
 
@@ -549,7 +557,7 @@ class _BugunNePisisemSayfasiState extends State<BugunNePisisemSayfasi> {
                       cipler: [
                         for (final m in _secilenMalzemeler)
                           SeciliMalzemeCipi(
-                            malzeme: m,
+                            malzeme: _malzemeAdi(m),
                             kaldirIpucu: MaterialLocalizations.of(
                               context,
                             ).deleteButtonTooltip,
@@ -576,12 +584,12 @@ class _BugunNePisisemSayfasiState extends State<BugunNePisisemSayfasi> {
                       children: [
                         for (final item in _populerMalzemeler)
                           KilCip(
-                            etiket: item['name']!,
-                            emoji: item['emoji'],
-                            secili: _secilenMalzemeler.contains(item['name']),
+                            etiket: item.anahtar.tr(),
+                            emoji: item.emoji,
+                            secili: _secilenMalzemeler.contains(item.anahtar),
                             onSelected: (secildi) => secildi
-                                ? _malzemeEkle(item['name']!)
-                                : _malzemeCikar(item['name']!),
+                                ? _malzemeEkle(item.anahtar)
+                                : _malzemeCikar(item.anahtar),
                           ),
                       ],
                     ),
@@ -597,7 +605,7 @@ class _BugunNePisisemSayfasiState extends State<BugunNePisisemSayfasi> {
                       children: [
                         for (final ogun in _ogunSecenekleri)
                           KilCip(
-                            etiket: ogun,
+                            etiket: ogun.tr(),
                             secili: _secilenOgun == ogun,
                             onSelected: (_) =>
                                 setState(() => _secilenOgun = ogun),
@@ -614,7 +622,7 @@ class _BugunNePisisemSayfasiState extends State<BugunNePisisemSayfasi> {
                       children: [
                         for (final sure in _sureSecenekleri)
                           KilCip(
-                            etiket: sure,
+                            etiket: sure.tr(),
                             secili: _secilenSure == sure,
                             onSelected: (_) =>
                                 setState(() => _secilenSure = sure),
