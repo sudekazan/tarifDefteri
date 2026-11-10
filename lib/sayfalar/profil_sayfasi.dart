@@ -361,24 +361,19 @@ class _ProfilSayfasiState extends State<ProfilSayfasi> {
   }
 
   Future<void> _yedekle() async {
-    try {
-      await _firebaseService.backupLocalDataToFirebase();
-      if (mounted) {
-        KilBildirim.goster(
-          context,
-          'settings_backup_success'.tr(),
-          tur: KilBildirimTuru.basari,
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        KilBildirim.goster(
-          context,
-          'settings_backup_error'.tr(),
-          tur: KilBildirimTuru.hata,
-        );
-      }
-    }
+    // Çıkıştaki doğrulamalı yedek kullanılır: veriler sunucuya gerçekten
+    // ulaşmadıysa (ör. internet yok) "yedeklendi" denmez.
+    var beklemeAcik = true;
+    KilDiyalog.beklemeGoster(context).then((_) => beklemeAcik = false);
+    final yedeklendi = await _firebaseService.cikisOncesiYedekle();
+    if (!mounted) return;
+    // Android geri tuşuyla kapatılmış olabilir; yalnızca açıksa kapat.
+    if (beklemeAcik) Navigator.of(context, rootNavigator: true).pop();
+    KilBildirim.goster(
+      context,
+      (yedeklendi ? 'settings_backup_success' : 'settings_backup_error').tr(),
+      tur: yedeklendi ? KilBildirimTuru.basari : KilBildirimTuru.hata,
+    );
   }
 
   Future<void> _hesapSilmeyiSor() async {
