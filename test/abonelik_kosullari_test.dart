@@ -37,4 +37,17 @@ void main() {
     expect(genelKosulAnahtari(isIOS: false), 'premium_sub_terms_body_android');
     expect(genelKosulAnahtari(isIOS: true), 'premium_sub_terms_body');
   });
+
+  test('kullanım koşulları iOS\'ta Apple sözleşmesini, Android\'de uygulamanınkini açar', () {
+    expect(kullanimKosullariAdresi(isIOS: true), contains('apple.com'));
+    expect(kullanimKosullariAdresi(isIOS: false), isNot(contains('apple.com')));
+    expect(kullanimKosullariAdresi(isIOS: false), endsWith('/terms.html'));
+  });
+
+  test('iptal notu ömür boyu planda gösterilmez', () {
+    expect(iptalNotuGosterilsinMi(PackageType.lifetime), isFalse);
+    expect(iptalNotuGosterilsinMi(PackageType.monthly), isTrue);
+    expect(iptalNotuGosterilsinMi(PackageType.annual), isTrue);
+    expect(iptalNotuGosterilsinMi(null), isTrue);
+  });
 }

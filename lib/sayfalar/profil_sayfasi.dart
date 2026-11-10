@@ -10,6 +10,7 @@ import '../services/ad_service.dart';
 import '../services/firebase_service.dart';
 import '../services/revenuecat_service.dart';
 import '../services/review_service.dart';
+import '../utils/abonelik_kosullari.dart';
 import '../utils/error_helper.dart';
 import 'premium_sayfasi.dart';
 import '../widgets/giris_parcalari.dart' show GirisBekleme;
@@ -430,7 +431,7 @@ class _ProfilSayfasiState extends State<ProfilSayfasi> {
       onHesapSil: _hesapSilmeyiSor,
       onDegerlendir: _rateApp,
       onGizlilik: () => _launchUrl('https://sudekazan.github.io/tarifDefteri/privacy.html'),
-      onKosullar: () => _launchUrl('https://www.apple.com/legal/internet-services/itunes/dev/stdeula/'),
+      onKosullar: () => _launchUrl(kullanimKosullariAdresi(isIOS: Platform.isIOS)),
       onGizlilikSecenekleri:
           _gizlilikSecenekleriGerekli ? AdService.gizlilikSecenekleriniGoster : null,
     );

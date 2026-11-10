@@ -405,11 +405,7 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
         baglantilar: [
           PremiumBaglanti(
             etiket: 'premium_terms_of_use'.tr(),
-            onTap: () => _openUrl(
-              Platform.isIOS
-                  ? 'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/'
-                  : 'https://sudekazan.github.io/tarifDefteri/terms.html',
-            ),
+            onTap: () => _openUrl(kullanimKosullariAdresi(isIOS: Platform.isIOS)),
           ),
           PremiumBaglanti(
             etiket: 'premium_privacy_policy'.tr(),
