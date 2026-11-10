@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
@@ -5,7 +6,9 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:tarif_defteri/tarifler_data/tarif_data.dart';
 import 'package:tarif_defteri/sayfalar/tarif_detay.dart';
 import '../services/analytics_service.dart';
+import '../services/firebase_service.dart';
 import '../utils/arama_metni.dart';
+import '../utils/tarif_kayit.dart';
 import '../widgets/arama_parcalari.dart';
 import '../widgets/kil/kil.dart';
 
@@ -96,12 +99,19 @@ class _AramaSayfasiState extends State<AramaSayfasi> {
       context,
       MaterialPageRoute(builder: (context) => TarifDetay(tarif: tarif)),
     );
-    if (guncelTarif == true ||
-        (guncelTarif != null && guncelTarif is TarifData)) {
-      _tumTarifleriYukle().then((_) {
-        if (mounted) _ara(_aramaController.text);
-      });
+    if (guncelTarif is TarifData) {
+      // Tarif detayı düzenlenen tarifi yalnızca geri döndürür; kaydetmek
+      // onu açan sayfanın işi (klasör içi ve Favoriler'deki gibi).
+      await tarifiCihazdaGuncelle(guncelTarif);
+      unawaited(tarifiArkadanBulutaGonder(
+        guncelTarif,
+        FirebaseService().updateTarifInFirebase,
+      ));
+    } else if (guncelTarif != true) {
+      return;
     }
+    await _tumTarifleriYukle();
+    if (mounted) _ara(_aramaController.text);
   }
 
   @override
