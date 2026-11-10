@@ -9,6 +9,8 @@ import 'package:tarif_defteri/sayfalar/tarif_olusturma.dart';
 import 'package:tarif_defteri/sayfalar/yemek_yapma_modu.dart';
 import 'package:share_plus/share_plus.dart';
 import '../widgets/banner_ad_widget.dart';
+import '../services/revenuecat_service.dart';
+import '../utils/tarif_kayit.dart';
 import '../widgets/kil/kil.dart';
 import '../widgets/tarif_detay_parcalari.dart';
 import '../utils/magaza_linki.dart';
@@ -407,6 +409,15 @@ class _TarifDetayState extends State<TarifDetay> {
               etiket: s.ad,
               onTap: () async {
                 Navigator.pop(sayfaContext);
+                if (await klasorTarifSiniriDolduMu(s.id)) {
+                  if (!context.mounted) return;
+                  KilBildirim.goster(
+                    context,
+                    'tarif_limit_reached'.tr(args: ['${RevenueCatService.freeTarifPerKlasorLimit}']),
+                    tur: KilBildirimTuru.uyari,
+                  );
+                  return;
+                }
                 await _moveTarif(s.id);
               },
             ),

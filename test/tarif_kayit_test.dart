@@ -117,4 +117,23 @@ void main() {
 
     expect((await _kayitlilar(7)).single.tarif_adi, 'Çorba');
   });
+
+  group('klasör tarif sınırı', () {
+    List<String> tarifler(int n) => List.generate(n, (i) => '{"tarif_id":$i}');
+
+    test('ücretsiz kullanıcıda 20 tarifli klasör doludur', () async {
+      SharedPreferences.setMockInitialValues({
+        'tarifler_7': tarifler(20),
+        'tarifler_8': tarifler(19),
+      });
+      expect(await klasorTarifSiniriDolduMu(7, premium: false), isTrue);
+      expect(await klasorTarifSiniriDolduMu(8, premium: false), isFalse);
+      expect(await klasorTarifSiniriDolduMu(99, premium: false), isFalse);
+    });
+
+    test('Premium kullanıcıda sınır yoktur', () async {
+      SharedPreferences.setMockInitialValues({'tarifler_7': tarifler(50)});
+      expect(await klasorTarifSiniriDolduMu(7, premium: true), isFalse);
+    });
+  });
 }

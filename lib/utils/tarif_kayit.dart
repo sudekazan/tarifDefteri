@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../services/revenuecat_service.dart';
 import '../tarifler_data/tarif_data.dart';
 
 /// Tariflerin cihazdaki (SharedPreferences) kaydı.
@@ -78,4 +79,14 @@ Future<void> tarifiArkadanBulutaGonder(
   } catch (e) {
     debugPrint('Tarif buluta gönderilemedi (cihazda duruyor): $e');
   }
+}
+
+/// Ücretsiz kullanıcıda klasör dolu mu (klasör başına tarif sınırı)?
+/// Tarif hangi yoldan gelirse gelsin (elle, yapay zekâ, Ne pişirsem,
+/// klasöre taşıma) eklemeden önce buna bakılır. Premium'da hep false.
+Future<bool> klasorTarifSiniriDolduMu(int klasorId, {bool? premium}) async {
+  if (premium ?? RevenueCatService.isProUser) return false;
+  final prefs = await SharedPreferences.getInstance();
+  final sayi = (prefs.getStringList(_anahtar(klasorId)) ?? []).length;
+  return sayi >= RevenueCatService.freeTarifPerKlasorLimit;
 }

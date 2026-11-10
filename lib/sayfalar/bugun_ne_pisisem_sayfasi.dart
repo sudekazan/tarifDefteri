@@ -231,6 +231,23 @@ class _BugunNePisisemSayfasiState extends State<BugunNePisisemSayfasi> {
       return;
     }
 
+    // Klasör dolu mu? Yapay zekâ hakkı harcanmadan önce bakılır.
+    final hedefId = _hedefKlasor?.klasor_id ??
+        (_klasorListesi.isEmpty ? null : _klasorListesi.first.klasor_id);
+    if (hedefId != null && await klasorTarifSiniriDolduMu(hedefId)) {
+      if (!mounted) return;
+      KilBildirim.goster(
+        context,
+        'tarif_limit_reached'.tr(args: ['${RevenueCatService.freeTarifPerKlasorLimit}']),
+        tur: KilBildirimTuru.uyari,
+      );
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const PremiumSayfasi(source: 'tarif_limit')),
+      );
+      return;
+    }
+
     // Limit Kontrolü
     bool canUseAi = await RevenueCatService.canUseAi();
     if (!mounted) return;
