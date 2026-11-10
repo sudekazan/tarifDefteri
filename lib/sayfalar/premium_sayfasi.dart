@@ -391,12 +391,14 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
         buyuk: true,
         onPressed: _isPurchasing ? null : _satinAlDugmesineBasildi,
       ),
-      const SizedBox(height: 12),
-      Text(
-        'premium_cancel_anytime'.tr(),
-        textAlign: TextAlign.center,
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(color: r.solukYazi),
-      ),
+      if (iptalNotuGosterilsinMi(_selectedPackage?.packageType)) ...[
+        const SizedBox(height: 12),
+        Text(
+          'premium_cancel_anytime'.tr(),
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(color: r.solukYazi),
+        ),
+      ],
       const SizedBox(height: 24),
       // Apple kural 3.1.2: otomatik yenilenen abonelik koşulları.
       PremiumKosullarKarti(
