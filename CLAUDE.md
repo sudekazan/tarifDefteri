@@ -48,3 +48,6 @@ cd backend && npm start
 - 2026-11-10: Silme ve çıkış onayları iOS'ta da kil diyaloğu; ana düğme üstte, "Vazgeç" altta. Güncelleme uyarısı iOS'ta sistem, Android'de kil.
 - 2026-11-10: Giriş ekranında Google'ın resmi renkli "G" logosu kullanılır; Apple düğmesi kil tarzında kalır (incelemede sorun çıkarsa değişir).
 - 2026-11-10: Yemek modu zamanlayıcısı süresi elle girilen basit bir zamanlayıcı olacak; adım metninden süre tanıma yok (ayrı iş).
+- 2026-11-10: Tarif ve klasör önce cihaza yazılır, Firebase beklenmez; fotoğraf arkadan yüklenir.
+- 2026-11-10: Çıkıştan önce tarifler buluta yedeklenir; yedeklenemezse kullanıcı uyarılır ("Yine de çık").
+- 2026-11-10: Açılış reklamı yalnızca açılıştan sonraki 4 saniyede yüklenirse ve kullanıcı ana ekrandaysa gösterilir.
