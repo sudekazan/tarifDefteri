@@ -437,6 +437,7 @@ class YemekMalzemeListesi extends StatelessWidget {
     required this.secililer,
     required this.onDegistir,
     required this.bosMetni,
+    this.basliklar = const {},
     this.ozet,
     this.padding = const EdgeInsets.fromLTRB(20, 8, 20, 24),
     this.shrinkWrap = false,
@@ -446,6 +447,10 @@ class YemekMalzemeListesi extends StatelessWidget {
   final Set<int> secililer;
   final ValueChanged<int> onDegistir;
   final String bosMetni;
+
+  /// Ara başlık olan satırların sıra numaraları ("Kek İçin"); bunlar onay
+  /// kutusu olmadan, başlık olarak çizilir.
+  final Set<int> basliklar;
   final Widget? ozet;
   final EdgeInsetsGeometry padding;
   final bool shrinkWrap;
@@ -470,12 +475,27 @@ class YemekMalzemeListesi extends StatelessWidget {
             ),
           ),
         for (var i = 0; i < malzemeler.length; i++) ...[
-          if (i > 0) const SizedBox(height: 12),
-          YemekMalzemeSatiri(
-            metin: malzemeler[i],
-            secili: secililer.contains(i),
-            onTap: () => onDegistir(i),
-          ),
+          if (i > 0) SizedBox(height: basliklar.contains(i) ? 20 : 12),
+          if (basliklar.contains(i))
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Semantics(
+                header: true,
+                child: Text(
+                  malzemeler[i],
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: r.baslik,
+                  ),
+                ),
+              ),
+            )
+          else
+            YemekMalzemeSatiri(
+              metin: malzemeler[i],
+              secili: secililer.contains(i),
+              onTap: () => onDegistir(i),
+            ),
         ],
       ],
     );

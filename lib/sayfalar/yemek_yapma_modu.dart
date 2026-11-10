@@ -6,6 +6,7 @@ import 'package:tarif_defteri/tarifler_data/tarif_data.dart';
 import '../services/analytics_service.dart';
 import '../services/review_service.dart';
 import '../utils/porsiyon_olcekleyici.dart';
+import '../utils/malzeme_basliklari.dart';
 import '../widgets/kil/kil.dart';
 import '../widgets/yemek_modu_parcalari.dart';
 
@@ -41,6 +42,10 @@ class _YemekYapmaModuState extends State<YemekYapmaModu> {
 
   List<String> _malzemeler = [];
   List<String> _adimlar = [];
+
+  /// Malzemelerin arasındaki ara başlıklar ("Kek İçin"); işaretlenmez ve
+  /// "hazır" sayısına girmez.
+  Set<int> _malzemeBasliklari = {};
   final Set<int> _checkedIngredients = {};
 
   @override
@@ -118,7 +123,9 @@ class _YemekYapmaModuState extends State<YemekYapmaModu> {
     }
 
     setState(() {
-      _malzemeler = tempMalzemeler;
+      // Başlıklar işaretlere bakılarak bulunur; işaretler ondan sonra atılır.
+      _malzemeBasliklari = malzemeBaslikIndeksleri(tempMalzemeler);
+      _malzemeler = tempMalzemeler.map(malzemeIsaretsiz).toList();
       _adimlar = tempAdimlar;
     });
   }
@@ -177,6 +184,7 @@ class _YemekYapmaModuState extends State<YemekYapmaModu> {
                       padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
                       malzemeler: _malzemeler,
                       secililer: _checkedIngredients,
+                      basliklar: _malzemeBasliklari,
                       bosMetni: 'cooking_mode_no_ingredients_short'.tr(),
                       onDegistir: (index) {
                         _malzemeyiDegistir(index);
@@ -269,13 +277,15 @@ class _YemekYapmaModuState extends State<YemekYapmaModu> {
                       return YemekMalzemeListesi(
                         malzemeler: _malzemeler,
                         secililer: _checkedIngredients,
+                        basliklar: _malzemeBasliklari,
                         onDegistir: _malzemeyiDegistir,
                         bosMetni: 'cooking_mode_no_ingredients_list'.tr(),
                         ozet: YemekMalzemeOzeti(
                           baslik: 'cooking_mode_ingredients'.tr(),
                           hazirMetni: 'cooking_mode_ready'.tr(),
                           hazir: _checkedIngredients.length,
-                          toplam: _malzemeler.length,
+                          toplam:
+                              _malzemeler.length - _malzemeBasliklari.length,
                         ),
                       );
                     }
