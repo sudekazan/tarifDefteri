@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -16,6 +17,7 @@ import '../utils/error_helper.dart';
 import '../services/review_service.dart';
 import '../services/analytics_service.dart';
 import '../utils/klasor_adi.dart';
+import '../utils/tarif_kayit.dart';
 import '../widgets/ana_sayfa_parcalari.dart';
 import '../widgets/kil/kil.dart';
 import '../widgets/ne_pisirsem_parcalari.dart';
@@ -174,7 +176,7 @@ class _BugunNePisisemSayfasiState extends State<BugunNePisisemSayfasi> {
     );
     klasorJsonList.add(json.encode(yeniKlasor.toMap()));
     await prefs.setStringList('klasorler', klasorJsonList);
-    await _firebaseService.saveKlasorToFirebase(yeniKlasor);
+    unawaited(_firebaseService.saveKlasorToFirebase(yeniKlasor));
 
     if (mounted) {
       setState(() {
@@ -339,19 +341,16 @@ class _BugunNePisisemSayfasiState extends State<BugunNePisisemSayfasi> {
   }
 
   Future<void> _tarifKaydet(TarifData yeniTarif, int klasorId) async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String key = 'tarifler_$klasorId';
-    List<String> tariflerJson = prefs.getStringList(key) ?? [];
-
     yeniTarif.tarif_id = DateTime.now().millisecondsSinceEpoch;
-
-    final cloudResimler = await _firebaseService.saveTarifToFirebase(yeniTarif);
-
     yeniTarif.klasor_id = klasorId;
-    yeniTarif.tarif_resimler = cloudResimler;
     yeniTarif.updatedAt = DateTime.now().millisecondsSinceEpoch;
-    tariflerJson.add(json.encode(yeniTarif.toMap()));
-    await prefs.setStringList(key, tariflerJson);
+
+    // Önce cihaza yaz; Firebase beklenmez (internet yokken yazma bitmez).
+    await yeniTarifiCihazaYaz(yeniTarif);
+    unawaited(tarifiArkadanBulutaGonder(
+      yeniTarif,
+      _firebaseService.saveTarifToFirebase,
+    ));
   }
 
   /// Günlük AI hakkı bittiğinde gösterilir. Pro kullanıcıya "reklam izle"

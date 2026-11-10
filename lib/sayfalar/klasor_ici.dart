@@ -4,6 +4,7 @@ import 'package:tarif_defteri/sayfalar/tarif_detay.dart';
 import 'package:tarif_defteri/tarifler_data/klasor_data.dart';
 import 'package:tarif_defteri/tarifler_data/tarif_data.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:async';
 import 'dart:convert';
 import 'package:share_plus/share_plus.dart';
 import 'dart:io';
@@ -14,6 +15,7 @@ import '../services/analytics_service.dart';
 import '../utils/arama_metni.dart';
 import '../utils/klasor_adi.dart';
 import '../utils/magaza_linki.dart';
+import '../utils/tarif_kayit.dart';
 import '../widgets/kil/kil.dart';
 import '../widgets/tarif_ekle_alt_sayfasi.dart';
 import '../widgets/tarif_listesi_parcalari.dart';
@@ -84,8 +86,11 @@ class _KlasorIciState extends State<KlasorIci> {
               ? List<String>.from(map['tarif_resimler'])
               : [];
 
-          // Bozuk (http olmayan) yol varsa cloud'dan al
-          final bool bozukYolVar = mevcutResimler.any((p) => !p.startsWith('http'));
+          // Bozuk yol (bulut adresi değil ve dosyası cihazda yok) varsa
+          // cloud'dan al. Dosyası duran yerel fotoğraf henüz yüklenmemiş
+          // olabilir; ona dokunulmaz.
+          final bool bozukYolVar = mevcutResimler
+              .any((p) => !p.startsWith('http') && !File(p).existsSync());
           final cloudTarif = cloudMap[tid];
           if (bozukYolVar && cloudTarif != null && cloudTarif.tarif_resimler.isNotEmpty) {
             final cloudResimler = cloudTarif.tarif_resimler
@@ -151,8 +156,19 @@ class _KlasorIciState extends State<KlasorIci> {
       final kaldirilanResimler = eskiTarif.tarif_resimler
           .where((p) => !guncelTarif.tarif_resimler.contains(p))
           .toList();
+      // Önce cihaza yaz ve listeyi yenile; Firebase beklenmez (internet
+      // yokken yazma bitmez, düzenleme kaydedilmemiş gibi görünürdü).
+      guncelTarif.updatedAt = DateTime.now().millisecondsSinceEpoch;
+      tariflerJson[index] = json.encode(guncelTarif.toMap());
+      await prefs.setStringList(key, tariflerJson);
+
+      // Yerel fotoğrafları yükler, bulut adreslerini cihazdaki kayda yazar.
+      unawaited(tarifiArkadanBulutaGonder(
+        guncelTarif,
+        _firebaseService.updateTarifInFirebase,
+      ));
       if (kaldirilanResimler.isNotEmpty) {
-        await _firebaseService.deleteImagesForTarif(
+        unawaited(_firebaseService.deleteImagesForTarif(
           TarifData(
             tarif_id: eskiTarif.tarif_id,
             tarif_adi: eskiTarif.tarif_adi,
@@ -160,51 +176,20 @@ class _KlasorIciState extends State<KlasorIci> {
             tarif_resimler: kaldirilanResimler,
             klasor_id: eskiTarif.klasor_id,
           ),
-        );
+        ));
       }
-
-      // Yerel görselleri buluta yükle ve cloud URL'lerini al
-      List<String> cloudResimler = guncelTarif.tarif_resimler;
-      if (_firebaseService.isUserLoggedIn) {
-        List<String> yuklenmisList = [];
-        for (String path in guncelTarif.tarif_resimler) {
-          if (path.startsWith('http')) {
-            yuklenmisList.add(path);
-          } else if (path.isNotEmpty && File(path).existsSync()) {
-            String? cloudUrl = await _firebaseService.uploadImage(File(path));
-            yuklenmisList.add(cloudUrl ?? path);
-          } else {
-            yuklenmisList.add(path);
-          }
-        }
-        cloudResimler = yuklenmisList;
-        guncelTarif.tarif_resimler = cloudResimler;
-      }
-
-      guncelTarif.updatedAt = DateTime.now().millisecondsSinceEpoch;
-      tariflerJson[index] = json.encode(guncelTarif.toMap());
-      await prefs.setStringList(key, tariflerJson);
-
-      // Firebase'de de güncelle (artık cloud URL'ler ile)
-      await _firebaseService.updateTarifInFirebase(guncelTarif);
 
       _tarifleriYukle();
     }
   }
 
   Future<void> _tarifSil(TarifData tarif) async {
-    final tarif_id = tarif.tarif_id;
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String key = 'tarifler_${widget.klasorData.klasor_id}';
-    List<String> tariflerJson = prefs.getStringList(key) ?? [];
-    tariflerJson.removeWhere((e) => json.decode(e)['tarif_id'] == tarif_id);
-    await prefs.setStringList(key, tariflerJson);
+    await tarifiCihazdanSil(widget.klasorData.klasor_id, tarif.tarif_id);
 
-    // Firebase'den de sil
-    await _firebaseService.deleteTarifFromFirebase(widget.klasorData.klasor_id, tarif_id);
-
-    // Görselleri (yerel + bulut) de sil, yetim dosya kalmasın
-    await _firebaseService.deleteImagesForTarif(tarif);
+    // Firebase'den ve görsellerden (yerel + bulut) de sil; beklenmez.
+    unawaited(_firebaseService.deleteTarifFromFirebase(
+        widget.klasorData.klasor_id, tarif.tarif_id));
+    unawaited(_firebaseService.deleteImagesForTarif(tarif));
 
     _tarifleriYukle();
   }

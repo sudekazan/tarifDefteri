@@ -223,9 +223,10 @@ class FirebaseService {
     }
   }
 
-  // Tarifi güncelle
-  Future<void> updateTarifInFirebase(TarifData tarif) async {
-    if (!isUserLoggedIn) return;
+  // Tarifi güncelle — fotoğrafların son yollarını (yüklenenler için bulut
+  // adresi) döndürür
+  Future<List<String>> updateTarifInFirebase(TarifData tarif) async {
+    if (!isUserLoggedIn) return tarif.tarif_resimler;
 
     try {
       // Yerel fotağrafları buluta yükle ve yolları güncelle
@@ -244,8 +245,10 @@ class FirebaseService {
         'isFavorite': tarif.isFavorite,
         'updatedAt': tarif.updatedAt,
       });
+      return guncelResimler;
     } catch (e) {
       debugPrint('Tarif güncelleme hatası: $e');
+      return tarif.tarif_resimler;
     }
   }
 

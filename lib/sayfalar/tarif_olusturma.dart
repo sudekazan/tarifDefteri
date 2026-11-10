@@ -10,7 +10,6 @@ import '../widgets/kil/kil.dart';
 import '../widgets/tarif_detay_parcalari.dart';
 import '../widgets/tarif_olusturma_parcalari.dart';
 import 'package:easy_localization/easy_localization.dart';
-import '../services/firebase_service.dart';
 import '../utils/recipe_link_helper.dart';
 
 class TarifOlusturma extends StatefulWidget {
@@ -40,7 +39,6 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
   final ScrollController _scrollController = ScrollController();
 
   bool isAiGenerated = false;
-  final FirebaseService _firebaseService = FirebaseService();
 
   // Görseli kalıcı klasöre kopyala
   Future<String> _copyImageToPermanentLocation(String sourcePath) async {
@@ -603,40 +601,15 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
     // Görselleri işle ve kaydet
     List<String> resimYollari = [];
 
-    if (photos.isNotEmpty) {
-      // Loading göster
-      KilDiyalog.beklemeGoster(context);
-
-      try {
-        for (var photo in photos) {
-          if (_isNetworkUrl(photo.path)) {
-            // Zaten bulutta olan görsel
-            resimYollari.add(photo.path);
-          } else {
-            // Yeni yerel görsel - önce yerel hafızaya kopyala
-            String localPath = await _copyImageToPermanentLocation(photo.path);
-
-            // Eğer kullanıcı giriş yapmışsa buluta yükle
-            if (_firebaseService.isUserLoggedIn && localPath.isNotEmpty) {
-              String? cloudUrl =
-                  await _firebaseService.uploadImage(File(localPath));
-              if (cloudUrl != null) {
-                resimYollari.add(cloudUrl);
-              } else {
-                resimYollari.add(
-                  localPath,
-                ); // Yükleme başarısızsa yerel yolu tut
-              }
-            } else {
-              resimYollari.add(localPath);
-            }
-          }
-        }
-      } catch (e) {
-        debugPrint('Görsel işleme hatası: $e');
-      } finally {
-        // Loading kapat
-        if (mounted) Navigator.pop(context);
+    // Fotoğraflar yalnızca cihazdaki kalıcı klasöre kopyalanır. Buluta
+    // yükleme burada beklenmez; tarifi kaydeden sayfa arkadan yükler
+    // (bkz. tarifiArkadanBulutaGonder). Böylece internet yokken ya da
+    // yavaşken kaydetme takılmaz.
+    for (var photo in photos) {
+      if (_isNetworkUrl(photo.path)) {
+        resimYollari.add(photo.path);
+      } else {
+        resimYollari.add(await _copyImageToPermanentLocation(photo.path));
       }
     }
 

@@ -10,6 +10,7 @@ import 'package:tarif_defteri/services/revenuecat_service.dart';
 import 'package:tarif_defteri/tarifler_data/klasor_data.dart';
 import 'package:tarif_defteri/tarifler_data/tarif_data.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:share_plus/share_plus.dart';
@@ -20,6 +21,7 @@ import '../services/firebase_service.dart';
 import '../utils/magaza_linki.dart';
 import '../services/ad_service.dart';
 import '../utils/klasor_adi.dart';
+import '../utils/tarif_kayit.dart';
 import '../widgets/ana_sayfa_parcalari.dart';
 import '../widgets/kil/kil.dart';
 import '../widgets/tarif_ekle_alt_sayfasi.dart';
@@ -204,7 +206,8 @@ class _KlasorlerState extends State<Klasorler> {
     klasorJsonList.add(json.encode(yeniKlasor.toMap()));
     await prefs.setStringList('klasorler', klasorJsonList);
 
-    await _firebaseService.saveKlasorToFirebase(yeniKlasor);
+    // Firebase beklenmez: internet yokken yazma bitmez, liste yenilenmezdi.
+    unawaited(_firebaseService.saveKlasorToFirebase(yeniKlasor));
     AnalyticsService.klasorOlusturuldu(klasorSayisi: klasorJsonList.length);
 
     _klasorleriYukle().then((_) {
@@ -226,22 +229,15 @@ class _KlasorlerState extends State<Klasorler> {
       }
     }
     if (indexToRemove != -1) {
-      // Klasörün içindeki tariflerin görsellerini (yerel + bulut) de sil
       String tarifKey = 'tarifler_$klasorId';
       final tariflerJson = prefs.getStringList(tarifKey) ?? [];
-      for (final tarifStr in tariflerJson) {
-        try {
-          await _firebaseService.deleteImagesForTarif(TarifData.fromMap(json.decode(tarifStr)));
-        } catch (e) {
-          debugPrint('Klasör silinirken tarif görseli temizleme hatası: $e');
-        }
-      }
       await prefs.remove(tarifKey);
       klasorJsonList.removeAt(indexToRemove);
       await prefs.setStringList('klasorler', klasorJsonList);
 
-      // Firebase'den de sil
-      await _firebaseService.deleteKlasorFromFirebase(klasorId);
+      // Bulut silme ve görsel temizliği beklenmez: internet yokken bitmez,
+      // liste yenilenmezdi.
+      unawaited(_klasoruBuluttanSil(klasorId, tariflerJson));
 
       _klasorleriYukle().then((_) {
         _filtreleKlasorler(aramaController.text); // Silme işleminden sonra filtreyi güncelle
@@ -274,6 +270,19 @@ class _KlasorlerState extends State<Klasorler> {
                 await _klasorYenidenAdlandir(klasor, yeniAd);
               }
             },
+  /// Silinen klasörü Firebase'den, içindeki tariflerin görsellerini de
+  /// cihazdan ve buluttan siler.
+  Future<void> _klasoruBuluttanSil(int klasorId, List<String> tariflerJson) async {
+    unawaited(_firebaseService.deleteKlasorFromFirebase(klasorId));
+    for (final tarifStr in tariflerJson) {
+      try {
+        await _firebaseService.deleteImagesForTarif(TarifData.fromMap(json.decode(tarifStr)));
+      } catch (e) {
+        debugPrint('Klasör silinirken tarif görseli temizleme hatası: $e');
+      }
+    }
+  }
+
           ),
           KilDiyalogMetinDugmesi(
             etiket: 'common_cancel'.tr(),
@@ -303,7 +312,7 @@ class _KlasorlerState extends State<Klasorler> {
 
     klasor.klasor_adi = yeniAd;
     klasor.updatedAt = DateTime.now().millisecondsSinceEpoch;
-    await _firebaseService.saveKlasorToFirebase(klasor);
+    unawaited(_firebaseService.saveKlasorToFirebase(klasor));
 
     _klasorleriYukle().then((_) {
       _filtreleKlasorler(aramaController.text);
@@ -703,7 +712,10 @@ class _FavoriTariflerSayfasiState extends State<FavoriTariflerSayfasi> {
         tariflerJson[idx] = json.encode(guncelTarif.toMap());
         await prefs.setStringList(key, tariflerJson);
       }
-      await _firebaseService.updateTarifInFirebase(guncelTarif);
+      unawaited(tarifiArkadanBulutaGonder(
+        guncelTarif,
+        _firebaseService.updateTarifInFirebase,
+      ));
     } catch (e) {
       debugPrint('Favori tarif düzenleme kaydı hatası: $e');
     }

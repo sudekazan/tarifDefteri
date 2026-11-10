@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -16,6 +17,7 @@ import '../services/revenuecat_service.dart';
 import '../tarifler_data/klasor_data.dart';
 import '../tarifler_data/tarif_data.dart';
 import '../utils/error_helper.dart';
+import '../utils/tarif_kayit.dart';
 import '../widgets/ai_chef_loading_animation.dart';
 import '../widgets/ai_hak_doldu_dialog.dart';
 import '../widgets/kil/kil.dart';
@@ -108,23 +110,20 @@ class TarifEklemeAkisi {
   }
 
   Future<void> _tarifEkle(TarifData yeniTarif) async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String key = 'tarifler_${klasor.klasor_id}';
-    List<String> tariflerJson = prefs.getStringList(key) ?? [];
-
     // Silinmiş tarif ID'leri ile çakışmayı önlemek için zaman damgası kullanıyoruz
     yeniTarif.tarif_id = DateTime.now().millisecondsSinceEpoch;
-
-    // Firebase'e kaydet ve cloud URL'lerini al
-    final cloudResimler = await _firebaseService.saveTarifToFirebase(yeniTarif);
-
-    // Cloud URL'leri ve tüm alanları (tarif_aciklama_json, updatedAt dahil) SharedPreferences'a kaydet
-    yeniTarif.tarif_resimler = cloudResimler;
+    yeniTarif.klasor_id = klasor.klasor_id;
     yeniTarif.updatedAt = DateTime.now().millisecondsSinceEpoch;
-    tariflerJson.add(json.encode(yeniTarif.toMap()));
-    await prefs.setStringList(key, tariflerJson);
 
+    // Önce cihaza yaz ve ekranı güncelle; Firebase beklenmez (internet
+    // yokken yazma bitmez, tarif kaydedilmemiş gibi görünürdü).
+    await yeniTarifiCihazaYaz(yeniTarif);
     kaydedilince(yeniTarif);
+
+    unawaited(tarifiArkadanBulutaGonder(
+      yeniTarif,
+      _firebaseService.saveTarifToFirebase,
+    ));
   }
 
   void _showLinkImportDialog() {
