@@ -328,6 +328,27 @@ class _ProfilSayfasiState extends State<ProfilSayfasi> {
     );
 
     if (shouldLogout == true) {
+      if (!mounted) return;
+      // Çıkış cihazdaki tarifleri siler; önce hepsinin bulutta olduğundan
+      // emin ol. Yedeklenemiyorsa (ör. internet yok) kullanıcı karar verir.
+      var beklemeAcik = true;
+      KilDiyalog.beklemeGoster(context).then((_) => beklemeAcik = false);
+      final yedeklendi = await _firebaseService.cikisOncesiYedekle();
+      if (!mounted) return;
+      // Android geri tuşuyla kapatılmış olabilir; yalnızca açıksa kapat.
+      if (beklemeAcik) Navigator.of(context, rootNavigator: true).pop();
+      if (!yedeklendi) {
+        final yineDeCik = await KilDiyalog.onayIste(
+          context,
+          ikon: Icons.warning_amber_rounded,
+          tehlikeli: true,
+          baslik: 'settings_logout_unsynced_title'.tr(),
+          mesaj: 'settings_logout_unsynced_content'.tr(),
+          onayEtiketi: 'settings_logout_anyway'.tr(),
+          vazgecEtiketi: 'settings_logout_cancel'.tr(),
+        );
+        if (yineDeCik != true) return;
+      }
       await _firebaseService.signOut();
       if (mounted) {
         KilBildirim.goster(

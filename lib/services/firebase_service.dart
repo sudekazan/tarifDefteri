@@ -548,6 +548,86 @@ class FirebaseService {
     ).join();
   }
 
+  /// Çıkıştan önce çağrılır: cihazdaki tüm klasör ve tarifleri (fotoğraflar
+  /// dahil) buluta yazar ve sunucuya gerçekten ulaştıklarını doğrular.
+  /// Hepsi buluttaysa true döner. [sure] içinde bitmezse (ör. internet yok)
+  /// ya da bir şey eksik kalırsa false döner; çıkış cihazdaki kopyayı
+  /// sildiği için kullanıcı o durumda uyarılmalıdır.
+  Future<bool> cikisOncesiYedekle({
+    Duration sure = const Duration(seconds: 30),
+  }) async {
+    if (!isUserLoggedIn) return true;
+    try {
+      return await _yedekleVeDogrula().timeout(sure);
+    } catch (e) {
+      debugPrint('Çıkış öncesi yedekleme tamamlanamadı: $e');
+      return false;
+    }
+  }
+
+  Future<bool> _yedekleVeDogrula() async {
+    final kullanici = _firestore.collection('users').doc(userId);
+    final prefs = await SharedPreferences.getInstance();
+    final klasorJsonList = prefs.getStringList('klasorler') ?? [];
+
+    final klasorIdleri = <String>{};
+    final tarifIdleri = <String>{};
+    var batch = _firestore.batch();
+    var bekleyen = 0;
+    Future<void> yaz(DocumentReference ref, Map<String, dynamic> veri) async {
+      batch.set(ref, veri, SetOptions(merge: true));
+      if (++bekleyen >= 400) {
+        await batch.commit();
+        batch = _firestore.batch();
+        bekleyen = 0;
+      }
+    }
+
+    for (int i = 0; i < klasorJsonList.length; i++) {
+      final map = json.decode(klasorJsonList[i]);
+      final int klasorId = map['klasor_id'] ?? i + 1;
+      klasorIdleri.add('$klasorId');
+      await yaz(kullanici.collection('klasorler').doc('$klasorId'), {
+        'klasor_id': klasorId,
+        'klasor_adi': map['klasor_adi'],
+        'iconCode': map['iconCode'] ?? 0xe2c7,
+        if (map['updatedAt'] != null) 'updatedAt': map['updatedAt'],
+      });
+
+      for (final e in prefs.getStringList('tarifler_$klasorId') ?? <String>[]) {
+        final tarif = TarifData.fromMap(json.decode(e));
+        final resimler = await _checkAndUploadLocalImages(tarif.tarif_resimler);
+        // Dosyası cihazda duran ama yüklenemeyen fotoğraf: yedek eksik.
+        if (resimler.any((p) => !p.startsWith('http') && File(p).existsSync())) {
+          return false;
+        }
+        final belgeId = '${klasorId}_${tarif.tarif_id}';
+        tarifIdleri.add(belgeId);
+        await yaz(kullanici.collection('tarifler').doc(belgeId), {
+          'tarif_id': tarif.tarif_id,
+          'tarif_adi': tarif.tarif_adi,
+          'tarif_aciklama': tarif.tarif_aciklama,
+          'tarif_aciklama_json': tarif.tarif_aciklama_json,
+          'tarif_resimler': resimler,
+          'klasor_id': klasorId,
+          'isFavorite': tarif.isFavorite,
+          'updatedAt': tarif.updatedAt,
+        });
+      }
+    }
+    if (bekleyen > 0) await batch.commit();
+
+    // Daha önce sıraya girmiş yazmalar da sunucuya ulaşsın.
+    await _firestore.waitForPendingWrites();
+
+    // Önbellekten değil sunucudan oku: her şey gerçekten orada mı?
+    const sunucudan = GetOptions(source: Source.server);
+    final sunucuKlasorler = await kullanici.collection('klasorler').get(sunucudan);
+    final sunucuTarifler = await kullanici.collection('tarifler').get(sunucudan);
+    return sunucuKlasorler.docs.map((d) => d.id).toSet().containsAll(klasorIdleri) &&
+        sunucuTarifler.docs.map((d) => d.id).toSet().containsAll(tarifIdleri);
+  }
+
   // Çıkış yap
   Future<void> signOut() async {
     await _auth.signOut();
