@@ -5,7 +5,7 @@ Kişisel tarif defteri: klasörler, zengin metinli tarif oluşturma, yemek yapma
 - Flutter + Provider. Firebase: Auth, Firestore, Storage, Analytics.
 - Giriş: e-posta, Google, Apple. Premium: RevenueCat (aylık / yıllık / ömür boyu). Reklam: AdMob + ATT.
 - Dil: easy_localization, `assets/lang/` içinde `tr`, `en`, `de`, `es`, `fr`, `pt`.
-- Tarif editörü: flutter_quill.
+- Tarif oluşturma: bölüm ve madde listesi (zengin metin editörü yok).
 
 # Yapı
 - Ekranlar: `lib/sayfalar/` (çoğu), `lib/screens/` (ayarlar, tema, güncelleme)

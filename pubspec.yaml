@@ -10,7 +10,6 @@ dependencies:
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.2
-  uuid: ^4.3.3
   shared_preferences: ^2.2.3
   image_picker: ^1.0.7
   share_plus: ^7.2.1
@@ -18,15 +17,11 @@ dependencies:
   provider: ^6.1.1
   path_provider: ^2.1.2
   path: ^1.9.0
-  flutter_quill: ^11.4.1
-  flutter_quill_extensions: ^11.0.0
-  showcaseview: ^4.0.1
   package_info_plus: ^8.0.0
   google_mobile_ads: ^8.0.0
   firebase_core: ^3.3.0
   firebase_auth: ^5.1.4
   cloud_firestore: ^5.2.1
-  cloud_functions: ^5.1.0
   # google_sign_in: ^6.2.1  # Geçici olarak kaldırıldı - pod dependency conflict
   google_fonts: ^6.1.0
   easy_localization: ^3.0.0
@@ -70,6 +65,5 @@ flutter_native_splash:
 flutter:
   uses-material-design: true
   assets:
-    - assets/logo.png
     - assets/lang/
     - assets/animations/
