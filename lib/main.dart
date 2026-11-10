@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -16,10 +17,21 @@ import 'screens/update_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Ekranlar dikey tasarlandı: telefon çevrilince yatay dönmesin. (iPad'de
+  // çoklu görev desteği nedeniyle sistem bu kilidi uygulamaz; orada döner.)
+  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+
   try {
     await EasyLocalization.ensureInitialized();
   } catch (e) {
     debugPrint('EasyLocalization init error: $e');
+  }
+
+  // Değerlendirme isteğinin 7 günlük beklemesi ilk açılıştan sayılır.
+  try {
+    await ReviewService.ilkAcilisiKaydet();
+  } catch (e) {
+    debugPrint('İlk açılış tarihi kaydedilemedi: $e');
   }
 
   try {
@@ -28,13 +40,6 @@ void main() async {
     );
   } catch (e) {
     debugPrint('Firebase init error: $e');
-  }
-
-  // Değerlendirme isteğinin 7 günlük beklemesi ilk açılıştan sayılır.
-  try {
-    await ReviewService.ilkAcilisiKaydet();
-  } catch (e) {
-    debugPrint('İlk açılış tarihi kaydedilemedi: $e');
   }
 
   try {
