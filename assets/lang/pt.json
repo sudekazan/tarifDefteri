@@ -44,6 +44,7 @@
   "settings_delete_account_item_recipes": "• Todas as suas receitas serão excluídas",
   "settings_delete_account_item_folders": "• Todas as suas pastas serão excluídas",
   "settings_delete_account_item_data": "• As informações da sua conta serão excluídas permanentemente",
+  "settings_delete_account_item_subscription": "• Uma assinatura ativa não é cancelada automaticamente; cancele-a separadamente na App Store ou no Google Play",
   "settings_delete_account_item_cannot_undo": "• Esta ação não pode ser desfeita",
   "settings_delete_account_confirm_question": "Tem certeza de que deseja continuar?",
   "settings_delete_account_button": "Excluir minha conta",

@@ -44,6 +44,7 @@
   "settings_delete_account_item_recipes": "• Tüm tarifleriniz silinecek",
   "settings_delete_account_item_folders": "• Tüm klasörleriniz silinecek",
   "settings_delete_account_item_data": "• Hesap bilgileriniz kalıcı olarak silinecek",
+  "settings_delete_account_item_subscription": "• Aktif aboneliğiniz varsa kendiliğinden iptal olmaz; App Store ya da Google Play'den ayrıca iptal etmelisiniz",
   "settings_delete_account_item_cannot_undo": "• Bu işlem geri alınamaz",
   "settings_delete_account_confirm_question": "Devam etmek istediğinizden emin misiniz?",
   "settings_delete_account_button": "Hesabımı Sil",

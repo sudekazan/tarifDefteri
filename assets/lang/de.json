@@ -44,6 +44,7 @@
   "settings_delete_account_item_recipes": "• Alle Ihre Rezepte werden gelöscht",
   "settings_delete_account_item_folders": "• Alle Ihre Ordner werden gelöscht",
   "settings_delete_account_item_data": "• Ihre Kontoinformationen werden dauerhaft gelöscht",
+  "settings_delete_account_item_subscription": "• Ein aktives Abo wird nicht automatisch gekündigt; kündigen Sie es separat im App Store oder bei Google Play",
   "settings_delete_account_item_cannot_undo": "• Diese Aktion kann nicht rückgängig gemacht werden",
   "settings_delete_account_confirm_question": "Sind Sie sicher, dass Sie fortfahren möchten?",
   "settings_delete_account_button": "Mein Konto löschen",

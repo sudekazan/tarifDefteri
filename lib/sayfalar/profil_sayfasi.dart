@@ -469,6 +469,7 @@ class HesapSilmeUyarisi extends StatelessWidget {
         Text('settings_delete_account_item_recipes'.tr(), style: govde),
         Text('settings_delete_account_item_folders'.tr(), style: govde),
         Text('settings_delete_account_item_data'.tr(), style: govde),
+        Text('settings_delete_account_item_subscription'.tr(), style: govde),
         Text('settings_delete_account_item_cannot_undo'.tr(), style: govde),
         const SizedBox(height: 12),
         Text(

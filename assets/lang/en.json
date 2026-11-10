@@ -44,6 +44,7 @@
   "settings_delete_account_item_recipes": "• All your recipes will be deleted",
   "settings_delete_account_item_folders": "• All your folders will be deleted",
   "settings_delete_account_item_data": "• Your account information will be permanently deleted",
+  "settings_delete_account_item_subscription": "• An active subscription is not cancelled automatically; cancel it separately in the App Store or Google Play",
   "settings_delete_account_item_cannot_undo": "• This action cannot be undone",
   "settings_delete_account_confirm_question": "Are you sure you want to continue?",
   "settings_delete_account_button": "Delete my account",

@@ -286,6 +286,7 @@ void main() {
       'profile_signed_in_with_email',
       'profile_signed_in_with_google',
       'profile_signed_in_with_apple',
+      'settings_delete_account_item_subscription',
     ];
     for (final dil in ['tr', 'en', 'de', 'es', 'fr', 'pt']) {
       final m = json.decode(File('assets/lang/$dil.json').readAsStringSync())
