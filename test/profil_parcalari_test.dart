@@ -9,7 +9,7 @@ import 'package:easy_localization/src/localization.dart';
 import 'package:easy_localization/src/translations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:tarif_defteri/screens/settings_page.dart';
+import 'package:tarif_defteri/sayfalar/profil_sayfasi.dart';
 import 'package:tarif_defteri/services/firebase_service.dart';
 import 'package:tarif_defteri/widgets/kil/kil.dart';
 import 'package:tarif_defteri/widgets/premium_parcalari.dart';

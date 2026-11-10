@@ -80,7 +80,7 @@ Bunlar `KilRenkleri.klasorFavori` vb. olarak kodda. Kontrastlar `test/kil_renkle
   - Defterim → `klasorler.dart`
   - Ne pişirsem → `bugun_ne_pisisem_sayfasi.dart`
   - Alışveriş → `alisveris_listesi.dart`
-  - Profil → `settings_page.dart` (aşama 9'dan beri görünümü `ProfilGorunumu`)
+  - Profil → `lib/sayfalar/profil_sayfasi.dart` (`ProfilSayfasi`; 2026-11-10'da `settings_page.dart`'tan taşındı; aşama 9'dan beri görünümü `ProfilGorunumu`)
 - Banner reklam sekme çubuğunun hemen üstünde durur; Pro kullanıcılarda gösterilmez.
 - Android geri tuşu: ilk sekmede değilken önce ilk sekmeye döner.
 - **Analitik:** Ekran ve olay adları değişmemeli (2026-11-04 kararı: önce ölçüm). `analytics_service.dart` içindeki ekran olayları sekmelere doğru bağlanmalı.

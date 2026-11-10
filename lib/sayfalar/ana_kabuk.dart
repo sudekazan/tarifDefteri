@@ -1,13 +1,13 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
-import '../screens/settings_page.dart';
 import '../services/revenuecat_service.dart';
 import '../widgets/banner_ad_widget.dart';
 import '../widgets/kil/kil.dart';
 import 'alisveris_listesi.dart';
 import 'bugun_ne_pisisem_sayfasi.dart';
 import 'klasorler.dart';
+import 'profil_sayfasi.dart';
 
 /// Uygulamanın ana kabuğu: alt sekme çubuğu ve dört sekme (Defterim,
 /// Ne pişirsem, Alışveriş, Profil).
@@ -59,8 +59,10 @@ class _SekmeSinyali extends ChangeNotifier {
 class _AnaKabukState extends State<AnaKabuk> with RouteAware {
   int _secili = AnaKabuk.defterim;
   final Set<int> _kurulanlar = {AnaKabuk.defterim};
-  final List<_SekmeSinyali> _sinyaller =
-      List.generate(AnaKabuk._sekmeSayisi, (_) => _SekmeSinyali());
+  final List<_SekmeSinyali> _sinyaller = List.generate(
+    AnaKabuk._sekmeSayisi,
+    (_) => _SekmeSinyali(),
+  );
 
   @override
   void didChangeDependencies() {
@@ -108,7 +110,7 @@ class _AnaKabukState extends State<AnaKabuk> with RouteAware {
       case AnaKabuk.alisveris:
         return AlisverisListesi(gorunduSinyali: _sinyaller[indeks]);
       default:
-        return SettingsPage(
+        return ProfilSayfasi(
           isDarkMode: widget.isDarkMode,
           onDarkModeChanged: widget.onDarkModeChanged,
           gorunduSinyali: _sinyaller[indeks],
@@ -140,9 +142,7 @@ class _AnaKabukState extends State<AnaKabuk> with RouteAware {
               context: context,
               removeBottom: true,
               // Pro durumu değişince banner baştan kurulur (Pro'da boş kalır).
-              child: BannerAdWidget(
-                key: ValueKey(RevenueCatService.isProUser),
-              ),
+              child: BannerAdWidget(key: ValueKey(RevenueCatService.isProUser)),
             ),
             KilSekmeCubugu(
               seciliIndeks: _secili,

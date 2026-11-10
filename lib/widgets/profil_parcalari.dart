@@ -447,7 +447,7 @@ class ProfilAltBilgi extends StatelessWidget {
   }
 }
 
-/// Profil sekmesinin tamamı. Veri ve işlemler [SettingsPage]'den gelir;
+/// Profil sekmesinin tamamı. Veri ve işlemler [ProfilSayfasi]'den gelir;
 /// böylece ekran Firebase olmadan test edilebilir.
 ///
 /// Sıra: başlık, hesap kartı (ya da giriş kartı), ardından ayarlar listesi:

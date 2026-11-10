@@ -11,12 +11,12 @@ import '../services/firebase_service.dart';
 import '../services/revenuecat_service.dart';
 import '../services/review_service.dart';
 import '../utils/error_helper.dart';
-import '../sayfalar/premium_sayfasi.dart';
+import 'premium_sayfasi.dart';
 import '../widgets/giris_parcalari.dart' show GirisBekleme;
 import '../widgets/kil/kil.dart';
 import '../widgets/profil_parcalari.dart';
 
-class SettingsPage extends StatefulWidget {
+class ProfilSayfasi extends StatefulWidget {
   final bool isDarkMode;
   final Function(bool) onDarkModeChanged;
 
@@ -24,7 +24,7 @@ class SettingsPage extends StatefulWidget {
   /// bir ekranda değişmiş olabileceği için sayfa yeniden çizilir.
   final Listenable? gorunduSinyali;
 
-  const SettingsPage({
+  const ProfilSayfasi({
     super.key,
     required this.isDarkMode,
     required this.onDarkModeChanged,
@@ -32,10 +32,10 @@ class SettingsPage extends StatefulWidget {
   });
 
   @override
-  State<SettingsPage> createState() => _SettingsPageState();
+  State<ProfilSayfasi> createState() => _ProfilSayfasiState();
 }
 
-class _SettingsPageState extends State<SettingsPage> {
+class _ProfilSayfasiState extends State<ProfilSayfasi> {
   static const String _androidPackageName = "com.sudekazan.tarif_defteri_yeni";
 
   String appVersion = '1.0.0';
