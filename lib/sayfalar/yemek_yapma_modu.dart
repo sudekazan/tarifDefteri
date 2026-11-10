@@ -1,14 +1,19 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:tarif_defteri/tarifler_data/tarif_data.dart';
 import '../services/analytics_service.dart';
 import '../services/review_service.dart';
+import '../services/zamanlayici_bildirim_service.dart';
 import '../utils/porsiyon_olcekleyici.dart';
 import '../utils/malzeme_basliklari.dart';
+import '../utils/yemek_zamanlayici.dart';
 import '../widgets/kil/kil.dart';
 import '../widgets/yemek_modu_parcalari.dart';
+import '../widgets/yemek_zamanlayici_parcalari.dart';
 
 /// Düz metin (eski) tariflerde malzemeler ile yapılış adımlarını ayıran
 /// başlık kelimeleri; uygulamanın desteklediği 6 dil için, küçük harfle.
@@ -35,7 +40,8 @@ class YemekYapmaModu extends StatefulWidget {
   State<YemekYapmaModu> createState() => _YemekYapmaModuState();
 }
 
-class _YemekYapmaModuState extends State<YemekYapmaModu> {
+class _YemekYapmaModuState extends State<YemekYapmaModu>
+    with WidgetsBindingObserver {
   final PageController _pageController = PageController();
   int _currentIndex = 0;
   bool _bitiriliyor = false;
@@ -48,17 +54,98 @@ class _YemekYapmaModuState extends State<YemekYapmaModu> {
   Set<int> _malzemeBasliklari = {};
   final Set<int> _checkedIngredients = {};
 
+  /// Ekranda tek zamanlayıcı; adım değişse de sürer.
+  final YemekZamanlayici _zamanlayici = YemekZamanlayici();
+  Timer? _tik;
+
   @override
   void initState() {
     super.initState();
     WakelockPlus.enable();
     AnalyticsService.yemekModuAcildi();
     _parseRecipeContent();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Arka plandan dönünce süreyi hemen güncelle (bitmişse uyar).
+    if (state == AppLifecycleState.resumed) _zamanlayiciTik();
+  }
+
+  void _zamanlayiciTik() {
+    if (!mounted) return;
+    if (_zamanlayici.bittiMiKontrolEt()) {
+      _tik?.cancel();
+      HapticFeedback.heavyImpact();
+      Future.delayed(
+        const Duration(milliseconds: 300),
+        HapticFeedback.heavyImpact,
+      );
+    }
+    setState(() {});
+  }
+
+  void _tikBaslat() {
+    _tik?.cancel();
+    _tik = Timer.periodic(
+      const Duration(milliseconds: 250),
+      (_) => _zamanlayiciTik(),
+    );
+  }
+
+  Future<void> _zamanlayiciAc() async {
+    final sure = await KilAltSayfa.goster<Duration>(
+      context,
+      builder: (_) => YemekZamanlayiciSecici(
+        baslik: 'cooking_timer'.tr(),
+        baslatEtiketi: 'cooking_timer_start'.tr(),
+      ),
+    );
+    if (sure == null || !mounted) return;
+    setState(() => _zamanlayici.baslat(sure));
+    _tikBaslat();
+    _bildirimKur();
+  }
+
+  void _bildirimKur() {
+    final bitis = _zamanlayici.bitis;
+    if (bitis == null) return;
+    ZamanlayiciBildirimService.kur(
+      bitis: bitis,
+      baslik: 'cooking_timer_done'.tr(),
+      metin: widget.tarif.tarif_adi,
+      kanalAdi: 'cooking_timer'.tr(),
+    );
+  }
+
+  void _zamanlayiciDuraklat() {
+    _tik?.cancel();
+    ZamanlayiciBildirimService.iptal();
+    setState(_zamanlayici.duraklat);
+  }
+
+  void _zamanlayiciDevam() {
+    setState(_zamanlayici.devamEt);
+    _tikBaslat();
+    _bildirimKur();
+  }
+
+  void _zamanlayiciSifirla() {
+    _tik?.cancel();
+    ZamanlayiciBildirimService.iptal();
+    setState(_zamanlayici.sifirla);
   }
 
   @override
   void dispose() {
     WakelockPlus.disable();
+    WidgetsBinding.instance.removeObserver(this);
+    _tik?.cancel();
+    // Ekrandan çıkınca zamanlayıcı da biter; bekleyen bildirim kalmasın.
+    if (_zamanlayici.durum != ZamanlayiciDurumu.bos) {
+      ZamanlayiciBildirimService.iptal();
+    }
     _pageController.dispose();
     super.dispose();
   }
@@ -260,6 +347,24 @@ class _YemekYapmaModuState extends State<YemekYapmaModu> {
                         : '${'cooking_mode_step'.tr()} $_currentIndex / ${_adimlar.length}',
                     sayfa: _currentIndex,
                     toplamSayfa: totalPages,
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+                child: yemekYaziSiniri(
+                  YemekZamanlayiciSeridi(
+                    durum: _zamanlayici.durum,
+                    kalan: _zamanlayici.kalan,
+                    etiket: 'cooking_timer'.tr(),
+                    baslatEtiketi: 'cooking_timer_start'.tr(),
+                    duraklatEtiketi: 'cooking_timer_pause'.tr(),
+                    sifirlaEtiketi: 'cooking_timer_reset'.tr(),
+                    bittiMetni: 'cooking_timer_done'.tr(),
+                    onAc: _zamanlayiciAc,
+                    onDuraklat: _zamanlayiciDuraklat,
+                    onDevam: _zamanlayiciDevam,
+                    onSifirla: _zamanlayiciSifirla,
                   ),
                 ),
               ),

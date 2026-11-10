@@ -37,6 +37,8 @@ dependencies:
   sign_in_with_apple: ^8.2.0
   crypto: ^3.0.8
   lottie: ^3.8.2
+  flutter_local_notifications: ^23.0.0
+  timezone: ^0.11.2
 
 
 dev_dependencies:
