@@ -43,3 +43,8 @@ cd backend && npm start
 - 2026-11-09: Xcode derlemesini Claude başlatmaz (bilgisayar ısınıyor). Ekranlar test görüntüleriyle kontrol edilir; gerçek cihaz derlemesini Sude yapar.
 - 2026-11-09: "Yeni tarif" alt sayfasında önce klasör seçilir (klasör içinden açılınca o klasör seçili). "Yeni klasör" düğmesi "Klasörlerim" başlığının yanında. Ana sayfadan eklenen tarif kaydedilince o klasör açılır.
 - 2026-11-10: Eski varsayılan klasör ikonu kodu (0xe2c7) ekranda klasör ikonu olarak gösterilir; kayıtlı veri değişmez.
+- 2026-11-10: Uygulamada "Pro" yerine her yerde "Premium"; satın alma düğmesi "Premium'a geç", Premium ekranında büyük harf yok.
+- 2026-11-10: Caveat başlıklar (iç sayfa ve ana sayfa dahil) büyük yazıda en fazla 2 kat büyür. Gövde yazısı küçülmez; en büyük yazıda uzun kelimelerin bölünmesi kabul.
+- 2026-11-10: Silme ve çıkış onayları iOS'ta da kil diyaloğu; ana düğme üstte, "Vazgeç" altta. Güncelleme uyarısı iOS'ta sistem, Android'de kil.
+- 2026-11-10: Giriş ekranında Google'ın resmi renkli "G" logosu kullanılır; Apple düğmesi kil tarzında kalır (incelemede sorun çıkarsa değişir).
+- 2026-11-10: Yemek modu zamanlayıcısı süresi elle girilen basit bir zamanlayıcı olacak; adım metninden süre tanıma yok (ayrı iş).
