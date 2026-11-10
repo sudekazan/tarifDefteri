@@ -102,7 +102,7 @@ void main() {
           aciklama: 'Açıklama',
           fiyat: '100 TL',
           secili: true,
-          rozet: 'EN AVANTAJLI',
+          rozet: 'En avantajlı',
           onTap: () => dokunuldu++,
         ),
       )));
@@ -116,7 +116,7 @@ void main() {
       expect(
         anlam,
         matchesSemantics(
-          label: 'Yıllık, EN AVANTAJLI, Açıklama, 100 TL',
+          label: 'Yıllık, En avantajlı, Açıklama, 100 TL',
           isButton: true,
           hasSelectedState: true,
           isSelected: true,

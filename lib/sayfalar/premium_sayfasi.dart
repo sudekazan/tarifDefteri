@@ -141,7 +141,7 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
     return kosul.key.tr(args: kosul.args);
   }
 
-  /// "EN AVANTAJLI" rozeti yalnızca yıllık pakette gösterilir.
+  /// "En avantajlı" rozeti yalnızca yıllık pakette gösterilir.
   String? _packageBadge(Package pkg) {
     if (pkg.packageType == PackageType.annual) {
       return 'premium_badge_most_popular'.tr();

@@ -17,9 +17,9 @@ bool premiumUstUsteMi(BuildContext context) =>
 const double premiumBaslikSiniri = 2.0;
 
 Widget premiumBaslikSinirla(Widget child) => MediaQuery.withClampedTextScaling(
-      maxScaleFactor: premiumBaslikSiniri,
-      child: child,
-    );
+  maxScaleFactor: premiumBaslikSiniri,
+  child: child,
+);
 
 /// Üst satır: solda kapat düğmesi, sağda "Geri Yükle".
 class PremiumUstSatiri extends StatelessWidget {
@@ -116,7 +116,6 @@ class PremiumTanitim extends StatelessWidget {
                       rozet,
                       style: metin.labelMedium?.copyWith(
                         color: r.seciliCipYazi,
-                        letterSpacing: 0.8,
                       ),
                     ),
                   ),
@@ -312,7 +311,7 @@ class PremiumPlanKarti extends StatelessWidget {
   /// Satın alma sürerken null (pasif).
   final VoidCallback? onTap;
 
-  /// Ör. "EN AVANTAJLI"; yalnızca yıllık planda.
+  /// Ör. "En avantajlı"; yalnızca yıllık planda.
   final String? rozet;
 
   static const double enKucukYukseklik = 72;
@@ -366,10 +365,7 @@ class PremiumPlanKarti extends StatelessWidget {
     final ad = Text(baslik, style: metin.titleMedium);
     final aciklamaYazisi = aciklama.isEmpty
         ? null
-        : Text(
-            aciklama,
-            style: metin.bodyMedium?.copyWith(color: r.solukYazi),
-          );
+        : Text(aciklama, style: metin.bodyMedium?.copyWith(color: r.solukYazi));
     final ustUste = premiumUstUsteMi(context);
     final fiyatYazisi = Text(
       fiyat,
@@ -422,10 +418,7 @@ class PremiumPlanKarti extends StatelessWidget {
                   const SizedBox(height: 3),
                   aciklamaYazisi,
                 ],
-                if (fiyatAltta) ...[
-                  const SizedBox(height: 6),
-                  fiyatYazisi,
-                ],
+                if (fiyatAltta) ...[const SizedBox(height: 6), fiyatYazisi],
               ],
             ),
           ),
@@ -475,10 +468,7 @@ class PremiumPlanKarti extends StatelessWidget {
             borderRadius: kose,
             child: ConstrainedBox(
               constraints: const BoxConstraints(minHeight: enKucukYukseklik),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: icerik,
-              ),
+              child: Padding(padding: const EdgeInsets.all(16), child: icerik),
             ),
           ),
         ),
@@ -489,7 +479,11 @@ class PremiumPlanKarti extends StatelessWidget {
 
 /// Paketler yüklenemediğinde çıkan, dokununca ayrıntıyı açan hata satırı.
 class PremiumHataSatiri extends StatelessWidget {
-  const PremiumHataSatiri({super.key, required this.metin, required this.onTap});
+  const PremiumHataSatiri({
+    super.key,
+    required this.metin,
+    required this.onTap,
+  });
 
   final String metin;
   final VoidCallback onTap;
@@ -497,10 +491,10 @@ class PremiumHataSatiri extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final r = context.kil;
-    final yazi = Theme.of(context)
-        .textTheme
-        .bodySmall
-        ?.copyWith(color: r.hataZeminYazi, fontWeight: FontWeight.w600);
+    final yazi = Theme.of(context).textTheme.bodySmall?.copyWith(
+      color: r.hataZeminYazi,
+      fontWeight: FontWeight.w600,
+    );
     const kose = BorderRadius.all(Radius.circular(14));
 
     return Semantics(
@@ -589,11 +583,7 @@ class PremiumKosullarKarti extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            baslik,
-            textAlign: TextAlign.center,
-            style: yazi.titleSmall,
-          ),
+          Text(baslik, textAlign: TextAlign.center, style: yazi.titleSmall),
           const SizedBox(height: 8),
           Text(
             metin,
@@ -647,11 +637,11 @@ class _BaglantiDugmesi extends StatelessWidget {
                 baglanti.etiket,
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: renk,
-                      fontWeight: FontWeight.w700,
-                      decoration: TextDecoration.underline,
-                      decorationColor: renk,
-                    ),
+                  color: renk,
+                  fontWeight: FontWeight.w700,
+                  decoration: TextDecoration.underline,
+                  decorationColor: renk,
+                ),
               ),
             ),
           ),
