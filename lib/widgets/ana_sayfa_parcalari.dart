@@ -5,8 +5,9 @@ import 'kil/kil.dart';
 // Ana sayfanın (Defterim) kil parçaları. Metinleri çağıran sayfa çevirip
 // verir; böylece parçalar çeviri olmadan da test edilebilir.
 
-/// Başlığın yanındaki küçük "Pro" rozeti. Görünen boyu küçük, dokunma alanı
-/// en az 48x48.
+/// Başlığın yanındaki küçük "Premium" rozeti. Görünen boyu küçük, dokunma
+/// alanı en az 48x48. Yazısı büyük yazıda en fazla [yaziSiniri] kat büyür;
+/// yoksa 320 genişlikte 3.2 katta "Premium" satıra sığmıyordu.
 class ProRozeti extends StatelessWidget {
   const ProRozeti({
     super.key,
@@ -22,57 +23,63 @@ class ProRozeti extends StatelessWidget {
   final VoidCallback onPressed;
 
   static const double dokunmaBoyutu = 48;
+  static const double yaziSiniri = 2.0;
 
   @override
   Widget build(BuildContext context) {
     final r = context.kil;
-    final yazi = Theme.of(context)
-        .textTheme
-        .labelMedium
-        ?.copyWith(color: r.seciliCipYazi);
+    final yazi = Theme.of(
+      context,
+    ).textTheme.labelMedium?.copyWith(color: r.seciliCipYazi);
     final sure = KilBasilir.sure(context);
 
-    return Semantics(
-      button: true,
-      label: anlamEtiketi,
-      // excludeSemantics içteki dokunma eylemini de siler; eylem burada
-      // ayrıca verilir, yoksa ekran okuyucu rozeti açamaz.
-      excludeSemantics: true,
-      onTap: onPressed,
-      child: KilBasilir(
+    return MediaQuery.withClampedTextScaling(
+      maxScaleFactor: yaziSiniri,
+      child: Semantics(
+        button: true,
+        label: anlamEtiketi,
+        // excludeSemantics içteki dokunma eylemini de siler; eylem burada
+        // ayrıca verilir, yoksa ekran okuyucu rozeti açamaz.
+        excludeSemantics: true,
         onTap: onPressed,
-        builder: (context, basili, odakli) => ConstrainedBox(
-          constraints: const BoxConstraints(
-            minWidth: dokunmaBoyutu,
-            minHeight: dokunmaBoyutu,
-          ),
-          child: Center(
-            widthFactor: 1,
-            heightFactor: 1,
-            child: AnimatedContainer(
-              duration: sure,
-              curve: Curves.easeOut,
-              transform: Matrix4.translationValues(0, basili ? 2 : 0, 0),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: r.seciliCipZemin,
-                borderRadius: BorderRadius.circular(999),
-                border: Border.all(
-                  color: odakli ? r.anaYazi : r.seciliCipZemin,
-                  width: 2,
+        child: KilBasilir(
+          onTap: onPressed,
+          builder: (context, basili, odakli) => ConstrainedBox(
+            constraints: const BoxConstraints(
+              minWidth: dokunmaBoyutu,
+              minHeight: dokunmaBoyutu,
+            ),
+            child: Center(
+              widthFactor: 1,
+              heightFactor: 1,
+              child: AnimatedContainer(
+                duration: sure,
+                curve: Curves.easeOut,
+                transform: Matrix4.translationValues(0, basili ? 2 : 0, 0),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
                 ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.workspace_premium_rounded,
-                    size: 16,
-                    color: r.seciliCipYazi,
+                decoration: BoxDecoration(
+                  color: r.seciliCipZemin,
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(
+                    color: odakli ? r.anaYazi : r.seciliCipZemin,
+                    width: 2,
                   ),
-                  const SizedBox(width: 4),
-                  Text(etiket, style: yazi),
-                ],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.workspace_premium_rounded,
+                      size: 16,
+                      color: r.seciliCipYazi,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(etiket, style: yazi),
+                  ],
+                ),
               ),
             ),
           ),
@@ -94,8 +101,9 @@ class AramaKutusu extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final r = context.kil;
-    final yazi =
-        Theme.of(context).textTheme.bodyLarge?.copyWith(color: r.solukYazi);
+    final yazi = Theme.of(
+      context,
+    ).textTheme.bodyLarge?.copyWith(color: r.solukYazi);
 
     return Semantics(
       button: true,
@@ -183,8 +191,10 @@ class NePisirsemKarti extends StatelessWidget {
               Flexible(
                 child: Text(
                   rozet,
-                  style: yaziTemasi.labelSmall
-                      ?.copyWith(color: yazi, letterSpacing: 0.8),
+                  style: yaziTemasi.labelSmall?.copyWith(
+                    color: yazi,
+                    letterSpacing: 0.8,
+                  ),
                 ),
               ),
             ],
@@ -192,15 +202,9 @@ class NePisirsemKarti extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         // Caveat (headlineSmall, 26): yalnızca 22 pt ve üstü.
-        Text(
-          baslik,
-          style: yaziTemasi.headlineSmall?.copyWith(color: yazi),
-        ),
+        Text(baslik, style: yaziTemasi.headlineSmall?.copyWith(color: yazi)),
         const SizedBox(height: 2),
-        Text(
-          altBaslik,
-          style: yaziTemasi.bodyMedium?.copyWith(color: yazi),
-        ),
+        Text(altBaslik, style: yaziTemasi.bodyMedium?.copyWith(color: yazi)),
       ],
     );
 
@@ -323,20 +327,22 @@ class KlasorIzgarasi extends StatelessWidget {
       satirlar.addAll(kartlar);
     } else {
       for (var i = 0; i < kartlar.length; i += 2) {
-        satirlar.add(IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(child: kartlar[i]),
-              const SizedBox(width: aralik),
-              Expanded(
-                child: i + 1 < kartlar.length
-                    ? kartlar[i + 1]
-                    : const SizedBox.shrink(),
-              ),
-            ],
+        satirlar.add(
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(child: kartlar[i]),
+                const SizedBox(width: aralik),
+                Expanded(
+                  child: i + 1 < kartlar.length
+                      ? kartlar[i + 1]
+                      : const SizedBox.shrink(),
+                ),
+              ],
+            ),
           ),
-        ));
+        );
       }
     }
     return Column(
