@@ -2,7 +2,8 @@ import 'package:purchases_flutter/purchases_flutter.dart';
 
 /// Paywall'daki abonelik koşulları metni için seçili plana göre çeviri
 /// anahtarını ve fiyat argümanını döndürür (Apple kural 3.1.2: süre ve fiyat
-/// seçilen plana uygun olmalı). Bilinmeyen plan türünde eski genel metne düşer.
+/// seçilen plana uygun olmalı). Bilinmeyen plan türünde platformun genel
+/// metnine düşer.
 ({String key, List<String> args}) abonelikKosullari(
   PackageType type,
   String priceString, {
@@ -17,6 +18,11 @@ import 'package:purchases_flutter/purchases_flutter.dart';
     case PackageType.lifetime:
       return (key: 'premium_terms_lifetime', args: [priceString]);
     default:
-      return (key: 'premium_sub_terms_body', args: const []);
+      return (key: genelKosulAnahtari(isIOS: isIOS), args: const []);
   }
 }
+
+/// Paket yüklenemediğinde ya da plan türü bilinmediğinde gösterilen genel
+/// koşul metni. iOS'ta Apple Kimliği, Android'de Google Play hesabı der.
+String genelKosulAnahtari({required bool isIOS}) =>
+    isIOS ? 'premium_sub_terms_body' : 'premium_sub_terms_body_android';

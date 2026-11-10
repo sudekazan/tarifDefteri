@@ -29,4 +29,12 @@ void main() {
     expect(sonuc.key, 'premium_sub_terms_body');
     expect(sonuc.args, isEmpty);
   });
+
+  test('Android\'de genel metin Google Play metnidir', () {
+    final sonuc = abonelikKosullari(PackageType.weekly, '₺10', isIOS: false);
+
+    expect(sonuc.key, 'premium_sub_terms_body_android');
+    expect(genelKosulAnahtari(isIOS: false), 'premium_sub_terms_body_android');
+    expect(genelKosulAnahtari(isIOS: true), 'premium_sub_terms_body');
+  });
 }

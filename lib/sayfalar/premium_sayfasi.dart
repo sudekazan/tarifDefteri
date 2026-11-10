@@ -132,11 +132,13 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
     }
   }
 
-  /// Seçili plana göre abonelik koşulları metni; paket yüklenemediyse eski
-  /// genel metin gösterilir.
+  /// Seçili plana göre abonelik koşulları metni; paket yüklenemediyse
+  /// platformun genel metni gösterilir.
   String _abonelikKosullariMetni() {
     final pkg = _selectedPackage;
-    if (pkg == null) return 'premium_sub_terms_body'.tr();
+    if (pkg == null) {
+      return genelKosulAnahtari(isIOS: Platform.isIOS).tr();
+    }
     final kosul = abonelikKosullari(pkg.packageType, pkg.storeProduct.priceString, isIOS: Platform.isIOS);
     return kosul.key.tr(args: kosul.args);
   }
