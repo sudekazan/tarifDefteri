@@ -10,7 +10,14 @@ class AdService {
   static AppOpenAd? _appOpenAd;
   static RewardedAd? _rewardedAd;
   static bool _isShowingAd = false;
-  static bool _showAfterLoad = false;
+
+  /// Açılış reklamı, ana ekran açıldıktan sonra en geç bu kadar sürede
+  /// yüklenirse gösterilir (2026-11-10 kararı). Daha geç yüklenen reklam o
+  /// açılışta gösterilmez: kullanıcı uygulamayı kullanırken çıkan tam ekran
+  /// reklamı AdMob "beklenmeyen reklam" sayar.
+  static const Duration acilisReklamPenceresi = Duration(seconds: 4);
+  static DateTime? _acilisAni;
+  static bool Function()? _acilisUygunMu;
   static bool _isLoadingAd = false;
   static bool _isLoadingRewarded = false;
 
@@ -186,27 +193,70 @@ class AdService {
           _appOpenAd = ad;
           _isLoadingAd = false;
           debugPrint('### AD_DEBUG: AppOpenAd loaded successfully.');
-          if (_showAfterLoad) {
-            _showAfterLoad = false;
-            debugPrint('### AD_DEBUG: showing ad because _showAfterLoad was true');
-            showAdIfAvailable();
-          }
+          _acilisIsteginiSonuclandir();
         },
         onAdFailedToLoad: (error) {
           debugPrint('### AD_DEBUG: AppOpenAd failed to load: ${error.message} (Code: ${error.code})');
           _isLoadingAd = false;
-          _showAfterLoad = false;
+          _acilisAni = null;
+          _acilisUygunMu = null;
         },
       ),
     );
   }
 
-  /// Show the ad if available.
+  /// Açılış reklamı şu an gösterilebilir mi: pencere dolmamış ve kullanıcı
+  /// hâlâ ana ekranda olmalı.
+  @visibleForTesting
+  static bool acilisReklamiGosterilebilir({
+    required DateTime acilisAni,
+    required DateTime simdi,
+    required bool anaEkranda,
+  }) {
+    return anaEkranda && !simdi.isAfter(acilisAni.add(acilisReklamPenceresi));
+  }
+
+  /// Açılış reklamını ister. Reklam hazırsa hemen, değilse yüklendiği an
+  /// gösterilir; ama yalnızca [acilisAni]'ndan sonraki
+  /// [acilisReklamPenceresi] içinde ve [uygunMu] true dönerse. Aksi halde bu
+  /// açılışta hiç gösterilmez.
+  static void acilisReklaminiGoster({
+    required DateTime acilisAni,
+    required bool Function() uygunMu,
+  }) {
+    if (RevenueCatService.isProUser || !reklamlarHazir.value) return;
+    _acilisAni = acilisAni;
+    _acilisUygunMu = uygunMu;
+    if (_appOpenAd != null) {
+      _acilisIsteginiSonuclandir();
+    } else {
+      loadAppOpenAd();
+    }
+  }
+
+  /// Bekleyen açılış isteğini bir kez değerlendirir ve siler.
+  static void _acilisIsteginiSonuclandir() {
+    final acilisAni = _acilisAni;
+    final uygunMu = _acilisUygunMu;
+    _acilisAni = null;
+    _acilisUygunMu = null;
+    if (acilisAni == null || uygunMu == null) return;
+    if (!acilisReklamiGosterilebilir(
+      acilisAni: acilisAni,
+      simdi: DateTime.now(),
+      anaEkranda: uygunMu(),
+    )) {
+      debugPrint('### AD_DEBUG: AppOpenAd geç yüklendi ya da kullanıcı ana ekranda değil; gösterilmedi.');
+      return;
+    }
+    showAdIfAvailable();
+  }
+
+  /// Show the ad if available. Hazır değilse yalnızca yükler; sonradan
+  /// kendiliğinden göstermez.
   static void showAdIfAvailable() {
     if (RevenueCatService.isProUser || !reklamlarHazir.value) return;
     if (_appOpenAd == null) {
-      debugPrint('Ad not ready yet, set to show after load.');
-      _showAfterLoad = true;
       loadAppOpenAd();
       return;
     }

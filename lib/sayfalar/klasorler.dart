@@ -31,7 +31,12 @@ import 'tarif_ekleme_akisi.dart';
 /// Ana sayfa (Defterim sekmesi): başlık ve Pro rozeti, arama kutusu,
 /// "Bugün ne pişirsem" kartı ve iki sütunlu klasör kartları.
 class Klasorler extends StatefulWidget {
-  const Klasorler({super.key, this.nePisirsemAc, this.gorunduSinyali});
+  const Klasorler({
+    super.key,
+    this.nePisirsemAc,
+    this.gorunduSinyali,
+    this.sekmeSecili,
+  });
 
   /// "Bugün ne pişirsem" kartına dokununca çağrılır; kabukta o sekmeye geçer.
   /// Verilmezse sayfa üstüne açılır.
@@ -41,6 +46,10 @@ class Klasorler extends StatefulWidget {
   /// okunur (Ne pişirsem varsayılan klasör açmış ya da Profil'de çıkış
   /// yapılmış olabilir).
   final Listenable? gorunduSinyali;
+
+  /// Kabukta Defterim sekmesi şu an seçili mi? Açılış reklamı yalnızca
+  /// kullanıcı hâlâ ana ekrandayken gösterilir. Verilmezse seçili sayılır.
+  final bool Function()? sekmeSecili;
 
   @override
   State<Klasorler> createState() => _KlasorlerState();
@@ -52,6 +61,21 @@ class _KlasorlerState extends State<Klasorler> {
   TextEditingController aramaController = TextEditingController();
 
   final FirebaseService _firebaseService = FirebaseService();
+
+  /// Ana ekranın açıldığı an; açılış reklamının penceresi buradan sayılır.
+  final DateTime _acilisAni = DateTime.now();
+
+  /// Kullanıcı hâlâ ana ekranda ve bir şey yapmıyor mu? (Üstte sayfa, diyalog
+  /// ya da alt sayfa yok, Defterim sekmesi seçili, klavye kapalı.)
+  bool _anaEkrandaBosta() {
+    if (!mounted) return false;
+    final durum = WidgetsBinding.instance.lifecycleState;
+    if (durum != null && durum != AppLifecycleState.resumed) return false;
+    if (widget.sekmeSecili?.call() == false) return false;
+    if (ModalRoute.of(context)?.isCurrent != true) return false;
+    if ((MediaQuery.maybeViewInsetsOf(context)?.bottom ?? 0) > 0) return false;
+    return true;
+  }
 
   @override
   void initState() {
@@ -66,13 +90,14 @@ class _KlasorlerState extends State<Klasorler> {
       int launchCount = prefs.getInt('app_launch_count') ?? 0;
       prefs.setInt('app_launch_count', launchCount + 1);
 
-      if (launchCount >= 2) {
-        Future.delayed(const Duration(seconds: 2), () {
-          if (mounted) {
-            AdService.loadAppOpenAd();
-            AdService.showAdIfAvailable();
-          }
-        });
+      // Reklam yalnızca açılıştan sonraki kısa pencerede yüklenirse ve
+      // kullanıcı hâlâ ana ekrandaysa gösterilir; geç yüklenirse bu açılışta
+      // hiç gösterilmez (kullanıcı yazarken tam ekran reklam çıkmasın).
+      if (launchCount >= 2 && mounted) {
+        AdService.acilisReklaminiGoster(
+          acilisAni: _acilisAni,
+          uygunMu: _anaEkrandaBosta,
+        );
       }
     });
     _temizleEskiKlasorler();
@@ -245,6 +270,19 @@ class _KlasorlerState extends State<Klasorler> {
     }
   }
 
+  /// Silinen klasörü Firebase'den, içindeki tariflerin görsellerini de
+  /// cihazdan ve buluttan siler.
+  Future<void> _klasoruBuluttanSil(int klasorId, List<String> tariflerJson) async {
+    unawaited(_firebaseService.deleteKlasorFromFirebase(klasorId));
+    for (final tarifStr in tariflerJson) {
+      try {
+        await _firebaseService.deleteImagesForTarif(TarifData.fromMap(json.decode(tarifStr)));
+      } catch (e) {
+        debugPrint('Klasör silinirken tarif görseli temizleme hatası: $e');
+      }
+    }
+  }
+
   Future<void> _klasorYenidenAdlandirDialog(KlasorData klasor) async {
     final TextEditingController nameController = TextEditingController(text: klasor.klasor_adi);
 
@@ -270,19 +308,6 @@ class _KlasorlerState extends State<Klasorler> {
                 await _klasorYenidenAdlandir(klasor, yeniAd);
               }
             },
-  /// Silinen klasörü Firebase'den, içindeki tariflerin görsellerini de
-  /// cihazdan ve buluttan siler.
-  Future<void> _klasoruBuluttanSil(int klasorId, List<String> tariflerJson) async {
-    unawaited(_firebaseService.deleteKlasorFromFirebase(klasorId));
-    for (final tarifStr in tariflerJson) {
-      try {
-        await _firebaseService.deleteImagesForTarif(TarifData.fromMap(json.decode(tarifStr)));
-      } catch (e) {
-        debugPrint('Klasör silinirken tarif görseli temizleme hatası: $e');
-      }
-    }
-  }
-
           ),
           KilDiyalogMetinDugmesi(
             etiket: 'common_cancel'.tr(),

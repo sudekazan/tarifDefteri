@@ -101,6 +101,7 @@ class _AnaKabukState extends State<AnaKabuk> with RouteAware {
         return Klasorler(
           nePisirsemAc: () => _sekmeyeGec(AnaKabuk.nePisirsem),
           gorunduSinyali: _sinyaller[indeks],
+          sekmeSecili: () => _secili == AnaKabuk.defterim,
         );
       case AnaKabuk.nePisirsem:
         return BugunNePisisemSayfasi(
