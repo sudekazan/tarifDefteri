@@ -58,3 +58,21 @@ Gece çalışmasında Sude'ye sorulamayan sorular ve sabah bakılacaklar. Her a�
 - `flutter analyze`: 49 bulgu, hepsi eski kod (Aşama 6 sonunda 53; arama sayfasındaki eski uyarılar kalktı). Aşama 7 dosyalarında bulgu yok. Ağ yoktu; analiz ve testler `--no-pub` ile çalıştı.
 - Test görüntüleri: `build/gecici_test/asama7_ekranlar_test.dart` (commit'e girmez); 22 görüntüde taşma yok.
 - Tüm testler: 205 geçti.
+
+## Aşama 8 (Premium)
+
+### Sorular
+- **Satın alma düğmesinin metni** (plandaki açık soru): şu an "PRO'YA GEÇ VE SINIRLARI KALDIR", büyük harf. Değişmedi. Büyük harfli uzun metin okunması zor; 402 genişlikte iki satıra iniyor. Öneri: "Pro'ya geç" gibi kısa ve normal yazımlı bir metin. Senin kararın.
+- **"EN AVANTAJLI" ve "TARİFLY PREMIUM" büyük harf.** Değişmedi; kil tarzında diğer rozetler normal yazımlı ("Pro", "Favoriler"). Normal yazıma geçsin mi?
+- **Koşullardaki "→" işareti** (ör. "Google Play → Abonelikler"): Quicksand'de bu işaret yok, telefonda başka bir yazı tipinden çizilir. Test görüntüsünde kutu çıkıyor (testte yedek yazı tipi yok). Cihazda bakılmalı.
+- **Paket yokken koşul metni.** Paket gelmeyince eski genel metin çıkıyor ve Android'de de "Apple Kimliği" diyor (`premium_sub_terms_body`). Önceden de böyleydi; Android için ayrı genel metin olsun mu?
+- **Profil'deki Pro kartı.** "Premium'a Geç" satırı kiremit karta döndü; sayfanın geri kalanı aşama 9'da yenilenecek. Aşama 9'daki profil tasarımında bu kartın yeri (hesap bilgisinin altında mı) konuşulmalı.
+- **En büyük yazıda uzun kelimeler** (önceki aşamalardaki soru): 320 genişlik ve 3.2 katta kenar boşlukları daraltıldı, "Reklamsız" artık sığıyor; ama "Medyadan" gibi uzun kelimeler hâlâ bölünüyor.
+
+### Bilgi
+- Fiyat, ürün kimliği, paket mantığı, satın alma / geri yükleme akışı ve analitik olaylar değişmedi; testler gerçek sayfayla sahte paketlerle denetliyor (`PremiumSayfasi.paketGetir`).
+- Uygulamada Pro kilidi ikonu yok; tarif ekleme alt sayfasındaki kilit giriş için.
+- `flutter analyze`: 41 bulgu, hepsi eski kod (Aşama 7 sonunda 49; Premium ve Ayarlar'daki eski `withOpacity` uyarıları kalktı). Aşama 8 dosyalarında bulgu yok.
+- Test görüntüleri: `build/gecici_test/asama8_ekranlar_test.dart` (commit'e girmez); 50 görüntüde taşma yok. Şef emojisi testte kutu görünüyor (testte emoji yazı tipi yok), cihazda normal.
+- Tüm testler: 222 geçti.
+

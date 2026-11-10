@@ -12,6 +12,7 @@ import '../services/revenuecat_service.dart';
 import '../services/review_service.dart';
 import '../utils/error_helper.dart';
 import '../sayfalar/premium_sayfasi.dart';
+import '../widgets/premium_parcalari.dart';
 
 class SettingsPage extends StatefulWidget {
   final bool isDarkMode;
@@ -397,17 +398,13 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
           ),
           if (RevenueCatService.isProUser) ...[
-            ListTile(
-              leading: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.amber.withOpacity(0.15),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(Icons.workspace_premium, color: Colors.amber[700]),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+              child: ProyaGecKarti(
+                baslik: 'settings_premium_active_title'.tr(),
+                aciklama: 'settings_premium_active_subtitle'.tr(),
+                aktif: true,
               ),
-              title: Text('settings_premium_active_title'.tr()),
-              subtitle: Text('settings_premium_active_subtitle'.tr()),
             ),
             ListTile(
               leading: const Icon(Icons.settings_suggest_outlined),
@@ -416,18 +413,19 @@ class _SettingsPageState extends State<SettingsPage> {
               onTap: _manageSubscription,
             ),
           ] else ...[
-            ListTile(
-              leading: Icon(Icons.workspace_premium, color: Colors.amber[700]),
-              title: Text('settings_premium_get_title'.tr()),
-              subtitle: Text('settings_premium_get_subtitle'.tr()),
-              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-              onTap: () async {
-                await Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const PremiumSayfasi(source: 'settings')),
-                );
-                setState(() {});
-              },
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+              child: ProyaGecKarti(
+                baslik: 'settings_premium_get_title'.tr(),
+                aciklama: 'settings_premium_get_subtitle'.tr(),
+                onTap: () async {
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const PremiumSayfasi(source: 'settings')),
+                  );
+                  setState(() {});
+                },
+              ),
             ),
             ListTile(
               leading: const Icon(Icons.restore),

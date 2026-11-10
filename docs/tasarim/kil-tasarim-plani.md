@@ -1,6 +1,6 @@
 # Kil tasarımına geçiş planı (Tarifly)
 
-Tarih: 2026-11-09. Durum: **Aşama 1–7 tamamlandı; ekranlar aşama 8'den itibaren yenilenecek.**
+Tarih: 2026-11-09. Durum: **Aşama 1–8 tamamlandı; ekranlar aşama 9'dan itibaren yenilenecek.**
 Kaynak: UI UX Pro Max'in "Recipe & Cooking App" önerisi (claymorphism) ve Sude ile yapılan önce/sonra görsel çalışması.
 
 ## Kararlar (Sude, 2026-11-09)
@@ -163,7 +163,18 @@ Her aşamadan sonra: `flutter analyze`, ilgili testler, simülatörde açık ve 
    - Yeni metinler (altı dilde): `shopping_list_add_button`, `shopping_list_delete_item`, `shopping_list_empty_title`, `shopping_list_empty_subtitle`. "Temizle" için var olan `common_clear`.
    - Dosyalar: `lib/widgets/alisveris_parcalari.dart` (`AlisverisBasligi`, `AlisverisMaddeSatiri`, `AlisverisBolumu`), `lib/widgets/arama_parcalari.dart` (`AramaUstSatiri`, `AramaSonucSatiri`, `AramaBilgiKarti`), `lib/sayfalar/alisveris_listesi.dart`, `lib/sayfalar/arama_sayfasi.dart`.
    - Testler: `test/alisveris_parcalari_test.dart` (gerçek sayfayla yükleme, ekleme, işaretleme, silme, temizleme, sekme sinyali, olaylar, 48'lik dokunma alanları, ekran okuyucu, boş durum, açık ve koyu modda 320 genişlik 1x ve 3.2 kat yazıda taşma yok, metinler altı dilde), `test/arama_parcalari_test.dart` (eşleşme, sonuç yok, temizle, çıkışta tek olay, geri düğmesi, büyük yazıda diziliş, taşma).
-8. **Premium:** fiyatlar RevenueCat'ten gelir; metinler Sude onaylamadan değişmez.
+8. **Premium — tamamlandı (2026-11-10, gece çalışması; test görüntüleriyle açık/koyu, 402 genişlikte 1x ve 320 genişlikte 3.2 kat yazıda, paketli ve paketsiz bakıldı):**
+   - Yalnızca görünüm değişti. Fiyatlar, paket sırası (aylık → yıllık → ömür boyu), varsayılan yıllık seçim, tasarruf yüzdesi, "EN AVANTAJLI" rozeti, abonelik koşulları metni, satın alma, geri yükleme, paket yoksa yeniden deneme ve hata ayrıntısı, analitik olaylar (`paywall_goruldu`, `paywall_kapatildi`, `satin_alma`, `satin_alma_basarisiz`) ve `source` değerleri aynı. Metin değişmedi, yeni metin yok.
+   - Üst çubuk yok: solda yuvarlak kapat düğmesi (ekran okuyucu etiketi Flutter'ın "Kapat"ı), sağda "Geri Yükle" ikincil düğmesi. Altında "Pro" hapı (seçili çip renkleri), şef dairesi, Caveat 34 başlık (en fazla 2 kat büyür), soluk alt yazı.
+   - Özellikler bir kil kartında; ikon kutuları klasör renkleri (tatlı, çorba, kahvaltı, favori), sağda adaçayı onay. Plan kartları: seçili kart açık turuncu zemin, terrakota kenar ve gölge, dolu seçim dairesi; seçilmemişte tanıtan kenarlı boş daire. Fiyat terrakota, sağda. "EN AVANTAJLI" adaçayı hap. Ekran okuyucu kartı "Yıllık Premium, EN AVANTAJLI, …, fiyat" diye tek öğe ve seçili/seçilmemiş okur.
+   - Paket gelmezse yedek kartta fiyat yerine "Fiyat Bilgisi Yüklenemedi" açıklamanın altında (yanda kelime ortasından bölünüyordu); hata satırı hata kutusu renklerinde, 48'lik.
+   - Satın al düğmesi `KilDugme` birincil, büyük, tam genişlik. Koşullar soluk yüzeyli gölgesiz kartta; yasal bağlantılar terrakota, altı çizili, 48'lik dokunma alanlı (önce yalnızca yazı kadardı). Satın alma sürerken `PremiumBeklemeKatmani`. Başarı ve hata bildirimleri adaçayı / hata renginde; paket hatası diyaloğu kil renklerinde (diyalogların genel düzeni aşama 9'da).
+   - Yazı 1.6 katın üstündeyse (`premiumUstUsteMi`) özellik ve plan kartlarında ikon / seçim dairesi metnin üstüne çıkar, fiyat alta iner; sayfa ve kart kenar boşlukları daralır.
+   - Profil (Ayarlar) sayfasındaki "Premium'a Geç" satırı kiremit `ProyaGecKarti` oldu; Pro kullanıcıda aynı kart sade kil kartında "Premium Aktif" (dokunulmaz). "Aboneliği Yönet" ve "Geri Yükle" satırları ve sayfanın kalanı aşama 9'da.
+   - Diğer Premium'a götüren parçalar önceki aşamalarda kil olmuştu: başlıktaki `ProRozeti` (aşama 2), Ne pişirsem'deki rozet ve hak kartı, "+1 hak" diyaloğu (aşama 6). Uygulamada Pro kilidi ikonu yok (tarif ekleme alt sayfasındaki kilit giriş içindir). Sınır aşılınca çıkan snackbar'lar aşama 9'da.
+   - Test için `PremiumSayfasi.paketGetir` (uygulamada `RevenueCatService.getOfferings`) eklendi; testte sahte paket verilebiliyor.
+   - Dosyalar: `lib/widgets/premium_parcalari.dart` (`PremiumUstSatiri`, `PremiumTanitim`, `PremiumOzellikKarti`, `PremiumOzellikSatiri`, `PremiumPlanKarti`, `PremiumHataSatiri`, `PremiumKosullarKarti`, `PremiumBaglanti`, `PremiumBeklemeKatmani`, `ProyaGecKarti`), `lib/sayfalar/premium_sayfasi.dart`, `lib/screens/settings_page.dart`.
+   - Testler: `test/premium_parcalari_test.dart` (plan kartı 72 yükseklik, seçim ve ekran okuyucu; büyük yazıda fiyat altta; üst satır ve bağlantılar 48'lik; Pro kartı; gerçek sayfayla plan sırası, varsayılan yıllık, tasarruf yüzdesi, seçimle değişen koşul metni, kapatınca olay, paketsiz yedek kart ve hata diyaloğu, geri yükleme bulunamadı bildirimi; açık ve koyu modda 320 genişlik, 1x ve 3.2 kat yazıda, paketli ve paketsiz taşma yok; metinler altı dilde).
 9. **Kalanlar:** giriş ekranı (`auth_screen.dart`), Profil (üstte hesap bilgisi olan yeni profil ekranı; ayarlar onun altında), güncelleme ekranı, diyaloglar ve snackbar'lar.
 10. **Son tarama:** elle yazılmış renkler (`grep "Color(0x\|Colors\."`; başlangıçta yaklaşık 660 kullanım var), karanlık mod turu, en büyük yazı boyutu, tüm testler.
 
