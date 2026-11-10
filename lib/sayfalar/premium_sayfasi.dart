@@ -196,7 +196,8 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
         KilBildirim.goster(
           context,
           'premium_restore_failed'.tr(),
-          tur: KilBildirimTuru.hata,
+          // Profil'deki gibi bilgi (gri); bir hata değil.
+          tur: KilBildirimTuru.bilgi,
         );
       }
     }
