@@ -10,6 +10,7 @@ import 'builders/app_theme_builder.dart';
 import 'sayfalar/ana_kabuk.dart';
 
 import 'services/revenuecat_service.dart';
+import 'services/review_service.dart';
 import 'screens/update_screen.dart';
 
 void main() async {
@@ -27,6 +28,13 @@ void main() async {
     );
   } catch (e) {
     debugPrint('Firebase init error: $e');
+  }
+
+  // Değerlendirme isteğinin 7 günlük beklemesi ilk açılıştan sayılır.
+  try {
+    await ReviewService.ilkAcilisiKaydet();
+  } catch (e) {
+    debugPrint('İlk açılış tarihi kaydedilemedi: $e');
   }
 
   try {

@@ -15,7 +15,25 @@ class ReviewService {
   static const int _daysBeforeFirstPrompt = 7;   // İlk soru: 7 gün sonra
   static const int _daysBetweenPrompts = 30;      // Tekrar soru: 30 günde bir
 
-  /// Uygulama her açıldığında çağrılır. Uygunsa review ister.
+  /// Testlerde saati ve mağaza penceresini değiştirmek için.
+  @visibleForTesting
+  static DateTime Function() simdi = DateTime.now;
+  @visibleForTesting
+  static Future<void> Function() pencereyiGoster = _showReviewPrompt;
+
+  /// Uygulama açılışında çağrılır: 7 günlük bekleme ilk açılıştan sayılsın
+  /// diye ilk açılış tarihini bir kez kaydeder. (Eskiden tarih ilk
+  /// tetiklemede yazılıyordu; o tetikleme boşa gidiyor, 7 gün de oradan
+  /// başlıyordu.)
+  static Future<void> ilkAcilisiKaydet() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!prefs.containsKey(_firstLaunchKey)) {
+      await prefs.setString(_firstLaunchKey, simdi().toIso8601String());
+    }
+  }
+
+  /// "Mutlu an"larda çağrılır (yemek modu bitti, tarif kaydedildi).
+  /// Uygunsa değerlendirme ister.
   static Future<void> checkAndRequestReview(BuildContext context) async {
     final prefs = await SharedPreferences.getInstance();
 
@@ -23,15 +41,17 @@ class ReviewService {
     final hasRated = prefs.getBool(_hasRatedKey) ?? false;
     if (hasRated) return;
 
-    final now = DateTime.now();
+    final now = simdi();
 
-    // 2. İlk açılış tarihini kaydet
-    if (!prefs.containsKey(_firstLaunchKey)) {
+    // 2. İlk açılış tarihi açılışta kaydedilir; yoksa (ör. eski sürümden
+    // gelen kullanıcı) şimdi kaydet ve bekle.
+    final ilkAcilisMetni = prefs.getString(_firstLaunchKey);
+    if (ilkAcilisMetni == null) {
       await prefs.setString(_firstLaunchKey, now.toIso8601String());
-      return; // İlk açılışta hemen sorma
+      return;
     }
 
-    final firstLaunch = DateTime.parse(prefs.getString(_firstLaunchKey)!);
+    final firstLaunch = DateTime.parse(ilkAcilisMetni);
     final daysSinceInstall = now.difference(firstLaunch).inDays;
 
     // 3. İlk 7 günü doldurmadıysa sorma
@@ -46,19 +66,21 @@ class ReviewService {
 
     // 5. Şartlar sağlandı → Son sorma tarihini güncelle ve sor
     await prefs.setString(_lastPromptKey, now.toIso8601String());
-    await _showReviewPrompt();
+    await pencereyiGoster();
   }
 
   /// Bir tarif kaydedildiğinde çağrılır (manuel veya AI ile). Toplam
   /// kaydedilen tarif sayısını artırır; AI ile üretilmiş bir tarifi
-  /// kaydetmek veya tam 5. tarife ulaşmak, kullanıcının üründen memnun
-  /// olduğu "mutlu an"lar olduğu için bu noktalarda değerlendirme istenir.
+  /// kaydetmek veya en az 5 tarif kaydetmiş olmak, kullanıcının üründen
+  /// memnun olduğu "mutlu an"lar olduğu için bu noktalarda değerlendirme
+  /// istenir. 5. tarif ilk 7 günde kaydedilirse istek kaybolmaz; bekleme
+  /// dolduktan sonraki ilk kayıtta sorulur.
   static Future<void> onRecipeSaved(BuildContext context, {bool isAiGenerated = false}) async {
     final prefs = await SharedPreferences.getInstance();
     final count = (prefs.getInt(_recipeSaveCountKey) ?? 0) + 1;
     await prefs.setInt(_recipeSaveCountKey, count);
 
-    if (isAiGenerated || count == 5) {
+    if (isAiGenerated || count >= 5) {
       await checkAndRequestReview(context);
     }
   }
