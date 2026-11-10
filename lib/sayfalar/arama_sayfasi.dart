@@ -118,7 +118,7 @@ class _AramaSayfasiState extends State<AramaSayfasi> {
       icerik = AramaBilgiKarti(metin: 'recipe_search_prompt'.tr());
     } else if (_filtrelenmisTarifler.isEmpty) {
       icerik = AramaBilgiKarti(
-        metin: 'folders_search_no_results'.tr(),
+        metin: 'recipes_search_no_results'.tr(),
         sonucYok: true,
       );
     } else {
@@ -151,7 +151,7 @@ class _AramaSayfasiState extends State<AramaSayfasi> {
             children: [
               AramaUstSatiri(
                 controller: _aramaController,
-                ipucu: 'folders_search_hint'.tr(),
+                ipucu: 'recipes_search_hint'.tr(),
                 onDegisti: _ara,
                 onTemizle: () {
                   _aramaController.clear();

@@ -109,6 +109,7 @@
   "folders_empty_subtitle": "Añade una nueva carpeta para organizar tus recetas.",
   "folders_empty_add_button": "Añadir nueva carpeta",
   "folders_search_no_results": "Ninguna carpeta coincide con tu búsqueda.",
+  "recipes_search_no_results": "Ninguna receta coincide con tu búsqueda.",
   "folders_delete_title": "Eliminar Carpeta",
   "folders_delete_confirm_suffix": " será eliminada. ¿Continuar?",
   "folders_favorites": "Favoritos",

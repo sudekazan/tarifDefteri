@@ -108,7 +108,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(AramaSonucSatiri), findsNothing);
     expect(
-      find.text('Aradığınız kritere uygun klasör bulunamadı.'),
+      find.text('Aradığınız kritere uygun tarif bulunamadı.'),
       findsOneWidget,
     );
 

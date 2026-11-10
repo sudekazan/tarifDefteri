@@ -126,6 +126,7 @@
   "folders_empty_subtitle": "Fügen Sie einen neuen Ordner hinzu, um Ihre Rezepte zu organisieren.",
   "folders_empty_add_button": "Neuen Ordner hinzufügen",
   "folders_search_no_results": "Keine Ordner entsprechen Ihrer Suche.",
+  "recipes_search_no_results": "Keine Rezepte entsprechen Ihrer Suche.",
   "folders_delete_title": "Ordner löschen",
   "folders_delete_confirm_suffix": " wird gelöscht. Fortfahren?",
   "folders_favorites": "Favoriten",
