@@ -43,3 +43,18 @@ Gece çalışmasında Sude'ye sorulamayan sorular ve sabah bakılacaklar. Her a�
 - Test görüntüleri: `build/gecici_test/asama6_ekranlar_test.dart` ve `asama6_lottie_test.dart` (commit'e girmez); 20 görüntüde taşma yok.
 - Tüm testler: 184 geçti.
 
+
+## Aşama 7 (alışveriş listesi ve arama)
+
+### Sorular
+- **Arama ekranında "klasör" metinleri.** Tarif arama ekranının kutusunda "Klasör ara..." (`folders_search_hint`), sonuç yokken "Aradığınız kritere uygun klasör bulunamadı." (`folders_search_no_results`) yazıyor; ama aranan şey tarif. Metin korunmak için gece değiştirilmedi. Öneri: kutuda ana sayfadaki gibi `recipes_search_hint` ("Tarif ara..."), sonuç yokta yeni bir "…uygun tarif bulunamadı." metni. Değişsin mi?
+- **Alışveriş listesi boş durumu.** Önce liste boşken ekran boş kalıyordu; şimdi bir kart var: "Listen boş" / "Eklediğin malzemeler burada görünür. Tarif detayındaki sepet düğmesiyle de ekleyebilirsin." (altı dilde). Metin uygun mu?
+- **"Temizle" düğmesinin yeri.** Eskiden üst çubukta etiketsiz bir ikondu (alınan yokken de görünüyordu). Şimdi "Alınanlar" başlığının yanında, yalnızca alınan varken. Eskisi gibi onay sormuyor; sorsun mu?
+- **En büyük yazıda uzun kelimeler** (Aşama 4–6'daki soru): 320 genişlik ve 3.2 katta "Zeytinyağı" ve arama bilgi kartındaki "Aradığınız" satıra sığmıyor, bölünüyor.
+
+### Bilgi
+- Liste işlemleri, kayıt anahtarları, arama mantığı ve olay adları değişmedi; testler bunları gerçek sayfayla denetliyor.
+- Aynı malzeme iki kez eklenebiliyordu, öyle kaldı.
+- `flutter analyze`: 49 bulgu, hepsi eski kod (Aşama 6 sonunda 53; arama sayfasındaki eski uyarılar kalktı). Aşama 7 dosyalarında bulgu yok. Ağ yoktu; analiz ve testler `--no-pub` ile çalıştı.
+- Test görüntüleri: `build/gecici_test/asama7_ekranlar_test.dart` (commit'e girmez); 22 görüntüde taşma yok.
+- Tüm testler: 205 geçti.

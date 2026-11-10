@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../services/analytics_service.dart';
+import '../widgets/alisveris_parcalari.dart';
+import '../widgets/kil/kil.dart';
+import '../widgets/ne_pisirsem_parcalari.dart' show MalzemeEklemeSatiri;
+import '../widgets/tarif_listesi_parcalari.dart' show TarifBosDurum;
 
 class AlisverisListesi extends StatefulWidget {
   const AlisverisListesi({super.key, this.gorunduSinyali});
@@ -92,115 +96,79 @@ class _AlisverisListesiState extends State<AlisverisListesi> {
     _kaydet();
   }
 
+  void _alinanlariTemizle() {
+    setState(() {
+      _alinanlar.clear();
+    });
+    _kaydet();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('shopping_list_title'.tr()),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.delete_sweep),
-            onPressed: () {
-              setState(() {
-                _alinanlar.clear();
-              });
-              _kaydet();
-            },
-          )
-        ],
+    final r = context.kil;
+    final silEtiketi = 'shopping_list_delete_item'.tr();
+
+    Widget satir(String madde, bool alindi) => AlisverisMaddeSatiri(
+      madde: madde,
+      alindi: alindi,
+      silEtiketi: silEtiketi,
+      onDegistir: () => _toggleDurum(madde, alindi),
+      onSil: () => _sil(madde, alindi),
+    );
+
+    return AnnotatedRegion(
+      value: kilDurumCubuguStili(context),
+      child: Scaffold(
+        backgroundColor: r.zemin,
+        body: SafeArea(
+          bottom: false,
+          child: _isLoading
+              ? Center(child: CircularProgressIndicator(color: r.birincil))
+              : ListView(
+                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+                  children: [
+                    AlisverisBasligi(baslik: 'shopping_list_title'.tr()),
+                    const SizedBox(height: 16),
+                    MalzemeEklemeSatiri(
+                      controller: _controller,
+                      ipucu: 'shopping_list_add_hint'.tr(),
+                      ekleEtiketi: 'shopping_list_add_button'.tr(),
+                      onEkle: _ekle,
+                    ),
+                    const SizedBox(height: 24),
+                    if (_alinacaklar.isEmpty && _alinanlar.isEmpty)
+                      TarifBosDurum(
+                        ikon: Icons.shopping_basket_rounded,
+                        renk: r.klasorCorba,
+                        baslik: 'shopping_list_empty_title'.tr(),
+                        altBaslik: 'shopping_list_empty_subtitle'.tr(),
+                      ),
+                    if (_alinacaklar.isNotEmpty)
+                      AlisverisBolumu(
+                        baslik: 'shopping_list_todo'.tr(),
+                        satirlar: [
+                          for (final madde in _alinacaklar) satir(madde, false),
+                        ],
+                      ),
+                    if (_alinacaklar.isNotEmpty && _alinanlar.isNotEmpty)
+                      const SizedBox(height: 24),
+                    if (_alinanlar.isNotEmpty)
+                      AlisverisBolumu(
+                        baslik: 'shopping_list_done'.tr(),
+                        alindi: true,
+                        eylem: KilDugme.ikincil(
+                          etiket: 'common_clear'.tr(),
+                          ikon: Icons.delete_sweep_rounded,
+                          onPressed: _alinanlariTemizle,
+                        ),
+                        satirlar: [
+                          for (final madde in _alinanlar) satir(madde, true),
+                        ],
+                      ),
+                  ],
+                ),
+        ),
       ),
-      body: _isLoading 
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _controller,
-                          decoration: InputDecoration(
-                            hintText: 'shopping_list_add_hint'.tr(),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-                          ),
-                          onSubmitted: _ekle,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      IconButton(
-                        icon: const Icon(Icons.add_circle, size: 40),
-                        color: Theme.of(context).primaryColor,
-                        onPressed: () => _ekle(_controller.text),
-                      ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: ListView(
-                    children: [
-                      if (_alinacaklar.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Text(
-                            'shopping_list_todo'.tr(),
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Theme.of(context).primaryColor,
-                            ),
-                          ),
-                        ),
-                      ..._alinacaklar.map((madde) => ListTile(
-                        leading: Checkbox(
-                          value: false,
-                          onChanged: (val) => _toggleDurum(madde, false),
-                        ),
-                        title: Text(madde, style: const TextStyle(fontSize: 16)),
-                        trailing: IconButton(
-                          icon: const Icon(Icons.close, color: Colors.grey),
-                          onPressed: () => _sil(madde, false),
-                        ),
-                      )).toList(),
-                      
-                      if (_alinanlar.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Text(
-                            'shopping_list_done'.tr(),
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.grey,
-                            ),
-                          ),
-                        ),
-                      ..._alinanlar.map((madde) => ListTile(
-                        leading: Checkbox(
-                          value: true,
-                          onChanged: (val) => _toggleDurum(madde, true),
-                        ),
-                        title: Text(
-                          madde,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey,
-                            decoration: TextDecoration.lineThrough,
-                          ),
-                        ),
-                        trailing: IconButton(
-                          icon: const Icon(Icons.close, color: Colors.grey),
-                          onPressed: () => _sil(madde, true),
-                        ),
-                      )).toList(),
-                    ],
-                  ),
-                ),
-              ],
-            ),
     );
   }
 }

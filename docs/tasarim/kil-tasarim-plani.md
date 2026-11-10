@@ -1,6 +1,6 @@
 # Kil tasarımına geçiş planı (Tarifly)
 
-Tarih: 2026-11-09. Durum: **Aşama 1–6 tamamlandı; ekranlar aşama 7'den itibaren yenilenecek.**
+Tarih: 2026-11-09. Durum: **Aşama 1–7 tamamlandı; ekranlar aşama 8'den itibaren yenilenecek.**
 Kaynak: UI UX Pro Max'in "Recipe & Cooking App" önerisi (claymorphism) ve Sude ile yapılan önce/sonra görsel çalışması.
 
 ## Kararlar (Sude, 2026-11-09)
@@ -155,7 +155,14 @@ Her aşamadan sonra: `flutter analyze`, ilgili testler, simülatörde açık ve 
    - Snackbar'lar, Pro limit ve hata diyalogları aşama 9'a bırakıldı.
    - Dosyalar: `lib/widgets/ne_pisirsem_parcalari.dart`, `lib/sayfalar/bugun_ne_pisisem_sayfasi.dart`, `lib/widgets/ai_chef_loading_animation.dart`, `lib/widgets/ai_hak_doldu_dialog.dart`, `lib/widgets/kil/kil_cip.dart`, `lib/widgets/kil/kil_secim_listesi.dart`. Yeni metin yok.
    - Testler: `test/ne_pisirsem_parcalari_test.dart` (renk eşlemesi ve koyu/açık modda arka planın kart rengi, 48'lik dokunma alanları, ekran okuyucu, büyük yazıda diziliş, bekleme katmanı, diyalog seçimi, gerçek sayfada seçim/kaldırma/temizleme/klasör değiştirme/uyarı, 320 genişlik 1x ve 3.2 kat yazıda açık ve koyu taşma yok, metinler altı dilde).
-7. **Alışveriş listesi ve arama.**
+7. **Alışveriş listesi ve arama — tamamlandı (2026-11-10, gece çalışması; test görüntüleriyle açık/koyu, 402 genişlikte 1x ve 320 genişlikte 3.2 kat yazıda bakıldı):**
+   - İşleyiş aynı: liste cihaz kaydında (`shopping_list_todo`, `shopping_list_done`), ekleme başa, işaretleme iki liste arasında taşır, silme ve "alınanları temizle" onay sormadan. Arama mantığı (`aramaEslesir`, ad ve açıklama), tarif yükleme, tarif detayına gidiş ve dönüşte tazeleme aynı. Olaylar aynı: `alisveris_listesi_acildi` (açılış ve sekme yeniden seçilince), `alisveris_listesine_eklendi`, `arama_yapildi` (çıkarken bir kez).
+   - Alışveriş: üst çubuk yok; Caveat 34 başlık. Ekleme kutusu ve "Ekle" düğmesi Ne pişirsem'deki `MalzemeEklemeSatiri` (büyük yazıda düğme alta iner). "Alınacaklar" kil kartında, "Alınanlar" soluk yüzeyli gölgesiz kartta; başlıklar Caveat 26 (alınanlar soluk yazı). Satır: `KilOnayKutusu`, ad (alınanda soluk ve üstü çizili), 48'lik sil düğmesi; ada dokunmak da işaretler, ekran okuyucu satırı "Süt, işaretli" diye tek öğe okur. Üst çubuktaki "alınanları temizle" ikonu artık "Alınanlar" başlığının yanında "Temizle" ikincil düğmesi (yalnızca alınan varken; büyük yazıda başlığın altına iner). Liste boşken boş durum kartı (önce ekran boş kalıyordu).
+   - Arama: üst çubuk yerine yuvarlak geri düğmesi ve yanında tema kenarlı arama kutusu (yazı varken içinde temizle düğmesi). Sonuçlar kil kartında `TarifKucukGorsel`, ad ve ok (görsel yoksa yer tutucu; 1.6 katın üstünde görsel adın üstüne çıkar). Yönlendirme ve "sonuç yok" ikonlu kil kartında, gövde yazısıyla.
+   - Caveat başlıklar en fazla 2 kat büyür (Aşama 5–6 gibi).
+   - Yeni metinler (altı dilde): `shopping_list_add_button`, `shopping_list_delete_item`, `shopping_list_empty_title`, `shopping_list_empty_subtitle`. "Temizle" için var olan `common_clear`.
+   - Dosyalar: `lib/widgets/alisveris_parcalari.dart` (`AlisverisBasligi`, `AlisverisMaddeSatiri`, `AlisverisBolumu`), `lib/widgets/arama_parcalari.dart` (`AramaUstSatiri`, `AramaSonucSatiri`, `AramaBilgiKarti`), `lib/sayfalar/alisveris_listesi.dart`, `lib/sayfalar/arama_sayfasi.dart`.
+   - Testler: `test/alisveris_parcalari_test.dart` (gerçek sayfayla yükleme, ekleme, işaretleme, silme, temizleme, sekme sinyali, olaylar, 48'lik dokunma alanları, ekran okuyucu, boş durum, açık ve koyu modda 320 genişlik 1x ve 3.2 kat yazıda taşma yok, metinler altı dilde), `test/arama_parcalari_test.dart` (eşleşme, sonuç yok, temizle, çıkışta tek olay, geri düğmesi, büyük yazıda diziliş, taşma).
 8. **Premium:** fiyatlar RevenueCat'ten gelir; metinler Sude onaylamadan değişmez.
 9. **Kalanlar:** giriş ekranı (`auth_screen.dart`), Profil (üstte hesap bilgisi olan yeni profil ekranı; ayarlar onun altında), güncelleme ekranı, diyaloglar ve snackbar'lar.
 10. **Son tarama:** elle yazılmış renkler (`grep "Color(0x\|Colors\."`; başlangıçta yaklaşık 660 kullanım var), karanlık mod turu, en büyük yazı boyutu, tüm testler.

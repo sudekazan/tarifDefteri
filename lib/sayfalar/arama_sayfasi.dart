@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
-import 'dart:io';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:tarif_defteri/tarifler_data/tarif_data.dart';
 import 'package:tarif_defteri/sayfalar/tarif_detay.dart';
 import '../services/analytics_service.dart';
 import '../utils/arama_metni.dart';
+import '../widgets/arama_parcalari.dart';
+import '../widgets/kil/kil.dart';
 
 class AramaSayfasi extends StatefulWidget {
-  const AramaSayfasi({Key? key}) : super(key: key);
+  const AramaSayfasi({super.key});
 
   @override
   State<AramaSayfasi> createState() => _AramaSayfasiState();
@@ -84,140 +85,85 @@ class _AramaSayfasiState extends State<AramaSayfasi> {
     setState(() {
       _filtrelenmisTarifler = _tumTarifler.where((tarif) {
         return aramaEslesir(tarif.tarif_adi, query) ||
-               aramaEslesir(tarif.tarif_aciklama, query);
+            aramaEslesir(tarif.tarif_aciklama, query);
       }).toList();
     });
     _sonAramaSonucVar = _filtrelenmisTarifler.isNotEmpty;
   }
 
+  Future<void> _tarifiAc(TarifData tarif) async {
+    final guncelTarif = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => TarifDetay(tarif: tarif)),
+    );
+    if (guncelTarif == true ||
+        (guncelTarif != null && guncelTarif is TarifData)) {
+      _tumTarifleriYukle().then((_) {
+        if (mounted) _ara(_aramaController.text);
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: TextField(
-          controller: _aramaController,
-          autofocus: true,
-          decoration: InputDecoration(
-            hintText: 'folders_search_hint'.tr(),
-            border: InputBorder.none,
-          ),
-          onChanged: _ara,
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.clear),
-            onPressed: () {
-              _aramaController.clear();
-              _ara('');
-            },
-          ),
+    final r = context.kil;
+
+    final Widget icerik;
+    if (_isLoading) {
+      icerik = Padding(
+        padding: const EdgeInsets.only(top: 48),
+        child: Center(child: CircularProgressIndicator(color: r.birincil)),
+      );
+    } else if (_aramaController.text.isEmpty) {
+      icerik = AramaBilgiKarti(metin: 'recipe_search_prompt'.tr());
+    } else if (_filtrelenmisTarifler.isEmpty) {
+      icerik = AramaBilgiKarti(
+        metin: 'folders_search_no_results'.tr(),
+        sonucYok: true,
+      );
+    } else {
+      icerik = Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (var i = 0; i < _filtrelenmisTarifler.length; i++) ...[
+            if (i > 0) const SizedBox(height: 12),
+            AramaSonucSatiri(
+              ad: _filtrelenmisTarifler[i].tarif_adi,
+              resimYolu: _filtrelenmisTarifler[i].tarif_resimler.isNotEmpty
+                  ? _filtrelenmisTarifler[i].tarif_resimler.first
+                  : null,
+              onTap: () => _tarifiAc(_filtrelenmisTarifler[i]),
+            ),
+          ],
         ],
+      );
+    }
+
+    return AnnotatedRegion(
+      value: kilDurumCubuguStili(context),
+      child: Scaffold(
+        backgroundColor: r.zemin,
+        body: SafeArea(
+          bottom: false,
+          child: ListView(
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            padding: const EdgeInsets.fromLTRB(20, 4, 20, 32),
+            children: [
+              AramaUstSatiri(
+                controller: _aramaController,
+                ipucu: 'folders_search_hint'.tr(),
+                onDegisti: _ara,
+                onTemizle: () {
+                  _aramaController.clear();
+                  _ara('');
+                },
+              ),
+              const SizedBox(height: 16),
+              icerik,
+            ],
+          ),
+        ),
       ),
-      body: _isLoading 
-          ? const Center(child: CircularProgressIndicator())
-          : _aramaController.text.isEmpty
-              ? Center(
-                  child: Text(
-                    'recipe_search_prompt'.tr(),
-                    style: TextStyle(fontSize: 16, color: Colors.grey[600]),
-                  ),
-                )
-              : _filtrelenmisTarifler.isEmpty
-                  ? Center(
-                      child: Text(
-                        'folders_search_no_results'.tr(),
-                        style: TextStyle(fontSize: 16, color: Colors.grey[600]),
-                      ),
-                    )
-                  : ListView.separated(
-                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-                      itemCount: _filtrelenmisTarifler.length,
-                      separatorBuilder: (context, index) => const SizedBox(height: 8),
-                      itemBuilder: (context, index) {
-                        var tarif = _filtrelenmisTarifler[index];
-                        return GestureDetector(
-                          onTap: () async {
-                            final guncelTarif = await Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => TarifDetay(tarif: tarif),
-                              ),
-                            );
-                            if (guncelTarif == true || (guncelTarif != null && guncelTarif is TarifData)) {
-                              _tumTarifleriYukle().then((_) {
-                                if (mounted) _ara(_aramaController.text);
-                              });
-                            }
-                          },
-                          child: Card(
-                            elevation: 2,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  if (tarif.tarif_resimler.isNotEmpty)
-                                    Container(
-                                      width: 60,
-                                      height: 60,
-                                      margin: const EdgeInsets.only(right: 12),
-                                      child: ClipRRect(
-                                        borderRadius: BorderRadius.circular(8),
-                                        child: tarif.tarif_resimler.first.startsWith('http')
-                                          ? Image.network(
-                                              tarif.tarif_resimler.first,
-                                              width: 60,
-                                              height: 60,
-                                              fit: BoxFit.cover,
-                                              errorBuilder: (context, error, stackTrace) {
-                                                return Container(
-                                                  color: Colors.grey[300],
-                                                  child: Icon(Icons.broken_image, color: Colors.grey[600], size: 24),
-                                                );
-                                              },
-                                            )
-                                          : File(tarif.tarif_resimler.first).existsSync()
-                                            ? Image.file(
-                                                File(tarif.tarif_resimler.first),
-                                                width: 60,
-                                                height: 60,
-                                                fit: BoxFit.cover,
-                                                errorBuilder: (context, error, stackTrace) {
-                                                  return Container(
-                                                    color: Colors.grey[300],
-                                                    child: Icon(Icons.broken_image, color: Colors.grey[600], size: 24),
-                                                  );
-                                                },
-                                              )
-                                            : Container(
-                                                color: Colors.grey[300],
-                                                child: Icon(Icons.broken_image, color: Colors.grey[600], size: 24),
-                                              ),
-                                      ),
-                                    ),
-                                  Expanded(
-                                    child: Text(
-                                      tarif.tarif_adi,
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.w600,
-                                        color: Theme.of(context).textTheme.bodyLarge?.color,
-                                      ),
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                  Icon(Icons.chevron_right, color: Colors.grey[400]),
-                                ],
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
     );
   }
 }
