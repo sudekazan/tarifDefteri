@@ -496,12 +496,16 @@ class _KlasorlerState extends State<Klasorler> {
         Flexible(
           child: Semantics(
             header: true,
-            // Caveat (headlineLarge, 34).
-            child: Text(
-              'app_title'.tr(),
-              style: Theme.of(context).textTheme.headlineLarge,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+            // Caveat (headlineLarge, 34); büyük yazıda en fazla 2 kat büyür,
+            // yoksa "Tarifly" kısalıyordu.
+            child: MediaQuery.withClampedTextScaling(
+              maxScaleFactor: KilSayfaBasligi.baslikSiniri,
+              child: Text(
+                'app_title'.tr(),
+                style: Theme.of(context).textTheme.headlineLarge,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
           ),
         ),

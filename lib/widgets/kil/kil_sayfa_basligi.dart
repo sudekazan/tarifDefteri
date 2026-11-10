@@ -35,6 +35,10 @@ class KilSayfaBasligi extends StatelessWidget {
   /// Sağdaki düğmeler (ör. arama). Her biri en az 48x48.
   final List<Widget> eylemler;
 
+  /// Caveat başlığın büyük yazıda en fazla büyüme katı (diğer sayfa
+  /// başlıklarındaki sınırla aynı).
+  static const double baslikSiniri = 2.0;
+
   /// Yuvarlak düğmenin görünen dairesi dokunma alanının içinde bu kadar
   /// içeride; düğmeler bu kadar kaydırılınca daire başlıkla aynı hizaya gelir.
   static const double _icPay =
@@ -74,13 +78,17 @@ class KilSayfaBasligi extends StatelessWidget {
         const SizedBox(height: 4),
         Semantics(
           header: true,
-          // Caveat (headlineLarge, 34).
-          child: Text(
-            baslik,
-            style: Theme.of(context)
-                .textTheme
-                .headlineLarge
-                ?.copyWith(color: r.baslik),
+          // Caveat (headlineLarge, 34). Büyük yazıda en fazla [baslikSiniri]
+          // kat büyür; yoksa 320 genişlikte 3.2 katta "Çorbalar" gibi tek
+          // kelimeler ortasından bölünüyordu.
+          child: MediaQuery.withClampedTextScaling(
+            maxScaleFactor: baslikSiniri,
+            child: Text(
+              baslik,
+              style: Theme.of(
+                context,
+              ).textTheme.headlineLarge?.copyWith(color: r.baslik),
+            ),
           ),
         ),
       ],
