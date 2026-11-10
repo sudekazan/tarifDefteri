@@ -1,6 +1,6 @@
 # Kil tasarımına geçiş planı (Tarifly)
 
-Tarih: 2026-11-09. Durum: **Aşama 1–8 tamamlandı; ekranlar aşama 9'dan itibaren yenilenecek.**
+Tarih: 2026-11-09. Durum: **Aşama 1–9 tamamlandı; yalnızca aşama 10 (son tarama) kaldı.**
 Kaynak: UI UX Pro Max'in "Recipe & Cooking App" önerisi (claymorphism) ve Sude ile yapılan önce/sonra görsel çalışması.
 
 ## Kararlar (Sude, 2026-11-09)
@@ -80,7 +80,7 @@ Bunlar `KilRenkleri.klasorFavori` vb. olarak kodda. Kontrastlar `test/kil_renkle
   - Defterim → `klasorler.dart`
   - Ne pişirsem → `bugun_ne_pisisem_sayfasi.dart`
   - Alışveriş → `alisveris_listesi.dart`
-  - Profil → `settings_page.dart`
+  - Profil → `settings_page.dart` (aşama 9'dan beri görünümü `ProfilGorunumu`)
 - Banner reklam sekme çubuğunun hemen üstünde durur; Pro kullanıcılarda gösterilmez.
 - Android geri tuşu: ilk sekmede değilken önce ilk sekmeye döner.
 - **Analitik:** Ekran ve olay adları değişmemeli (2026-11-04 kararı: önce ölçüm). `analytics_service.dart` içindeki ekran olayları sekmelere doğru bağlanmalı.
@@ -175,7 +175,15 @@ Her aşamadan sonra: `flutter analyze`, ilgili testler, simülatörde açık ve 
    - Test için `PremiumSayfasi.paketGetir` (uygulamada `RevenueCatService.getOfferings`) eklendi; testte sahte paket verilebiliyor.
    - Dosyalar: `lib/widgets/premium_parcalari.dart` (`PremiumUstSatiri`, `PremiumTanitim`, `PremiumOzellikKarti`, `PremiumOzellikSatiri`, `PremiumPlanKarti`, `PremiumHataSatiri`, `PremiumKosullarKarti`, `PremiumBaglanti`, `PremiumBeklemeKatmani`, `ProyaGecKarti`), `lib/sayfalar/premium_sayfasi.dart`, `lib/screens/settings_page.dart`.
    - Testler: `test/premium_parcalari_test.dart` (plan kartı 72 yükseklik, seçim ve ekran okuyucu; büyük yazıda fiyat altta; üst satır ve bağlantılar 48'lik; Pro kartı; gerçek sayfayla plan sırası, varsayılan yıllık, tasarruf yüzdesi, seçimle değişen koşul metni, kapatınca olay, paketsiz yedek kart ve hata diyaloğu, geri yükleme bulunamadı bildirimi; açık ve koyu modda 320 genişlik, 1x ve 3.2 kat yazıda, paketli ve paketsiz taşma yok; metinler altı dilde).
-9. **Kalanlar:** giriş ekranı (`auth_screen.dart`), Profil (üstte hesap bilgisi olan yeni profil ekranı; ayarlar onun altında), güncelleme ekranı, diyaloglar ve snackbar'lar.
+9. **Giriş, Profil, güncelleme, diyaloglar ve snackbar'lar — tamamlandı (2026-11-10, gece çalışması; test görüntüleriyle açık/koyu, 402 genişlikte 1x ve 320 genişlikte 3.2 kat yazıda bakıldı):**
+   - Mantık aynı: e-posta / Google / Apple girişi, RevenueCat kimlik bağlama, yerel tariflerin birleşmesi (`mergeLocalAndCloudData`, kayıtta `backupLocalDataToFirebase`), şifre sıfırlama, çıkış, hesap silme (önce kimlik tazeleme), yedekleme, geri yükleme, dil, koyu mod, değerlendirme ve bağlantılar. Analitik olaylar değişmedi. Metinler aynı; yalnızca giriş yöntemi için 3 yeni metin.
+   - **Ortak diyalog ve snackbar** (`lib/widgets/kil/kil_diyalog.dart`, `kil_bildirim.dart`): `KilDiyalog` (kart rengi, 24 köşe, süs kenarı; isteğe bağlı ikon dairesi: normalde seçili çip, tehlikede hata kutusu renkleri; Quicksand başlık en fazla 2 kat büyür; düğmeler alt alta tam genişlik, en altta soluk "Vazgeç" `KilDiyalogMetinDugmesi`; içerik sığmazsa kaydırılır). Kalıplar: `KilDiyalog.onayIste` (true / false / null), `bilgiGoster`, `beklemeGoster` (`KilBeklemeKutusu`). `KilBuyukFoto` büyük fotoğrafı siyah yerine kart çerçevesinde gösterir. `KilBildirim.goster(context, mesaj, tur:)`: bilgi (temanın snackbar'ı), başarı (adaçayı, siyah yazı, onay ikonu), hata (hata rengi), uyarı (kiremit; koyu modda kenarlı); isteğe bağlı eylem. `KilDugme`'ye `hata` türü eklendi.
+   - Uygulamadaki bütün `AlertDialog`, `SnackBar` ve dönen bekleme diyalogları bunlara bağlandı: klasörler (yeniden adlandır, klasör / tarif sil, sınır uyarısı, paylaşma hatası), klasör içi, tarif ekleme akışı (bağlantıdan tarif, AI tarif, Pro hak doldu, AI hatası, sınır ve "Pro'ya özel" uyarıları, AI bekleme kartı), tarif oluşturma (madde düzenle, vazgeç uyarısı, kaydetme hataları, bekleme), tarif detayı, Ne pişirsem, Premium (bildirimler, paket hatası), bağlantı açma yardımcısı ve Profil. Dağınık `Colors.green/red/orange/amber`, `0xFF2ECC71`, `0xFFE65100` kalktı. "+1 hak" diyaloğu (aşama 6) zaten kildi, dokunulmadı.
+   - Uygulama diyalogları iOS'ta da eskisi gibi Material (kil) kaldı. Güncelleme uyarısı iOS ve macOS'ta Cupertino (sistem uyarısı; düğmeler mavi yerine terrakota, "Güncelle" kalın), Android'de `KilDiyalog` (eskiden Android'de de Cupertino'ydu). Ne zaman çıkacağı, "Daha Sonra" ve engelleyici sürüm kuralları `upgrader` paketinde kaldı (`KilGuncellemeUyarisi`, `guncellemeKilDiyalogu`).
+   - **Giriş** (`lib/auth_screen.dart`, `lib/widgets/giris_parcalari.dart`): üst çubuk yerine yuvarlak geri düğmesi; seçili çip renkli ikon dairesi, Caveat 34 "Tarifly" (en fazla 2 kat), soluk alt yazı. Form bir `KilKart`ta: Giriş/Kayıt seçici (`GirisSekmeSecici`; seçili parça terrakota, 48'lik, ekran okuyucu "seçili"; 1.6 katın üstünde alt alta), tema kenarlı metin kutuları, terrakota "Şifremi Unuttum" (48'lik), hata kutusu renkli `GirisHataKutusu` (ekran okuyucu okur), büyük birincil düğme (işlem sürerken yerinde gösterge), "veya" ayracı, Google ve Apple ikincil `KilDugme`. Firebase alanları geç kuruluyor (ekran testte Firebase olmadan açılabiliyor); `girisAppleGosterilsinMi` yalnızca test için.
+   - **Profil** (`lib/screens/settings_page.dart` mantık, `lib/widgets/profil_parcalari.dart` görünüm `ProfilGorunumu`): Caveat 34 "Profil" başlığı, altında hesap kartı (kişi dairesi, ad ya da e-posta, e-posta, giriş yöntemi hapı: "Google ile giriş yapıldı" vb.; girişsizken "Giriş Yap / Kayıt Ol" kartı ve "Giriş Yap" düğmesi). Hemen altında ayarlar listesi; özet ya da sayı yok (Sude kararı). Sıra: Pro kartı (`ProyaGecKarti`) ve Geri Yükle / Aboneliği Yönet; Ayarlar (Koyu Mod anahtarı, Dil); Hesap Yönetimi (yalnızca girişliyken: Verileri Yedekle, Çıkış Yap, Hesabımı Sil; son ikisi hata renginde); Uygulama Bilgileri; Yasal & Gizlilik (reklam gizlilik satırı yalnızca AB'de); alt bilgi. Satırlar `ProfilSatiri` (en az 56, ikon kutusu, ekran okuyucu tek öğe; 1.6 katın üstünde ikon kutusu gizlenir), kartlar `ProfilBolumu`. Çıkış, hesap silme ve şifre doğrulama diyalogları `KilDiyalog` (hesap silmede uyarı kutusu `HesapSilmeUyarisi`); dil seçimi `KilAltSayfa` + `KilSecimListesi` (bayraklar için `KilSecenek.emoji` eklendi). Dosya ve sınıf adı `SettingsPage` olarak kaldı (dosya silinmedi); kabuk (`ana_kabuk.dart`) değişmedi.
+   - Yeni metinler (altı dilde): `profile_signed_in_with_email`, `profile_signed_in_with_google`, `profile_signed_in_with_apple`.
+   - Testler: `test/kil_diyalog_test.dart` (onay dönüşleri, tehlike renkleri açık/koyu, 48'lik düğmeler, bekleme, büyük foto, bildirim renkleri ve eylemi, 320 genişlik ve 3.2 katta taşma yok, bayraklı seçenek), `test/giris_parcalari_test.dart` (gerçek `AuthScreen`: seçici, doğrulama, şifre sıfırlama hatası, Apple düğmesi, 48'lik öğeler, ekran okuyucu, açık ve koyu 320 genişlik 1x ve 3.2 kat), `test/profil_parcalari_test.dart` (hesap kartı halleri, girişsiz kart, her satırın doğru işlemi çağırması, Pro, reklam gizlilik satırı, 56'lık satırlar, taşma; metinler altı dilde), `test/guncelleme_diyalogu_test.dart` (platforma göre stil, düğmeler, engelleyici sürüm, taşma).
 10. **Son tarama:** elle yazılmış renkler (`grep "Color(0x\|Colors\."`; başlangıçta yaklaşık 660 kullanım var), karanlık mod turu, en büyük yazı boyutu, tüm testler.
 
 ## Her ekranda kontrol listesi
@@ -189,4 +197,4 @@ Her aşamadan sonra: `flutter analyze`, ilgili testler, simülatörde açık ve 
 ## Açık sorular (Sude)
 - Premium satın alma düğmesinin metni.
 - Mağaza ekran görüntüleri ve uygulama ikonu yeni tarza göre yenilenecek mi?
-- Profil ekranında hesap bilgisinin altında neler olacak (ör. tarif ve klasör sayısı)? Aşama 9'dan önce konuşulacak.
+- ~~Profil ekranında hesap bilgisinin altında neler olacak?~~ Karar (Sude): özet ya da sayı yok; hemen ayarlar listesi başlar (aşama 9).

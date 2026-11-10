@@ -411,5 +411,8 @@
   "add_option_link_desc": "Paste the link to a recipe page",
   "folder_name_label": "Folder name",
   "recipe_favorite_add": "Add to favorites",
-  "recipe_favorite_remove": "Remove from favorites"
+  "recipe_favorite_remove": "Remove from favorites",
+  "profile_signed_in_with_email": "Signed in with email",
+  "profile_signed_in_with_google": "Signed in with Google",
+  "profile_signed_in_with_apple": "Signed in with Apple"
 }

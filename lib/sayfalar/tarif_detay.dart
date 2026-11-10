@@ -43,12 +43,11 @@ class _TarifDetayState extends State<TarifDetay> {
       await prefs.setStringList('shopping_list_todo', list);
       
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('recipe_detail_add_to_cart'.tr()),
-            duration: const Duration(seconds: 2),
-            backgroundColor: Colors.green,
-          ),
+        KilBildirim.goster(
+          context,
+          'recipe_detail_add_to_cart'.tr(),
+          tur: KilBildirimTuru.basari,
+          sure: const Duration(seconds: 2),
         );
       }
     }
@@ -200,24 +199,10 @@ class _TarifDetayState extends State<TarifDetay> {
   void _showBigPhoto(String imagePath) {
     showDialog(
       context: context,
-      builder: (context) => Dialog(
-        backgroundColor: Colors.transparent,
-        child: GestureDetector(
-          onTap: () => Navigator.of(context).pop(),
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              color: Colors.black,
-            ),
-            padding: const EdgeInsets.all(8),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: imagePath.startsWith('http')
-                  ? Image.network(imagePath, fit: BoxFit.contain)
-                  : Image.file(File(imagePath), fit: BoxFit.contain),
-            ),
-          ),
-        ),
+      builder: (context) => KilBuyukFoto(
+        child: imagePath.startsWith('http')
+            ? Image.network(imagePath, fit: BoxFit.contain)
+            : Image.file(File(imagePath), fit: BoxFit.contain),
       ),
     );
   }
@@ -263,13 +248,10 @@ class _TarifDetayState extends State<TarifDetay> {
     } catch (e) {
       debugPrint('Tarif paylaşma hatası: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'share_error_generic'.tr(),
-            ),
-            backgroundColor: Colors.red,
-          ),
+        KilBildirim.goster(
+          context,
+          'share_error_generic'.tr(),
+          tur: KilBildirimTuru.hata,
         );
       }
     }
@@ -462,11 +444,10 @@ class _TarifDetayState extends State<TarifDetay> {
     
     if (!mounted) return;
     
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('folders_move_success'.tr()),
-        backgroundColor: Colors.green,
-      ),
+    KilBildirim.goster(
+      context,
+      'folders_move_success'.tr(),
+      tur: KilBildirimTuru.basari,
     );
     
     Navigator.pop(context, true); // Pop the screen and return true to indicate change

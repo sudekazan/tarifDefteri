@@ -76,3 +76,23 @@ Gece çalışmasında Sude'ye sorulamayan sorular ve sabah bakılacaklar. Her a�
 - Test görüntüleri: `build/gecici_test/asama8_ekranlar_test.dart` (commit'e girmez); 50 görüntüde taşma yok. Şef emojisi testte kutu görünüyor (testte emoji yazı tipi yok), cihazda normal.
 - Tüm testler: 222 geçti.
 
+## Aşama 9 (giriş, Profil, güncelleme, diyaloglar ve snackbar'lar)
+
+### Sorular
+- **Güncelleme uyarısı Android'de değişti.** Eskiden her platformda Cupertino (iOS tarzı) diyalogdu. "iOS'ta uyarı adaptif kalsın" isteğine göre iOS ve macOS'ta Cupertino kaldı (düğmeler terrakota), Android'de kil diyaloğu oldu. Uygun mu?
+- **Uygulama diyalogları iOS'ta Material.** Eskiden de öyleydi (hiçbiri `showAdaptiveDialog` değildi), korundu. Silme ve çıkış onayları iOS'ta Cupertino uyarısı olsun mu? Olursa kil görünümü yalnızca Android'de kalır.
+- **Düğme sırası.** Onay diyaloglarında ana eylem üstte tam genişlik, "Vazgeç / Hayır / İptal" altında soluk metin düğmesi (büyük yazıda bölünmesin diye alt alta). Eskiden yan yanaydı, vazgeç soldaydı. Uygun mu?
+- **Sınır ve "Pro'ya özel" uyarıları** turuncu yerine kiremit (öne çıkan kart) snackbar; "AI için giriş gerekli" hata renginde, "Giriş Yap" eylemiyle. Geri yükleme bulunamadı bildirimi Profil'de gri (bilgi), Premium'da kırmızıydı; ikisi de eskisi gibi bırakıldı. Birleştirilsin mi?
+- **Google düğmesindeki "G".** Eskiden mavi bir "G" harfiydi; şimdi Material'ın `g_mobiledata` ikonu, terrakota (kil rengi). Google'ın resmi logosu istenirse görsel dosya gerekir (yeni varlık).
+- **Apple ile giriş düğmesi** eskisi gibi kendi tasarımımız (ikincil kil düğme, Apple ikonu). Apple'ın kuralları özel düğmeye izin veriyor ama incelemede sorun çıkarsa siyah/beyaz resmi stile geçmek gerekebilir.
+- **Profil'de "Premium" başlığı** kalktı; Pro kartı hesap kartının hemen altında, kartın kendi başlığı "Premium'a Geç" / "Premium Aktif". "Ayarlar" bölüm başlığı koyu mod ve dil için kullanıldı.
+- **Dosya adı.** Profil ekranı hâlâ `lib/screens/settings_page.dart` / `SettingsPage` (dosya silinmedi, yeniden adlandırılmadı). İstenirse `lib/sayfalar/profil_sayfasi.dart` olarak taşınabilir.
+- **Büyük yazıda başlıklar.** Diyalog başlıkları en fazla 2 kat büyüyor (önceki aşamalardaki başlık sınırı gibi); gövde ve düğmeler sınırsız. 3.2 katta metin kutusu etiketleri ("E-po…", "Yeni İs…") Flutter'ın kendi davranışıyla kısaltılıyor; uzun kelimeler (ör. güncelleme metni) yine bölünüyor.
+- **Güncelleme başlığındaki 🎉 ve 🚀** test görüntüsünde kutu çıkıyor (testte emoji yazı tipi yok); cihazda normal.
+
+### Bilgi
+- `flutter analyze`: 20 bulgu, hepsi eski kod (Aşama 8 sonunda 41). Aşama 9'da değişen dosyalarda yeni bulgu yok (`klasor_ici.dart:196` ve `klasor_data.dart` eskiden kalma).
+- Şifre gösterme düğmesinin ekran okuyucu etiketi yok (eskiden de yoktu; yeni metin gerektiği için eklenmedi).
+- Test görüntüleri: `build/gecici_test/asama9_ekranlar_test.dart` (commit'e girmez); 40 görüntüde taşma yok.
+- Tüm testler: 274 geçti.
+

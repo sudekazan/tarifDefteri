@@ -254,21 +254,19 @@ class _KlasorlerState extends State<Klasorler> {
 
     await showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('folders_rename'.tr()),
-        content: TextField(
+      builder: (context) => KilDiyalog(
+        baslik: 'folders_rename'.tr(),
+        icerik: TextField(
           controller: nameController,
           decoration: InputDecoration(
             labelText: 'folders_new_name'.tr(),
           ),
           autofocus: true,
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('common_cancel'.tr()),
-          ),
-          ElevatedButton(
+        eylemler: [
+          KilDugme.birincil(
+            etiket: 'common_save'.tr(),
+            tamGenislik: true,
             onPressed: () async {
               String yeniAd = nameController.text.trim();
               if (yeniAd.isNotEmpty && yeniAd != klasor.klasor_adi) {
@@ -276,7 +274,10 @@ class _KlasorlerState extends State<Klasorler> {
                 await _klasorYenidenAdlandir(klasor, yeniAd);
               }
             },
-            child: Text('common_save'.tr()),
+          ),
+          KilDiyalogMetinDugmesi(
+            etiket: 'common_cancel'.tr(),
+            onPressed: () => Navigator.pop(context),
           ),
         ],
       ),
@@ -311,10 +312,10 @@ class _KlasorlerState extends State<Klasorler> {
 
   void _yeniKlasorEkle() async {
     if (!RevenueCatService.isProUser && klasorListesi.length >= RevenueCatService.freeKlasorLimit) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('klasor_limit_reached'.tr(args: ['${RevenueCatService.freeKlasorLimit}'])),
-        ),
+      KilBildirim.goster(
+        context,
+        'klasor_limit_reached'.tr(args: ['${RevenueCatService.freeKlasorLimit}']),
+        tur: KilBildirimTuru.uyari,
       );
       Navigator.push(
         context,
@@ -427,32 +428,17 @@ class _KlasorlerState extends State<Klasorler> {
   }
 
   void _silmeOnayi(KlasorData klasor) {
-    final r = context.kil;
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('folders_delete_title'.tr()),
-        content: Text('${klasorGorunenAdi(klasor)}${'folders_delete_confirm_suffix'.tr()}'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('common_no'.tr()),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              sil(klasor.klasor_id);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: r.hata,
-              foregroundColor: r.hataUstuYazi,
-              side: BorderSide.none,
-            ),
-            child: Text('common_yes'.tr()),
-          ),
-        ],
-      ),
-    );
+    KilDiyalog.onayIste(
+      context,
+      ikon: Icons.delete_outline_rounded,
+      tehlikeli: true,
+      baslik: 'folders_delete_title'.tr(),
+      mesaj: '${klasorGorunenAdi(klasor)}${'folders_delete_confirm_suffix'.tr()}',
+      onayEtiketi: 'common_yes'.tr(),
+      vazgecEtiketi: 'common_no'.tr(),
+    ).then((onay) {
+      if (onay == true) sil(klasor.klasor_id);
+    });
   }
 
   Widget _klasorMenusu(KilRenkleri r, KlasorData klasor) {
@@ -798,12 +784,11 @@ class _FavoriTariflerSayfasiState extends State<FavoriTariflerSayfasi> {
       AnalyticsService.tarifPaylasildi(kaynak: 'klasorler');
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('share_error_generic'.tr()),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 2),
-          ),
+        KilBildirim.goster(
+          context,
+          'share_error_generic'.tr(),
+          tur: KilBildirimTuru.hata,
+          sure: const Duration(seconds: 2),
         );
       }
     }
@@ -816,32 +801,17 @@ class _FavoriTariflerSayfasiState extends State<FavoriTariflerSayfasi> {
   }
 
   void _silmeOnayi(TarifData tarif) {
-    final r = context.kil;
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text('recipes_delete_title'.tr()),
-        content: Text('${tarif.tarif_adi}${'recipes_delete_confirm_suffix'.tr()}'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text('common_no'.tr()),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              _tarifSil(tarif);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: r.hata,
-              foregroundColor: r.hataUstuYazi,
-              side: BorderSide.none,
-            ),
-            child: Text('common_yes'.tr()),
-          ),
-        ],
-      ),
-    );
+    KilDiyalog.onayIste(
+      context,
+      ikon: Icons.delete_outline_rounded,
+      tehlikeli: true,
+      baslik: 'recipes_delete_title'.tr(),
+      mesaj: '${tarif.tarif_adi}${'recipes_delete_confirm_suffix'.tr()}',
+      onayEtiketi: 'common_yes'.tr(),
+      vazgecEtiketi: 'common_no'.tr(),
+    ).then((onay) {
+      if (onay == true) _tarifSil(tarif);
+    });
   }
 
   Future<void> _tarifiAc(TarifData tarif) async {

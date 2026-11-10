@@ -10,6 +10,7 @@ class KilSecenek {
     required this.onTap,
     this.secili = false,
     this.renk,
+    this.emoji,
   });
 
   final IconData ikon;
@@ -21,6 +22,9 @@ class KilSecenek {
 
   /// İkon kutusunun rengi (ör. klasör rengi). Verilmezse seçili çip rengi.
   final KlasorRenk? renk;
+
+  /// Verilirse ikon yerine kutuda gösterilir (ör. dil bayrağı).
+  final String? emoji;
 }
 
 /// Alt sayfalardaki seçenek listesi (klasöre taşı, bölüm ekle). Her satır en
@@ -69,11 +73,18 @@ class KilSecimListesi extends StatelessWidget {
                             color: s.renk?.zemin ?? r.seciliCipZemin,
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: Icon(
-                            s.ikon,
-                            size: 22,
-                            color: s.renk?.ikon ?? r.seciliCipYazi,
-                          ),
+                          alignment: Alignment.center,
+                          child: s.emoji != null
+                              ? Text(
+                                  s.emoji!,
+                                  style: const TextStyle(fontSize: 22),
+                                  textScaler: TextScaler.noScaling,
+                                )
+                              : Icon(
+                                  s.ikon,
+                                  size: 22,
+                                  color: s.renk?.ikon ?? r.seciliCipYazi,
+                                ),
                         ),
                       ),
                       const SizedBox(width: 14),

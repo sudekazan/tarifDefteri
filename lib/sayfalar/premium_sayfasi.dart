@@ -169,16 +169,10 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
     if (mounted) {
       setState(() => _isPurchasing = false);
       if (sonuc == SatinAlmaSonucu.basarili) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'premium_success'.tr(),
-              style: TextStyle(color: context.kil.vurguUstuYazi),
-            ),
-            backgroundColor: context.kil.vurgu,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
+        KilBildirim.goster(
+          context,
+          'premium_success'.tr(),
+          tur: KilBildirimTuru.basari,
         );
         Navigator.pop(context, true);
       }
@@ -192,29 +186,17 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
     if (mounted) {
       setState(() => _isPurchasing = false);
       if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'premium_restored'.tr(),
-              style: TextStyle(color: context.kil.vurguUstuYazi),
-            ),
-            backgroundColor: context.kil.vurgu,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
+        KilBildirim.goster(
+          context,
+          'premium_restored'.tr(),
+          tur: KilBildirimTuru.basari,
         );
         Navigator.pop(context, true);
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'premium_restore_failed'.tr(),
-              style: TextStyle(color: context.kil.hataUstuYazi),
-            ),
-            backgroundColor: context.kil.hata,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
+        KilBildirim.goster(
+          context,
+          'premium_restore_failed'.tr(),
+          tur: KilBildirimTuru.hata,
         );
       }
     }
@@ -249,61 +231,44 @@ class _PremiumSayfasiState extends State<PremiumSayfasi> {
       builder: (ctx) {
         final r = ctx.kil;
         final yazi = Theme.of(ctx).textTheme;
-        return AlertDialog(
-          backgroundColor: r.kart,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(KilKart.koseYaricapi),
-            side: BorderSide(color: r.kenar, width: KilKart.kenarKalinligi),
-          ),
-          title: Row(
+        return KilDiyalog(
+          ikon: Icons.info_outline_rounded,
+          baslik: 'premium_package_error_title'.tr(),
+          mesaj: 'premium_package_error_body'.tr(),
+          icerik: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(Icons.info_outline_rounded, color: r.baslik, size: 28),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text('premium_package_error_title'.tr()),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: r.hataZemin,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: SelectableText(
+                  errorDetail,
+                  style: TextStyle(
+                    fontFamily: 'monospace',
+                    fontSize: 12,
+                    color: r.hataZeminYazi,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+              Text(
+                Platform.isIOS
+                    ? 'premium_package_error_reasons_ios'.tr()
+                    : 'premium_package_error_reasons_android'.tr(),
+                style: yazi.bodySmall?.copyWith(color: r.solukYazi, height: 1.5),
               ),
             ],
           ),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'premium_package_error_body'.tr(),
-                  style: yazi.bodyMedium?.copyWith(height: 1.4),
-                ),
-                const SizedBox(height: 12),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: r.hataZemin,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: SelectableText(
-                    errorDetail,
-                    style: TextStyle(
-                      fontFamily: 'monospace',
-                      fontSize: 12,
-                      color: r.hataZeminYazi,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 14),
-                Text(
-                  Platform.isIOS
-                      ? 'premium_package_error_reasons_ios'.tr()
-                      : 'premium_package_error_reasons_android'.tr(),
-                  style: yazi.bodySmall?.copyWith(color: r.solukYazi, height: 1.5),
-                ),
-              ],
-            ),
-          ),
-          actions: [
+          eylemler: [
             KilDugme.birincil(
               etiket: 'common_ok'.tr(),
+              tamGenislik: true,
               onPressed: () => Navigator.pop(ctx),
             ),
           ],

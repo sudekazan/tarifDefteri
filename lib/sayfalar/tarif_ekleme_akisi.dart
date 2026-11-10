@@ -18,6 +18,7 @@ import '../tarifler_data/tarif_data.dart';
 import '../utils/error_helper.dart';
 import '../widgets/ai_chef_loading_animation.dart';
 import '../widgets/ai_hak_doldu_dialog.dart';
+import '../widgets/kil/kil.dart';
 import '../widgets/tarif_ekle_alt_sayfasi.dart';
 import 'premium_sayfasi.dart';
 import 'tarif_olusturma.dart';
@@ -88,18 +89,15 @@ class TarifEklemeAkisi {
         }
       } catch (_) {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('auth_error_network'.tr()),
-              backgroundColor: Colors.red,
-            ),
+          KilBildirim.goster(
+            context,
+            'auth_error_network'.tr(),
+            tur: KilBildirimTuru.hata,
           );
         }
       }
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('ai_login_required'.tr())),
-      );
+      KilBildirim.goster(context, 'ai_login_required'.tr());
     }
   }
 
@@ -133,64 +131,41 @@ class TarifEklemeAkisi {
     final TextEditingController urlController = TextEditingController();
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(
-          children: [
-            Icon(Icons.link_rounded, color: Theme.of(context).primaryColor),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                'link_dialog_title'.tr(),
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
+      builder: (context) => KilDiyalog(
+        ikon: Icons.link_rounded,
+        baslik: 'link_dialog_title'.tr(),
+        mesaj: 'link_dialog_hint'.tr(),
+        icerik: TextField(
+          controller: urlController,
+          autofocus: true,
+          keyboardType: TextInputType.url,
+          decoration: InputDecoration(
+            hintText: 'link_dialog_placeholder'.tr(),
+            prefixIcon: const Icon(Icons.language_rounded),
+            suffixIcon: IconButton(
+              icon: const Icon(Icons.content_paste_rounded),
+              tooltip: 'link_dialog_paste'.tr(),
+              onPressed: () async {
+                final data = await Clipboard.getData(Clipboard.kTextPlain);
+                if (data?.text != null) {
+                  urlController.text = data!.text!;
+                }
+              },
             ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'link_dialog_hint'.tr(),
-              style: const TextStyle(fontSize: 14),
-            ),
-            const SizedBox(height: 14),
-            TextField(
-              controller: urlController,
-              autofocus: true,
-              keyboardType: TextInputType.url,
-              decoration: InputDecoration(
-                hintText: 'link_dialog_placeholder'.tr(),
-                prefixIcon: const Icon(Icons.language_rounded),
-                suffixIcon: IconButton(
-                  icon: const Icon(Icons.content_paste_rounded),
-                  tooltip: 'link_dialog_paste'.tr(),
-                  onPressed: () async {
-                    final data = await Clipboard.getData(Clipboard.kTextPlain);
-                    if (data?.text != null) {
-                      urlController.text = data!.text!;
-                    }
-                  },
-                ),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('common_cancel'.tr(), style: const TextStyle(color: Colors.grey)),
           ),
-          ElevatedButton.icon(
+        ),
+        eylemler: [
+          KilDugme.birincil(
+            etiket: 'link_dialog_import'.tr(),
+            ikon: Icons.download_rounded,
+            tamGenislik: true,
             onPressed: () {
               final url = urlController.text.trim();
               if (url.isEmpty || !url.contains('.')) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('link_error_invalid'.tr()),
-                    backgroundColor: Colors.red,
-                  ),
+                KilBildirim.goster(
+                  context,
+                  'link_error_invalid'.tr(),
+                  tur: KilBildirimTuru.hata,
                 );
                 return;
               }
@@ -198,12 +173,10 @@ class TarifEklemeAkisi {
               Navigator.pop(context);
               _generateAndNavigate(url, true);
             },
-            icon: const Icon(Icons.download_rounded, color: Colors.white, size: 20),
-            label: Text('link_dialog_import'.tr(), style: const TextStyle(color: Colors.white)),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Theme.of(context).primaryColor,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
+          ),
+          KilDiyalogMetinDugmesi(
+            etiket: 'common_cancel'.tr(),
+            onPressed: () => Navigator.pop(context),
           ),
         ],
       ),
@@ -214,35 +187,29 @@ class TarifEklemeAkisi {
     final TextEditingController promptController = TextEditingController();
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('add_option_ai'.tr()),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('ai_input_hint'.tr()),
-            const SizedBox(height: 16),
-            TextField(
-              controller: promptController,
-              autofocus: true,
-              maxLines: null,
-              decoration: InputDecoration(
-                hintText: 'ai_input_placeholder'.tr(),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('ai_dialog_cancel'.tr(), style: const TextStyle(color: Colors.grey)),
+      builder: (context) => KilDiyalog(
+        ikon: Icons.auto_awesome_rounded,
+        baslik: 'add_option_ai'.tr(),
+        mesaj: 'ai_input_hint'.tr(),
+        icerik: TextField(
+          controller: promptController,
+          autofocus: true,
+          maxLines: null,
+          decoration: InputDecoration(
+            hintText: 'ai_input_placeholder'.tr(),
           ),
-          ElevatedButton(
+        ),
+        eylemler: [
+          KilDugme.birincil(
+            etiket: 'ai_dialog_create'.tr(),
+            tamGenislik: true,
             onPressed: () {
               final text = promptController.text.trim();
               if (text.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('ai_name_warning'.tr()), backgroundColor: Colors.red),
+                KilBildirim.goster(
+                  context,
+                  'ai_name_warning'.tr(),
+                  tur: KilBildirimTuru.hata,
                 );
                 return;
               }
@@ -250,8 +217,10 @@ class TarifEklemeAkisi {
               // Link kontrolü veya saçma kelime kontrolü
               bool isUrl = Uri.tryParse(text)?.hasAbsolutePath ?? false;
               if (!isUrl && (text.length < 2 || !RegExp(r'[a-zA-ZçğıöşüÇĞİÖŞÜ]').hasMatch(text))) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('ai_error_not_food'.tr()), backgroundColor: Colors.red),
+                KilBildirim.goster(
+                  context,
+                  'ai_error_not_food'.tr(),
+                  tur: KilBildirimTuru.hata,
                 );
                 return;
               }
@@ -259,8 +228,10 @@ class TarifEklemeAkisi {
               Navigator.pop(context); // Close dialog
               _generateAndNavigate(text, isUrl); // Start magic
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).primaryColor),
-            child: Text('ai_dialog_create'.tr(), style: const TextStyle(color: Colors.white)),
+          ),
+          KilDiyalogMetinDugmesi(
+            etiket: 'ai_dialog_cancel'.tr(),
+            onPressed: () => Navigator.pop(context),
           ),
         ],
       ),
@@ -271,11 +242,10 @@ class TarifEklemeAkisi {
     if (!RevenueCatService.isProUser &&
         await _klasordekiTarifSayisi() >= RevenueCatService.freeTarifPerKlasorLimit) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('tarif_limit_reached'.tr(args: ['${RevenueCatService.freeTarifPerKlasorLimit}'])),
-          backgroundColor: Colors.orange,
-        ),
+      KilBildirim.goster(
+        context,
+        'tarif_limit_reached'.tr(args: ['${RevenueCatService.freeTarifPerKlasorLimit}']),
+        tur: KilBildirimTuru.uyari,
       );
       Navigator.push(
         context,
@@ -286,8 +256,10 @@ class TarifEklemeAkisi {
     if (!context.mounted) return;
 
     if (isUrl && !RevenueCatService.isProUser) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('link_recipe_pro_only'.tr()), backgroundColor: Colors.orange),
+      KilBildirim.goster(
+        context,
+        'link_recipe_pro_only'.tr(),
+        tur: KilBildirimTuru.uyari,
       );
       Navigator.push(
         context,
@@ -309,14 +281,15 @@ class TarifEklemeAkisi {
       context: context,
       barrierDismissible: false,
       builder: (context) => Dialog(
-        backgroundColor: Colors.transparent,
+        backgroundColor: context.kil.kart,
+        surfaceTintColor: Colors.transparent,
         elevation: 0,
-        child: Container(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(KilDiyalog.koseYaricapi),
+          side: BorderSide(color: context.kil.kenar, width: KilKart.kenarKalinligi),
+        ),
+        child: Padding(
           padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: Theme.of(context).cardColor,
-            borderRadius: BorderRadius.circular(24),
-          ),
           child: AiChefLoadingAnimation(
             title: 'ai_generating_title'.tr(),
             messages: [
@@ -408,19 +381,12 @@ class TarifEklemeAkisi {
   Future<void> _showAiLimitChoiceDialog(String input, bool isUrl) async {
     if (!context.mounted) return;
     if (RevenueCatService.isProUser) {
-      showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: Text('ai_limit_pro_title'.tr(), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-          content: Text('ai_limit_pro_body'.tr(), style: const TextStyle(fontSize: 14, height: 1.4)),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: Text('ai_limit_pro_ok'.tr(), style: const TextStyle(fontWeight: FontWeight.bold)),
-            ),
-          ],
-        ),
+      KilDiyalog.bilgiGoster(
+        context,
+        ikon: Icons.hourglass_bottom_rounded,
+        baslik: 'ai_limit_pro_title'.tr(),
+        mesaj: 'ai_limit_pro_body'.tr(),
+        tamamEtiketi: 'ai_limit_pro_ok'.tr(),
       );
       return;
     }
@@ -498,18 +464,13 @@ class TarifEklemeAkisi {
       message = 'ai_error_not_food'.tr();
     }
 
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('ai_error_title'.tr()),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('common_ok'.tr()),
-          )
-        ],
-      ),
+    KilDiyalog.bilgiGoster(
+      context,
+      ikon: Icons.error_outline_rounded,
+      tur: KilDiyalogTuru.tehlike,
+      baslik: 'ai_error_title'.tr(),
+      mesaj: message,
+      tamamEtiketi: 'common_ok'.tr(),
     );
   }
 
@@ -517,11 +478,10 @@ class TarifEklemeAkisi {
     if (!RevenueCatService.isProUser &&
         await _klasordekiTarifSayisi() >= RevenueCatService.freeTarifPerKlasorLimit) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('tarif_limit_reached'.tr(args: ['${RevenueCatService.freeTarifPerKlasorLimit}'])),
-          backgroundColor: Colors.orange,
-        ),
+      KilBildirim.goster(
+        context,
+        'tarif_limit_reached'.tr(args: ['${RevenueCatService.freeTarifPerKlasorLimit}']),
+        tur: KilBildirimTuru.uyari,
       );
       Navigator.push(
         context,

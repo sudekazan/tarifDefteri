@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../widgets/kil/kil.dart';
+
 /// Bir metnin link/URL gibi görünüp görünmediğini kontrol eder.
 /// tarif_olusturma.dart ve tarif_detay.dart'ta aynı mantık tekrarlanmasın diye ortak hale getirildi.
 bool isValidRecipeUrl(String text) {
@@ -31,20 +33,18 @@ Future<void> launchRecipeUrl(BuildContext context, String url) async {
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     } else if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('${'link_cannot_open_prefix'.tr()}$url'),
-          backgroundColor: Colors.red,
-        ),
+      KilBildirim.goster(
+        context,
+        '${'link_cannot_open_prefix'.tr()}$url',
+        tur: KilBildirimTuru.hata,
       );
     }
   } catch (e) {
     if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('${'link_invalid_prefix'.tr()}$url'),
-          backgroundColor: Colors.red,
-        ),
+      KilBildirim.goster(
+        context,
+        '${'link_invalid_prefix'.tr()}$url',
+        tur: KilBildirimTuru.hata,
       );
     }
   }

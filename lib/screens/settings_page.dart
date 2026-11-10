@@ -12,7 +12,9 @@ import '../services/revenuecat_service.dart';
 import '../services/review_service.dart';
 import '../utils/error_helper.dart';
 import '../sayfalar/premium_sayfasi.dart';
-import '../widgets/premium_parcalari.dart';
+import '../widgets/giris_parcalari.dart' show GirisBekleme;
+import '../widgets/kil/kil.dart';
+import '../widgets/profil_parcalari.dart';
 
 class SettingsPage extends StatefulWidget {
   final bool isDarkMode;
@@ -38,7 +40,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
   String appVersion = '1.0.0';
   String buildNumber = '1';
-  final FirebaseService _firebaseService = FirebaseService();
+  late final FirebaseService _firebaseService = FirebaseService();
   User? _currentUser;
 
   /// AB'deki kullanıcılar için reklam onayını değiştirme satırı gösterilsin mi?
@@ -124,68 +126,24 @@ class _SettingsPageState extends State<SettingsPage> {
       {'code': 'pt', 'key': 'settings_language_portuguese'},
     ];
 
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    KilAltSayfa.goster<void>(
+      context,
+      baslik: 'settings_language_title'.tr(),
+      builder: (sayfaContext) => KilSecimListesi(
+        secenekler: [
+          for (final lang in languages)
+            KilSecenek(
+              ikon: Icons.language_rounded,
+              emoji: _languageFlags[lang['code']],
+              etiket: lang['key']!.tr(),
+              secili: context.locale.languageCode == lang['code'],
+              onTap: () {
+                context.setLocale(Locale(lang['code']!));
+                Navigator.pop(sayfaContext);
+              },
+            ),
+        ],
       ),
-      builder: (context) {
-        return SafeArea(
-          child: Padding(
-            padding: EdgeInsets.only(
-              bottom: MediaQuery.of(context).viewInsets.bottom,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const SizedBox(height: 8),
-                Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'settings_language_title'.tr(),
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                ...languages.map((lang) {
-                  final code = lang['code']!;
-                  final isSelected = context.locale.languageCode == code;
-                  return ListTile(
-                    leading: Text(
-                      _languageFlags[code] ?? '',
-                      style: const TextStyle(fontSize: 24),
-                    ),
-                    title: Text(
-                      lang['key']!.tr(),
-                      style: TextStyle(
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                      ),
-                    ),
-                    trailing: isSelected
-                        ? Icon(Icons.check_circle, color: Theme.of(context).colorScheme.primary)
-                        : null,
-                    onTap: () {
-                      context.setLocale(Locale(code));
-                      Navigator.pop(context);
-                    },
-                  );
-                }),
-                const SizedBox(height: 16),
-              ],
-            ),
-          ),
-        );
-      },
     );
   }
 
@@ -223,8 +181,10 @@ class _SettingsPageState extends State<SettingsPage> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(ErrorHelper.getFriendlyErrorMessage(e))),
+        KilBildirim.goster(
+          context,
+          ErrorHelper.getFriendlyErrorMessage(e),
+          tur: KilBildirimTuru.hata,
         );
       }
     }
@@ -239,11 +199,7 @@ class _SettingsPageState extends State<SettingsPage> {
     final dogrulandi = await _kimligiTazele();
     if (!dogrulandi || !mounted) return;
 
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const Center(child: CircularProgressIndicator()),
-    );
+    KilDiyalog.beklemeGoster(context);
 
     try {
       await _firebaseService.deleteUserAccount();
@@ -296,18 +252,11 @@ class _SettingsPageState extends State<SettingsPage> {
 
   void _showAccountDeletedSnackBar() {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.check_circle, color: Colors.white),
-            const SizedBox(width: 12),
-            Text('settings_delete_account_success'.tr()),
-          ],
-        ),
-        backgroundColor: Colors.green,
-        duration: const Duration(seconds: 3),
-      ),
+    KilBildirim.goster(
+      context,
+      'settings_delete_account_success'.tr(),
+      tur: KilBildirimTuru.basari,
+      sure: const Duration(seconds: 3),
     );
   }
 
@@ -319,18 +268,11 @@ class _SettingsPageState extends State<SettingsPage> {
 
   void _showAccountDeletionErrorText(String mesaj) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.error, color: Colors.white),
-            const SizedBox(width: 12),
-            Expanded(child: Text(mesaj)),
-          ],
-        ),
-        backgroundColor: Colors.red,
-        duration: const Duration(seconds: 5),
-      ),
+    KilBildirim.goster(
+      context,
+      mesaj,
+      tur: KilBildirimTuru.hata,
+      sure: const Duration(seconds: 5),
     );
   }
 
@@ -342,11 +284,7 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _restorePurchases() async {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const Center(child: CircularProgressIndicator()),
-    );
+    KilDiyalog.beklemeGoster(context);
 
     final success = await RevenueCatService.restorePurchases();
 
@@ -354,10 +292,10 @@ class _SettingsPageState extends State<SettingsPage> {
     Navigator.pop(context); // Loading kapat
     setState(() {});
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(success ? 'premium_restored'.tr() : 'premium_restore_failed'.tr()),
-      ),
+    KilBildirim.goster(
+      context,
+      success ? 'premium_restored'.tr() : 'premium_restore_failed'.tr(),
+      tur: success ? KilBildirimTuru.basari : KilBildirimTuru.bilgi,
     );
   }
 
@@ -369,367 +307,158 @@ class _SettingsPageState extends State<SettingsPage> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(ErrorHelper.getFriendlyErrorMessage(e))),
+        KilBildirim.goster(
+          context,
+          ErrorHelper.getFriendlyErrorMessage(e),
+          tur: KilBildirimTuru.hata,
         );
       }
     }
   }
 
+  Future<void> _cikisYap() async {
+    final shouldLogout = await KilDiyalog.onayIste(
+      context,
+      ikon: Icons.logout_rounded,
+      tehlikeli: true,
+      baslik: 'settings_logout_confirm_title'.tr(),
+      mesaj: 'settings_logout_confirm_content'.tr(),
+      onayEtiketi: 'settings_logout'.tr(),
+      vazgecEtiketi: 'settings_logout_cancel'.tr(),
+    );
+
+    if (shouldLogout == true) {
+      await _firebaseService.signOut();
+      if (mounted) {
+        KilBildirim.goster(
+          context,
+          'settings_logout_success'.tr(),
+          tur: KilBildirimTuru.basari,
+        );
+      }
+    }
+  }
+
+  Future<void> _yedekle() async {
+    try {
+      await _firebaseService.backupLocalDataToFirebase();
+      if (mounted) {
+        KilBildirim.goster(
+          context,
+          'settings_backup_success'.tr(),
+          tur: KilBildirimTuru.basari,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        KilBildirim.goster(
+          context,
+          'settings_backup_error'.tr(),
+          tur: KilBildirimTuru.hata,
+        );
+      }
+    }
+  }
+
+  Future<void> _hesapSilmeyiSor() async {
+    final shouldDelete = await KilDiyalog.onayIste(
+      context,
+      ikon: Icons.warning_amber_rounded,
+      tehlikeli: true,
+      baslik: 'settings_delete_account_dialog_title'.tr(),
+      icerik: const HesapSilmeUyarisi(),
+      onayEtiketi: 'settings_delete_account_button'.tr(),
+      vazgecEtiketi: 'settings_logout_cancel'.tr(),
+    );
+
+    if (shouldDelete == true) {
+      await _performAccountDeletion();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text('settings_title'.tr())),
-      body: Container(
-        color: Theme.of(context).scaffoldBackgroundColor,
-        child: ListView(
-          children: [
-          SwitchListTile(
-            title: Text('settings_dark_mode'.tr()),
-            value: widget.isDarkMode,
-            onChanged: widget.onDarkModeChanged,
-          ),
-          const Divider(),
-          // Premium
-          ListTile(
-            title: Text(
-              'settings_premium_title'.tr(),
-              style: const TextStyle(fontWeight: FontWeight.bold),
+    final kullanici = _currentUser;
+    return ProfilGorunumu(
+      hesap: kullanici == null
+          ? null
+          : ProfilHesap(
+              ad: kullanici.displayName,
+              eposta: kullanici.email,
+              yontem: _firebaseService.reauthYontemi,
             ),
-          ),
-          if (RevenueCatService.isProUser) ...[
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-              child: ProyaGecKarti(
-                baslik: 'settings_premium_active_title'.tr(),
-                aciklama: 'settings_premium_active_subtitle'.tr(),
-                aktif: true,
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.settings_suggest_outlined),
-              title: Text('settings_premium_manage'.tr()),
-              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-              onTap: _manageSubscription,
-            ),
-          ] else ...[
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-              child: ProyaGecKarti(
-                baslik: 'settings_premium_get_title'.tr(),
-                aciklama: 'settings_premium_get_subtitle'.tr(),
-                onTap: () async {
-                  await Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const PremiumSayfasi(source: 'settings')),
-                  );
-                  setState(() {});
-                },
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.restore),
-              title: Text('settings_premium_restore'.tr()),
-              onTap: _restorePurchases,
-            ),
-          ],
-          const Divider(),
-          // Dil Seçimi
-          ListTile(
-            leading: const Icon(Icons.language),
-            title: Text('settings_language_title'.tr()),
-            subtitle: Text(_getCurrentLanguageName(context)),
-            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-            onTap: () => _showLanguageBottomSheet(context),
-          ),
-          const Divider(),
-          // Firebase / Hesap Yönetimi
-          ListTile(
-            title: Text(
-              'settings_account_title'.tr(),
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ),
-          if (_currentUser != null) ...[
-            ListTile(
-              leading: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.green.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.person, color: Colors.green),
-              ),
-              title: Text('settings_logged_in'.tr()),
-              subtitle: Text(
-                _currentUser?.email ?? 'settings_user_fallback'.tr(),
-                style: const TextStyle(fontWeight: FontWeight.w500),
-              ),
-              trailing: IconButton(
-                icon: const Icon(Icons.logout, color: Colors.red),
-                tooltip: 'settings_logout'.tr(),
-                onPressed: () async {
-                  // Onay dialogu göster
-                  final shouldLogout = await showDialog<bool>(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      title: Text('settings_logout_confirm_title'.tr()),
-                      content: Text('settings_logout_confirm_content'.tr()),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context, false),
-                          child: Text('settings_logout_cancel'.tr()),
-                        ),
-                        TextButton(
-                          onPressed: () => Navigator.pop(context, true),
-                          child: Text(
-                            'settings_logout'.tr(),
-                            style: const TextStyle(color: Colors.red),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                  
-                  if (shouldLogout == true) {
-                    await _firebaseService.signOut();
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Row(
-                            children: [
-                              const Icon(Icons.check_circle, color: Colors.white),
-                              const SizedBox(width: 12),
-                              Text('settings_logout_success'.tr()),
-                            ],
-                          ),
-                          backgroundColor: Colors.green,
-                        ),
-                      );
-                    }
-                  }
-                },
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.cloud_upload),
-              title: Text('settings_backup'.tr()),
-              subtitle: Text('settings_backup_subtitle'.tr()),
-              onTap: () async {
-                // TODO: Yedekleme işlemi eklenecek
-                try {
-                  await _firebaseService.backupLocalDataToFirebase();
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('settings_backup_success'.tr())),
-                    );
-                  }
-                } catch (e) {
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('settings_backup_error'.tr())),
-                    );
-                  }
-                }
-              },
-            ),
-            const Divider(),
-            ListTile(
-              leading: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.red.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.delete_forever, color: Colors.red),
-              ),
-              title: Text(
-                'settings_delete_account'.tr(),
-                style: const TextStyle(color: Colors.red),
-              ),
-              subtitle: Text('settings_delete_account_subtitle'.tr()),
-              onTap: () async {
-                // Hesap silme onayı
-                final shouldDelete = await showDialog<bool>(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    title: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.red.withOpacity(0.1),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(Icons.warning, color: Colors.red, size: 28),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            'settings_delete_account_dialog_title'.tr(),
-                            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                      ],
-                    ),
-                    content: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'settings_delete_account_warning_title'.tr(),
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                        ),
-                        const SizedBox(height: 12),
-                        Text('settings_delete_account_when_delete'.tr()),
-                        const SizedBox(height: 8),
-                        Text('settings_delete_account_item_recipes'.tr()),
-                        Text('settings_delete_account_item_folders'.tr()),
-                        Text('settings_delete_account_item_data'.tr()),
-                        Text('settings_delete_account_item_cannot_undo'.tr()),
-                        const SizedBox(height: 12),
-                        Text(
-                          'settings_delete_account_confirm_question'.tr(),
-                          style: const TextStyle(fontWeight: FontWeight.w500),
-                        ),
-                      ],
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, false),
-                        child: Text('settings_logout_cancel'.tr()),
-                      ),
-                      ElevatedButton(
-                        onPressed: () => Navigator.pop(context, true),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red,
-                        ),
-                        child: Text(
-                          'settings_delete_account_button'.tr(),
-                          style: const TextStyle(color: Colors.white),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
+      proKullanici: RevenueCatService.isProUser,
+      koyuMod: widget.isDarkMode,
+      dilAdi: _getCurrentLanguageName(context),
+      surum: appVersion,
+      onKoyuMod: widget.onDarkModeChanged,
+      onDil: () => _showLanguageBottomSheet(context),
+      onPremium: () async {
+        await Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const PremiumSayfasi(source: 'settings')),
+        );
+        setState(() {});
+      },
+      onAbonelikYonet: _manageSubscription,
+      onGeriYukle: _restorePurchases,
+      onGiris: () async {
+        await Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const AuthScreen()),
+        );
+        _getCurrentUser();
+      },
+      onYedekle: _yedekle,
+      onCikis: _cikisYap,
+      onHesapSil: _hesapSilmeyiSor,
+      onDegerlendir: _rateApp,
+      onGizlilik: () => _launchUrl('https://sudekazan.github.io/tarifDefteri/privacy.html'),
+      onKosullar: () => _launchUrl('https://www.apple.com/legal/internet-services/itunes/dev/stdeula/'),
+      onGizlilikSecenekleri:
+          _gizlilikSecenekleriGerekli ? AdService.gizlilikSecenekleriniGoster : null,
+    );
+  }
+}
 
-                if (shouldDelete == true) {
-                  await _performAccountDeletion();
-                }
-              },
-            ),
-          ] else ...[
-            ListTile(
-              leading: const Icon(Icons.login),
-              title: Text('settings_login_register'.tr()),
-              subtitle: Text('settings_login_subtitle'.tr()),
-              onTap: () async {
-                await Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const AuthScreen()),
-                );
-                _getCurrentUser();
-              },
-            ),
-          ],
-          const Divider(),
-          // Uygulama Bilgileri
-          ListTile(
-            title: Text(
-              'settings_app_info_title'.tr(),
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
+/// Hesap silme onayının içeriği: uyarı başlığı ve silinecekler listesi.
+class HesapSilmeUyarisi extends StatelessWidget {
+  const HesapSilmeUyarisi({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final r = context.kil;
+    final yazi = Theme.of(context).textTheme;
+    final govde = yazi.bodyLarge?.copyWith(color: r.anaYazi, height: 1.4);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: r.hataZemin,
+            borderRadius: BorderRadius.circular(12),
           ),
-          ListTile(
-            leading: const Icon(Icons.info_outline),
-            title: Text('settings_version'.tr()),
-            subtitle: Text(appVersion),
+          child: Text(
+            'settings_delete_account_warning_title'.tr(),
+            style: yazi.titleMedium?.copyWith(color: r.hataZeminYazi),
           ),
-          ListTile(
-            leading: const Icon(Icons.person),
-            title: Text('settings_developer'.tr()),
-            subtitle: const Text('Sude Kazan'),
-          ),
-          ListTile(
-            leading: const Icon(Icons.email),
-            title: Text('settings_contact'.tr()),
-            subtitle: const Text('sudekazan1907@gmail.com'),
-          ),
-          ListTile(
-            leading: const Icon(Icons.star_outline, color: Colors.amber),
-            title: Text('settings_rate_app'.tr()),
-            subtitle: Text('settings_rate_app_subtitle'.tr()),
-            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-            onTap: _rateApp,
-          ),
-          const Divider(),
-          // Yasal & Gizlilik
-          ListTile(
-            title: Text(
-              'settings_legal_title'.tr(),
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ),
-          ListTile(
-            leading: const Icon(Icons.privacy_tip_outlined, color: Colors.blueAccent),
-            title: Text('settings_privacy_policy'.tr()),
-            subtitle: Text('settings_privacy_policy_subtitle'.tr()),
-            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-            onTap: () => _launchUrl('https://sudekazan.github.io/tarifDefteri/privacy.html'),
-          ),
-          ListTile(
-            leading: const Icon(Icons.description_outlined, color: Colors.deepPurpleAccent),
-            title: Text('settings_terms_of_use'.tr()),
-            subtitle: Text('settings_terms_of_use_subtitle'.tr()),
-            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-            onTap: () => _launchUrl('https://www.apple.com/legal/internet-services/itunes/dev/stdeula/'),
-          ),
-          if (_gizlilikSecenekleriGerekli)
-            ListTile(
-              leading: const Icon(Icons.shield_outlined, color: Colors.blueGrey),
-              title: Text('settings_privacy_options'.tr()),
-              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-              onTap: AdService.gizlilikSecenekleriniGoster,
-            ),
-          const SizedBox(height: 20),
-          // Alt kısımda uygulama adı ve versiyon
-          Center(
-            child: Column(
-              children: [
-                Text(
-                  'settings_footer_app_name'.tr(),
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).textTheme.bodyLarge?.color,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '${'settings_footer_version_prefix'.tr()} $appVersion',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.7),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'settings_footer_copyright'.tr(),
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Theme.of(context).textTheme.bodySmall?.color?.withOpacity(0.5),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
-        ],
         ),
-      ),
+        const SizedBox(height: 12),
+        Text('settings_delete_account_when_delete'.tr(), style: govde),
+        const SizedBox(height: 8),
+        Text('settings_delete_account_item_recipes'.tr(), style: govde),
+        Text('settings_delete_account_item_folders'.tr(), style: govde),
+        Text('settings_delete_account_item_data'.tr(), style: govde),
+        Text('settings_delete_account_item_cannot_undo'.tr(), style: govde),
+        const SizedBox(height: 12),
+        Text(
+          'settings_delete_account_confirm_question'.tr(),
+          style: yazi.titleMedium?.copyWith(color: r.anaYazi),
+        ),
+      ],
     );
   }
 }
@@ -787,43 +516,34 @@ class _SifreDogrulamaDialogState extends State<_SifreDogrulamaDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      title: Text('settings_reauth_dialog_title'.tr()),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('settings_reauth_dialog_message'.tr()),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _passwordController,
-            obscureText: true,
-            autofocus: true,
-            onSubmitted: (_) => _isSubmitting ? null : _dogrula(),
-            decoration: InputDecoration(
-              labelText: 'auth_password_label'.tr(),
-              border: const OutlineInputBorder(),
-              errorText: _errorText,
-            ),
-          ),
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: _isSubmitting ? null : () => Navigator.pop(context, false),
-          child: Text('settings_logout_cancel'.tr()),
+    return KilDiyalog(
+      ikon: Icons.lock_outline_rounded,
+      tur: KilDiyalogTuru.tehlike,
+      baslik: 'settings_reauth_dialog_title'.tr(),
+      mesaj: 'settings_reauth_dialog_message'.tr(),
+      icerik: TextField(
+        controller: _passwordController,
+        obscureText: true,
+        autofocus: true,
+        onSubmitted: (_) => _isSubmitting ? null : _dogrula(),
+        decoration: InputDecoration(
+          labelText: 'auth_password_label'.tr(),
+          errorText: _errorText,
+          errorMaxLines: 3,
         ),
-        ElevatedButton(
-          onPressed: _isSubmitting ? null : _dogrula,
-          style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-          child: _isSubmitting
-              ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                )
-              : Text('settings_reauth_confirm_button'.tr(), style: const TextStyle(color: Colors.white)),
+      ),
+      eylemler: [
+        if (_isSubmitting)
+          const GirisBekleme()
+        else
+          KilDugme.hata(
+            etiket: 'settings_reauth_confirm_button'.tr(),
+            tamGenislik: true,
+            onPressed: _dogrula,
+          ),
+        KilDiyalogMetinDugmesi(
+          etiket: 'settings_logout_cancel'.tr(),
+          onPressed: _isSubmitting ? null : () => Navigator.pop(context, false),
         ),
       ],
     );

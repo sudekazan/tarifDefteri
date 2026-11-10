@@ -362,22 +362,17 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
     );
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('recipe_edit_edit_item'.tr()),
-        content: TextField(
+      builder: (context) => KilDiyalog(
+        baslik: 'recipe_edit_edit_item'.tr(),
+        icerik: TextField(
           controller: editController,
           autofocus: true,
           maxLines: null,
-          decoration: InputDecoration(
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-          ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('common_cancel'.tr()),
-          ),
-          ElevatedButton(
+        eylemler: [
+          KilDugme.birincil(
+            etiket: 'common_save'.tr(),
+            tamGenislik: true,
             onPressed: () {
               if (editController.text.trim().isNotEmpty) {
                 setState(() {
@@ -388,13 +383,10 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
               }
               Navigator.pop(context);
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Theme.of(context).primaryColor,
-            ),
-            child: Text(
-              'common_save'.tr(),
-              style: const TextStyle(color: Colors.white),
-            ),
+          ),
+          KilDiyalogMetinDugmesi(
+            etiket: 'common_cancel'.tr(),
+            onPressed: () => Navigator.pop(context),
           ),
         ],
       ),
@@ -404,22 +396,8 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
   void _showBigPhoto(File file) {
     showDialog(
       context: context,
-      builder: (context) => Dialog(
-        backgroundColor: Colors.transparent,
-        child: GestureDetector(
-          onTap: () => Navigator.of(context).pop(),
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              color: Colors.black,
-            ),
-            padding: const EdgeInsets.all(8),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Image.file(file, fit: BoxFit.contain),
-            ),
-          ),
-        ),
+      builder: (context) => KilBuyukFoto(
+        child: Image.file(file, fit: BoxFit.contain),
       ),
     );
   }
@@ -433,105 +411,14 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
       onPopInvokedWithResult: (didPop, result) async {
         if (didPop) return;
         // Geri tuşuna basıldığında uyarı göster (yalnızca kaydedilmemiş veri varken buraya düşer)
-        final confirmDiscard = await showDialog<bool>(
-          context: context,
-          builder: (context) => AlertDialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-            contentPadding: const EdgeInsets.all(24),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // İkon
-                Container(
-                  width: 60,
-                  height: 60,
-                  decoration: BoxDecoration(
-                    color: Colors.amber.withValues(alpha: 0.15),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.warning_amber_rounded,
-                    color: Colors.amber.shade700,
-                    size: 32,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                // Başlık
-                Text(
-                  'recipe_edit_discard_title'.tr(),
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).textTheme.bodyLarge?.color,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 12),
-                // Açıklama
-                Text(
-                  'recipe_edit_discard_message'.tr(),
-                  style: TextStyle(
-                    fontSize: 15,
-                    color: Theme.of(context).textTheme.bodyMedium?.color,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 24),
-                // Butonlar
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () => Navigator.pop(context, false),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          side: BorderSide(
-                            color: Colors.grey.shade400,
-                            width: 1.5,
-                          ),
-                        ),
-                        child: Text(
-                          'recipe_edit_discard_keep'.tr(),
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.grey.shade700,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () => Navigator.pop(context, true),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          elevation: 0,
-                        ),
-                        child: Text(
-                          'recipe_edit_discard_exit'.tr(),
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
+        final confirmDiscard = await KilDiyalog.onayIste(
+          context,
+          ikon: Icons.warning_amber_rounded,
+          tehlikeli: true,
+          baslik: 'recipe_edit_discard_title'.tr(),
+          mesaj: 'recipe_edit_discard_message'.tr(),
+          onayEtiketi: 'recipe_edit_discard_exit'.tr(),
+          vazgecEtiketi: 'recipe_edit_discard_keep'.tr(),
         );
         if (confirmDiscard == true && context.mounted) {
           Navigator.of(context).pop();
@@ -658,26 +545,20 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
   Future<void> _kaydet() async {
     // Tarif adı kontrolü
     if (tfTaridAdi.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'recipe_edit_error_no_name'.tr(),
-          ),
-          backgroundColor: Colors.red,
-        ),
+      KilBildirim.goster(
+        context,
+        'recipe_edit_error_no_name'.tr(),
+        tur: KilBildirimTuru.hata,
       );
       return;
     }
 
     // En az bir section olmalı
     if (sections.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'recipe_edit_error_no_section'.tr(),
-          ),
-          backgroundColor: Colors.red,
-        ),
+      KilBildirim.goster(
+        context,
+        'recipe_edit_error_no_section'.tr(),
+        tur: KilBildirimTuru.hata,
       );
       return;
     }
@@ -692,13 +573,10 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
     }
 
     if (!hasItems) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'recipe_edit_error_no_item'.tr(),
-          ),
-          backgroundColor: Colors.red,
-        ),
+      KilBildirim.goster(
+        context,
+        'recipe_edit_error_no_item'.tr(),
+        tur: KilBildirimTuru.hata,
       );
       return;
     }
@@ -727,13 +605,7 @@ class _TarifOlusturmaState extends State<TarifOlusturma> {
 
     if (photos.isNotEmpty) {
       // Loading göster
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
+      KilDiyalog.beklemeGoster(context);
 
       try {
         for (var photo in photos) {

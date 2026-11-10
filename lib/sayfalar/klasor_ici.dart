@@ -248,44 +248,28 @@ class _KlasorIciState extends State<KlasorIci> {
       AnalyticsService.tarifPaylasildi(kaynak: 'klasor_ici');
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('share_error_generic'.tr()),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 2),
-          ),
+        KilBildirim.goster(
+          context,
+          'share_error_generic'.tr(),
+          tur: KilBildirimTuru.hata,
+          sure: const Duration(seconds: 2),
         );
       }
     }
   }
 
   void _silmeOnayi(TarifData tarif) {
-    final r = context.kil;
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('recipes_delete_title'.tr()),
-        content: Text('${tarif.tarif_adi}${'recipes_delete_confirm_suffix'.tr()}'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('common_no'.tr()),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _tarifSil(tarif);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: r.hata,
-              foregroundColor: r.hataUstuYazi,
-              side: BorderSide.none,
-            ),
-            child: Text('common_yes'.tr()),
-          ),
-        ],
-      ),
-    );
+    KilDiyalog.onayIste(
+      context,
+      ikon: Icons.delete_outline_rounded,
+      tehlikeli: true,
+      baslik: 'recipes_delete_title'.tr(),
+      mesaj: '${tarif.tarif_adi}${'recipes_delete_confirm_suffix'.tr()}',
+      onayEtiketi: 'common_yes'.tr(),
+      vazgecEtiketi: 'common_no'.tr(),
+    ).then((onay) {
+      if (onay == true) _tarifSil(tarif);
+    });
   }
 
   Future<void> _tarifiAc(TarifData tarif) async {

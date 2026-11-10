@@ -411,5 +411,8 @@
   "add_option_link_desc": "Bir tarif sayfasının linkini yapıştırın",
   "folder_name_label": "Klasör adı",
   "recipe_favorite_add": "Favorilere ekle",
-  "recipe_favorite_remove": "Favorilerden çıkar"
+  "recipe_favorite_remove": "Favorilerden çıkar",
+  "profile_signed_in_with_email": "E-posta ile giriş yapıldı",
+  "profile_signed_in_with_google": "Google ile giriş yapıldı",
+  "profile_signed_in_with_apple": "Apple ile giriş yapıldı"
 }

@@ -204,36 +204,27 @@ class _BugunNePisisemSayfasiState extends State<BugunNePisisemSayfasi> {
 
   Future<void> _tarifiUret() async {
     if (_secilenMalzemeler.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('what_to_cook_no_ingredients_warning'.tr()),
-          backgroundColor: const Color(0xFFE65100),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ),
+      KilBildirim.goster(
+        context,
+        'what_to_cook_no_ingredients_warning'.tr(),
+        tur: KilBildirimTuru.uyari,
       );
       return;
     }
 
     // Giriş Kontrolü
     if (FirebaseAuth.instance.currentUser == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('auth_required_for_ai'.tr()),
-          backgroundColor: Colors.redAccent,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          action: SnackBarAction(
-            label: 'auth_button_login'.tr(),
-            textColor: Colors.white,
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const AuthScreen()),
-              );
-            },
-          ),
-        ),
+      KilBildirim.goster(
+        context,
+        'auth_required_for_ai'.tr(),
+        tur: KilBildirimTuru.hata,
+        eylemEtiketi: 'auth_button_login'.tr(),
+        onEylem: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const AuthScreen()),
+          );
+        },
       );
       return;
     }
@@ -319,13 +310,10 @@ class _BugunNePisisemSayfasiState extends State<BugunNePisisemSayfasi> {
           await ReviewService.onRecipeSaved(context, isAiGenerated: true);
         }
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('what_to_cook_saved_success'.tr()),
-              backgroundColor: const Color(0xFF2ECC71),
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
+          KilBildirim.goster(
+            context,
+            'what_to_cook_saved_success'.tr(),
+            tur: KilBildirimTuru.basari,
           );
           final kaydedilince = widget.tarifKaydedilince;
           if (kaydedilince != null) {
@@ -372,19 +360,12 @@ class _BugunNePisisemSayfasiState extends State<BugunNePisisemSayfasi> {
   /// bilgi gösterilir; free kullanıcıya eski "reklam/Pro" seçim diyaloğu çıkar.
   Future<void> _showAiLimitChoiceDialog() async {
     if (RevenueCatService.isProUser) {
-      showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: Text('ai_limit_pro_title'.tr(), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-          content: Text('ai_limit_pro_body'.tr(), style: const TextStyle(fontSize: 14, height: 1.4)),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: Text('ai_limit_pro_ok'.tr(), style: const TextStyle(fontWeight: FontWeight.bold)),
-            ),
-          ],
-        ),
+      KilDiyalog.bilgiGoster(
+        context,
+        ikon: Icons.hourglass_bottom_rounded,
+        baslik: 'ai_limit_pro_title'.tr(),
+        mesaj: 'ai_limit_pro_body'.tr(),
+        tamamEtiketi: 'ai_limit_pro_ok'.tr(),
       );
       return;
     }
@@ -425,19 +406,13 @@ class _BugunNePisisemSayfasiState extends State<BugunNePisisemSayfasi> {
   }
 
   void _showErrorDialog(Object error) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        title: Text('ai_error_title'.tr()),
-        content: Text(ErrorHelper.getFriendlyErrorMessage(error)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text('common_ok'.tr()),
-          )
-        ],
-      ),
+    KilDiyalog.bilgiGoster(
+      context,
+      ikon: Icons.error_outline_rounded,
+      tur: KilDiyalogTuru.tehlike,
+      baslik: 'ai_error_title'.tr(),
+      mesaj: ErrorHelper.getFriendlyErrorMessage(error),
+      tamamEtiketi: 'common_ok'.tr(),
     );
   }
 

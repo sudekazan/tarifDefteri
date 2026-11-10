@@ -411,5 +411,8 @@
   "add_option_link_desc": "Fügen Sie den Link einer Rezeptseite ein",
   "folder_name_label": "Ordnername",
   "recipe_favorite_add": "Zu Favoriten hinzufügen",
-  "recipe_favorite_remove": "Aus Favoriten entfernen"
+  "recipe_favorite_remove": "Aus Favoriten entfernen",
+  "profile_signed_in_with_email": "Mit E-Mail angemeldet",
+  "profile_signed_in_with_google": "Mit Google angemeldet",
+  "profile_signed_in_with_apple": "Mit Apple angemeldet"
 }

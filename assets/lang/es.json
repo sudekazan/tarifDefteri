@@ -411,5 +411,8 @@
   "add_option_link_desc": "Pega el enlace de una página de recetas",
   "folder_name_label": "Nombre de la carpeta",
   "recipe_favorite_add": "Añadir a favoritos",
-  "recipe_favorite_remove": "Quitar de favoritos"
+  "recipe_favorite_remove": "Quitar de favoritos",
+  "profile_signed_in_with_email": "Sesión iniciada con correo",
+  "profile_signed_in_with_google": "Sesión iniciada con Google",
+  "profile_signed_in_with_apple": "Sesión iniciada con Apple"
 }

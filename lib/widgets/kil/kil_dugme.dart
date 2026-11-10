@@ -3,9 +3,10 @@ import 'package:flutter/material.dart';
 import '../../theme/kil_renkleri.dart';
 import 'kil_basilir.dart';
 
-enum KilDugmeTuru { birincil, ikincil, vurgu }
+enum KilDugmeTuru { birincil, ikincil, vurgu, hata }
 
-/// Kil düğmesi: birincil (terrakota), ikincil (beyaz), vurgu (adaçayı).
+/// Kil düğmesi: birincil (terrakota), ikincil (beyaz), vurgu (adaçayı), hata
+/// (geri alınamayan işlemler: sil, çıkış yap).
 ///
 /// Açık modda alttan sert gölge vardır; basınca birkaç piksel aşağı iner.
 /// Koyu modda gölge yerine kenar vardır. "Hareketi azalt" açıksa geçiş
@@ -47,6 +48,15 @@ class KilDugme extends StatelessWidget {
     this.tamGenislik = false,
     this.buyuk = false,
   }) : tur = KilDugmeTuru.vurgu;
+
+  const KilDugme.hata({
+    super.key,
+    required this.etiket,
+    required this.onPressed,
+    this.ikon,
+    this.tamGenislik = false,
+    this.buyuk = false,
+  }) : tur = KilDugmeTuru.hata;
 
   final String etiket;
   final VoidCallback? onPressed;
@@ -92,6 +102,11 @@ class KilDugme extends StatelessWidget {
         yazi = r.vurguUstuYazi;
         golge = r.vurguGolge;
         kenar = r.sertGolge ? r.vurgu : r.vurguGolge;
+      case KilDugmeTuru.hata:
+        zemin = r.hata;
+        yazi = r.hataUstuYazi;
+        golge = r.hataZeminYazi;
+        kenar = r.hata;
     }
 
     final zeminRengi = etkin ? zemin : r.solukYuzey;
