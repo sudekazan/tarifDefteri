@@ -1,6 +1,6 @@
 # Kil tasarımına geçiş planı (Tarifly)
 
-Tarih: 2026-11-09. Durum: **Aşama 1–9 tamamlandı; yalnızca aşama 10 (son tarama) kaldı.**
+Tarih: 2026-11-09. Durum: **Tüm aşamalar tamamlandı (1–10, 2026-11-10).** Aşama 4–10 `kil-gece` dalında; Sude'nin soruları ve cihaz kontrol listesi `docs/tasarim/gece-notlari.md` başındaki sabah özetinde.
 Kaynak: UI UX Pro Max'in "Recipe & Cooking App" önerisi (claymorphism) ve Sude ile yapılan önce/sonra görsel çalışması.
 
 ## Kararlar (Sude, 2026-11-09)
@@ -184,7 +184,16 @@ Her aşamadan sonra: `flutter analyze`, ilgili testler, simülatörde açık ve 
    - **Profil** (`lib/screens/settings_page.dart` mantık, `lib/widgets/profil_parcalari.dart` görünüm `ProfilGorunumu`): Caveat 34 "Profil" başlığı, altında hesap kartı (kişi dairesi, ad ya da e-posta, e-posta, giriş yöntemi hapı: "Google ile giriş yapıldı" vb.; girişsizken "Giriş Yap / Kayıt Ol" kartı ve "Giriş Yap" düğmesi). Hemen altında ayarlar listesi; özet ya da sayı yok (Sude kararı). Sıra: Pro kartı (`ProyaGecKarti`) ve Geri Yükle / Aboneliği Yönet; Ayarlar (Koyu Mod anahtarı, Dil); Hesap Yönetimi (yalnızca girişliyken: Verileri Yedekle, Çıkış Yap, Hesabımı Sil; son ikisi hata renginde); Uygulama Bilgileri; Yasal & Gizlilik (reklam gizlilik satırı yalnızca AB'de); alt bilgi. Satırlar `ProfilSatiri` (en az 56, ikon kutusu, ekran okuyucu tek öğe; 1.6 katın üstünde ikon kutusu gizlenir), kartlar `ProfilBolumu`. Çıkış, hesap silme ve şifre doğrulama diyalogları `KilDiyalog` (hesap silmede uyarı kutusu `HesapSilmeUyarisi`); dil seçimi `KilAltSayfa` + `KilSecimListesi` (bayraklar için `KilSecenek.emoji` eklendi). Dosya ve sınıf adı `SettingsPage` olarak kaldı (dosya silinmedi); kabuk (`ana_kabuk.dart`) değişmedi.
    - Yeni metinler (altı dilde): `profile_signed_in_with_email`, `profile_signed_in_with_google`, `profile_signed_in_with_apple`.
    - Testler: `test/kil_diyalog_test.dart` (onay dönüşleri, tehlike renkleri açık/koyu, 48'lik düğmeler, bekleme, büyük foto, bildirim renkleri ve eylemi, 320 genişlik ve 3.2 katta taşma yok, bayraklı seçenek), `test/giris_parcalari_test.dart` (gerçek `AuthScreen`: seçici, doğrulama, şifre sıfırlama hatası, Apple düğmesi, 48'lik öğeler, ekran okuyucu, açık ve koyu 320 genişlik 1x ve 3.2 kat), `test/profil_parcalari_test.dart` (hesap kartı halleri, girişsiz kart, her satırın doğru işlemi çağırması, Pro, reklam gizlilik satırı, 56'lık satırlar, taşma; metinler altı dilde), `test/guncelleme_diyalogu_test.dart` (platforma göre stil, düğmeler, engelleyici sürüm, taşma).
-10. **Son tarama:** elle yazılmış renkler (`grep "Color(0x\|Colors\."`; başlangıçta yaklaşık 660 kullanım var), karanlık mod turu, en büyük yazı boyutu, tüm testler.
+10. **Son tarama — tamamlandı (2026-11-10, gece çalışması; test görüntüleriyle 11 ana ekran açık/koyu, 402 genişlikte 1x ve 320 genişlikte 3.2 kat yazıda):** elle yazılmış renkler, karanlık mod turu, en büyük yazı boyutu, kullanılmayan kod listesi, tüm testler.
+   - **Elle yazılmış renkler:** `grep -rn --include='*.dart' -E "Color\(0x|Colors\." lib` 62 sonuç veriyor (başlangıçta yaklaşık 660). Ekran kodlarında sabit renk yok; kalanların hepsi izinli:
+     - 54'ü `lib/theme/kil_renkleri.dart` içindeki palet tanımları.
+     - 6'sı `Colors.transparent`.
+     - 2'si `lib/builders/app_theme_builder.dart` içinde: `_saydam` ve `_siyah`. Siyah, temanın `shadow` ve `scrim` rengi; Material'ın varsayılanı da siyah ve diyalog ile alt sayfa karartmasının saydamlığı Flutter'dan geliyor. Bu yüzden palete taşınmadı.
+   - **Koyu mod ve kontrast:** Geçici bir test (`build/gecici_test/asama10_tur_test.dart`, commit'e girmez) her yazının ve ikonun rengini arkasındaki zemine göre ölçtü. Gerçek bir kontrast hatası çıkmadı; sınırın altında kalan ölçümler gizli ipucu yazıları, emojiler ve gizli onay ikonuydu. Defterim, klasör içi ve tarif oluşturma ilk kez gerçek sayfalarıyla çizildi; Firebase ve reklam kanalları testte taklit edildi.
+   - **En büyük yazı:** 44 görüntünün hiçbirinde taşma yok. İç sayfa başlıkları (`KilSayfaBasligi`, `KilIcSayfa`) ve ana sayfa başlığı 3.2 katta sınırsız büyüyor: kelime bölünüyor, "Tarifly" "Ta…" oluyor. Mevcut davranış korundu, karar Sude'de (gece notları, sabah özeti 2. soru).
+   - **Kullanılmayan kod:** Silinmedi; liste gece notlarında "Aşama 10 / silinebilecekler" başlığında. Liste: 5 kullanılmayan paket, 3 yöntem, 59 çeviri anahtarı, paketlenen ama kullanılmayan `assets/logo.png` ve kökteki tek seferlik betikler.
+   - Açılış ekranı (`flutter_native_splash`) hâlâ eski renklerde (`#F8F9FC` / `#10121A`); soru gece notlarında.
+   - `lib/` kodu değişmedi; yalnızca plan ve gece notları güncellendi.
 
 ## Her ekranda kontrol listesi
 - Yazı kontrastı en az 4.5:1; öğeyi tanıtan kenarlar ve ikonlar en az 3:1.
@@ -198,3 +207,6 @@ Her aşamadan sonra: `flutter analyze`, ilgili testler, simülatörde açık ve 
 - Premium satın alma düğmesinin metni.
 - Mağaza ekran görüntüleri ve uygulama ikonu yeni tarza göre yenilenecek mi?
 - ~~Profil ekranında hesap bilgisinin altında neler olacak?~~ Karar (Sude): özet ya da sayı yok; hemen ayarlar listesi başlar (aşama 9).
+- Açılış ekranı (`flutter_native_splash`) kil kremi / koyu kahveye geçsin mi? (Aşama 10)
+- Büyük yazıda iç sayfa ve ana sayfa başlıklarına da 2 kat sınırı uygulansın mı? (Aşama 10)
+- Gece notlarındaki "Aşama 10 / silinebilecekler" listesi silinsin mi?

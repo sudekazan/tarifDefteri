@@ -2,6 +2,65 @@
 
 Gece çalışmasında Sude'ye sorulamayan sorular ve sabah bakılacaklar. Her aşama kendi başlığı altında.
 
+## Sabah özeti (2026-11-10)
+
+Aşama 1–10 bitti. Aşama 4–10 `kil-gece` dalında, push yapılmadı. Ayrıntılar aşağıda, her aşamanın kendi başlığında.
+
+### Karar vermen gereken sorular
+Gece hep mevcut davranışı koruyan seçenekle devam edildi. Cevap "böyle kalsın" ise bir şey yapmak gerekmiyor.
+
+**Hepsini ilgilendiren**
+1. **Büyük yazıda başlıklar.** Ne pişirsem, Alışveriş, Premium, yemek modu ve diyaloglarda başlıklar en fazla 2 kat büyüyor. Bu sınır uygun mu? (Aşama 5, 6, 9)
+2. **İç sayfa başlıkları ve ana sayfa başlığı sınırsız büyüyor** (Aşama 10'da bulundu). 320 genişlik ve 3.2 kat yazıda klasör içi, tarif detayı ve tarif oluşturmadaki Caveat 34 başlık kelime ortasından bölünüyor ("Çorbal-ar", "Tarif Düzenl-eme"). Defterim'deki "Tarifly" başlığı da "Ta…" diye kısalıyor. 1. sorudaki 2 kat sınırı bunlara da uygulansın mı? Değişiklik tek yerde: `KilSayfaBasligi` / `KilIcSayfa` ve ana sayfa başlığı.
+3. **En büyük yazıda uzun kelimeler bölünüyor.** Tek başına satıra sığmayan kelimeler ("Patlıcanları", "Fotoğra-f Ekle", "Zeytinyağı", "Medyadan") her ekranda bölünüyor. Taşma yok. Bu boyutta gövde yazısı küçülsün mü, yoksa böyle kalabilir mi? (Aşama 4–9)
+
+**Ekran ekran**
+4. **Tarif oluşturma:** `flutter_quill` ve `flutter_quill_extensions` hiç kullanılmıyor. Kaldırılsınlar mı? (Aşama 4; aşağıdaki "silinebilecekler" listesinde de var.)
+5. **Yemek modu:** Zamanlayıcı yok, eklenmedi. İster misin? İstersen adım metnindeki "25 dakika" gibi süreden mi başlasın, yoksa süreyi elle mi gireceksin? (Aşama 5)
+6. **Arama:** Kutuda "Klasör ara...", sonuç yokken "…klasör bulunamadı." yazıyor ama aranan şey tarif. "Tarif ara..." ve yeni bir "…tarif bulunamadı." metnine geçilsin mi? (Aşama 7)
+7. **Alışveriş:** Boş liste kartının metni uygun mu? "Temizle" eskisi gibi onay sormuyor; sorsun mu? (Aşama 7)
+8. **Premium:**
+   - Satın alma düğmesinin metni ne olsun? Şu an "PRO'YA GEÇ VE SINIRLARI KALDIR".
+   - "EN AVANTAJLI" ve "TARİFLY PREMIUM" büyük harfle yazılıyor. Normal yazıma geçsinler mi?
+   - Paket yüklenemeyince çıkan koşul metni Android'de de "Apple Kimliği" diyor. Android için ayrı bir metin olsun mu? (Aşama 8)
+9. **Diyaloglar:**
+   - Güncelleme uyarısı Android'de kil diyaloğuna döndü; iOS'ta sistem uyarısı olarak kaldı. Uygun mu?
+   - Silme ve çıkış onayları iOS'ta sistem (Cupertino) uyarısı olsun mu?
+   - Onay diyaloglarında ana düğme üstte, "Vazgeç" altta. Eskiden yan yanaydı. Bu sıra uygun mu? (Aşama 9)
+10. **Bildirimler:** Sınır uyarıları turuncu yerine kiremit renginde. "Geri yükleme bulunamadı" bildirimi Profil'de gri, Premium'da kırmızı; ikisi aynı renk olsun mu? (Aşama 9)
+11. **Giriş:**
+    - Google düğmesinde Material'ın "G" ikonu var. Resmi Google logosu istersen bir görsel dosyası eklemek gerekir.
+    - Apple düğmesi kil tarzında. App Store incelemesinde sorun çıkarsa Apple'ın siyah/beyaz düğmesine geçilir. (Aşama 9)
+12. **Profil:** Dosya hâlâ `lib/screens/settings_page.dart` (`SettingsPage`). `lib/sayfalar/profil_sayfasi.dart` olarak taşınsın mı? (Aşama 9)
+13. **Açılış ekranı ve ikon** (Aşama 10'da bulundu):
+    - `flutter_native_splash` açılış ekranı hâlâ eski renklerde: açıkta `#F8F9FC`, koyuda `#10121A`. Kil kremi `#FFFBEB` ve koyu kahve `#1C1412` olsun mu? Değişirse `dart run flutter_native_splash:create` yeniden çalıştırılmalı.
+    - Uygulama ikonu ve mağaza ekran görüntüleri yenilenecek mi? (Plandaki açık soru.)
+14. **Silinebilecekler:** "Aşama 10 / silinebilecekler" listesindekiler silinsin mi? Gece hiçbir şey silinmedi.
+
+### Cihazda özellikle bakılacak yerler
+Testlerde fontlar ve emoji olmadığı ya da eklentiler taklit edildiği için aşağıdakiler yalnızca cihazda doğrulanabilir.
+- **Lottie bekleme animasyonu** ("Şefe Sor" ve klasör içinden yapay zekâyla tarif): açık ve koyu modda renkler (mor yerine terrakota, kâse ve şişe adaçayı; alevler kırmızı kaldı), koyu modda beyaz dikdörtgen kalmamış olmalı.
+- **Premium:**
+  - Gerçek RevenueCat paketleriyle fiyatlar, paket sırası ve "EN AVANTAJLI".
+  - Koşul metnindeki "→" işareti (testte kutu çıkıyordu).
+  - Satın alma düğmesinin iki satıra inmesi ve satın alma sırasındaki bekleme katmanı.
+  - Pro olunca alt banner'ın kalkması.
+- **Giriş:**
+  - Google ve Apple ile giriş, şifre sıfırlama.
+  - Girişten sonra yerel tariflerin birleşmesi, ezilmemesi (`NASIL_TEST_EDILIR.md`).
+  - Profil'de giriş yöntemi hapı ("Google ile giriş yapıldı").
+- **Emojiler:** Şef emojisi, güncelleme başlığındaki 🎉 🚀 ve dil seçimindeki bayraklar testte kutu çıkıyordu.
+- **Kabuk:**
+  - Alt sekme çubuğu ile banner reklamın yerleşimi.
+  - Durum çubuğu ikonlarının açık ve koyu modda okunması.
+  - Android geri tuşunun önce Defterim'e dönmesi.
+- **Koyu mod:** Profil'deki anahtarla anında geçiş, her sekmede bir kez.
+- **En büyük yazı:** iOS'ta Ayarlar › Erişilebilirlik › Ekran ve Metin Boyutu › Daha Büyük Metin'i en sona alıp her sekmeye bak. Testte 3.2 kat denendi.
+- **Yemek modu:** Ekranın açık kalması ve "Tamamla"dan sonra değerlendirme isteği.
+- **Güncelleme uyarısı:** iOS'ta sistem uyarısı, Android'de kil diyaloğu.
+- **Klasör ikonları:** İkon seçilmeden açılmış eski klasörlerde klasör ikonu görünmeli.
+- **Açılış ekranı:** Eski renkte (13. soru); kil temasına geçişte renk sıçraması olup olmadığına bak.
+
 ## Aşama 4 (tarif detayı ve tarif oluşturma)
 
 ### Sorular
@@ -96,3 +155,58 @@ Gece çalışmasında Sude'ye sorulamayan sorular ve sabah bakılacaklar. Her a�
 - Test görüntüleri: `build/gecici_test/asama9_ekranlar_test.dart` (commit'e girmez); 40 görüntüde taşma yok.
 - Tüm testler: 274 geçti.
 
+
+## Aşama 10 (son tarama)
+
+### Sorular
+Sorular yukarıdaki sabah özetinde: 2 (iç sayfa ve ana sayfa başlıkları büyük yazıda), 13 (açılış ekranı renkleri) ve 14 (silinebilecekler).
+
+### Bilgi
+- **Elle yazılmış renkler:** `grep -rn --include='*.dart' -E "Color\(0x|Colors\." lib` 62 sonuç veriyor (başlangıçta yaklaşık 660). Hepsi izinli yerlerde:
+  - 54'ü `lib/theme/kil_renkleri.dart` içindeki palet tanımları.
+  - 2'si `lib/builders/app_theme_builder.dart` içinde: `_saydam` ve `_siyah`. Siyah, temanın `shadow` ve `scrim` rengi; Material'ın varsayılanı da siyah, karartma saydamlığı Flutter'dan geliyor.
+  - 6'sı `Colors.transparent`.
+  - `Color.fromARGB`, `fromRGBO`, `CupertinoColors` ve başka sabit renk yok.
+- **Koyu mod turu:** `build/gecici_test/asama10_tur_test.dart` (commit'e girmez) 11 ana ekranı gerçek sayfalarıyla çiziyor: Defterim, klasör içi, tarif detayı, tarif oluşturma, yemek modu, Ne pişirsem, Alışveriş, arama, Premium, giriş, Profil. Her ekran açık ve koyu modda, 402 genişlikte 1x ve 320 genişlikte 3.2 kat yazıyla çizildi; 44 görüntünün hiçbirinde taşma yok.
+  - Defterim, klasör içi ve tarif oluşturma ilk kez kopya yerine gerçek sayfayla çizildi. Firebase, AdMob onayı ve Firebase Auth kanalları testte taklit edildi.
+  - Test her yazının rengini arkasındaki zemine göre ölçtü: yazıda en az 4.5, ikonda en az 3.0.
+  - Sınırın altında kalan 24 ölçüm de yanlış alarm: görünmeyen ipucu yazıları (saydamlığı 0, kutu doluyken ya da etiket yukarı kalkınca), renkli emojiler (yazı rengi emojiye işlemez) ve işaretsiz onay kutusunun 0 ölçekle gizlenen onay ikonu.
+  - Gerçek bir kontrast hatası çıkmadı. Kenarlar ve klasör renkleri zaten `test/kil_renkleri_test.dart` içinde denetleniyor.
+- **En büyük yazı turu:** Taşma yok. Uzun kelimelerin bölünmesi önceki aşamalardaki gibi. Yeni bulunan: iç sayfa başlıkları ve ana sayfa başlığı 3.2 katta sınırsız büyüyor (sabah özetinde 2. soru). Mevcut davranış korundu, kod değişmedi.
+- `flutter analyze`: 20 bulgu, Aşama 9 sonundakiyle aynı, hepsi eski kod. Bu aşamada `lib/` değişmedi.
+
+### Aşama 10 / silinebilecekler
+Hiçbiri silinmedi. Silmeden önce senin onayın gerekiyor.
+
+**Dosyalar ve sınıflar.** `lib/` altındaki 64 Dart dosyasının hepsi bir yerden içe aktarılıyor. Hiç kullanılmayan sınıf ya da enum yok. Aşama 1–9'da boşa düşen dosyalar (`theme_settings_page.dart`, `klasorler_with_theme.dart` vb.) o aşamalarda zaten kaldırılmıştı.
+
+**Paketler.** Bunlar `pubspec.yaml`'da var ama `lib/` içinde hiç içe aktarılmıyor:
+- `flutter_quill`, `flutter_quill_extensions`: Tarif oluşturma bölüm ve madde listesiyle çalışıyor (Aşama 4'teki soru). Kaldırılırsa CLAUDE.md'deki "Tarif editörü: flutter_quill" satırı da güncellenmeli.
+- `showcaseview`: Tanıtım turu yok.
+- `uuid`
+- `cloud_functions`: `functions/index.js` içindeki `generateRecipe` yorum satırında, yapay zekâ istekleri `backend/` üzerinden gidiyor.
+- `cupertino_icons`: `CupertinoIcons` hiçbir yerde kullanılmıyor. Flutter şablonundan kalma ve küçük bir paket; kalabilir.
+
+**Kullanılmayan yöntemler.** Hiçbir yerden çağrılmıyorlar:
+- `FirebaseService.restoreFromFirebaseToLocal` (`lib/services/firebase_service.dart:289`). Girişteki birleştirme `mergeLocalAndCloudData` ile yapılıyor.
+- `FirebaseService.saveGeneratedRecipeToFirestore` (`lib/services/firebase_service.dart:717`). Yapay zekâ tarifleri normal tarif kaydıyla saklanıyor.
+- `ReviewService.resetForTesting` (`lib/services/review_service.dart:83`). Geliştirme yardımcısı; elle test için kalabilir.
+
+**Çeviri anahtarları.** 59 anahtar `lib/` içinde hiç kullanılmıyor. Her biri altı dil dosyasında da var. Dinamik kurulan anahtarlar (`premium_terms_*_ios/android`, dil adları) bu listeye alınmadı.
+- Tema seçiminden kalanlar: `theme_name_pastel_green`, `theme_name_pastel_blue`, `theme_name_pastel_lilac`, `theme_name_pastel_pink`, `theme_name_pastel_orange`, `theme_name_pastel_gray`, `theme_name_pastel_turquoise`, `theme_name_pastel_red`, `theme_name_pastel_purple`, `theme_name_pastel_yellow`, `settings_theme_title`.
+- Eski ana sayfa ve gezinmeden kalanlar: `home_title`, `home_subtitle`, `btn_get_started`, `btn_favorites`, `btn_settings`, `btn_change_language`, `folder_title`, `recipes_title`, `no_recipes`, `add_recipe`, `add_option_title`, `folder_add_title`, `folder_name_hint`, `recipes_tap_for_details`.
+- Eski giriş ekranından kalanlar: `auth_title_login`, `auth_title_register`, `auth_toggle_question_login`, `auth_toggle_question_register`, `auth_toggle_button_login`, `auth_toggle_button_register`, `auth_register_success`, `auth_error_code_prefix`, `auth_error_unexpected_prefix`.
+- Eski Ayarlar ekranından kalanlar: `settings_premium_title`, `settings_logged_in`.
+- Eski Premium ekranından kalanlar: `premium_feature_ads`, `premium_feature_ads_desc`, `premium_feature_ai`, `premium_feature_ai_desc`, `premium_feature_link`, `premium_feature_link_desc`, `premium_no_packages`, `premium_updating_packages`, `premium_offerings_unreachable`, `premium_upgrade_button`.
+- Ne pişirsem ve yapay zekâdan kalanlar: `what_to_cook_btn_try`, `what_to_cook_ingredients_title`, `what_to_cook_limit_dialog_title`, `what_to_cook_limit_dialog_body`, `what_to_cook_loading_message`, `ai_create_button`, `ai_generating_message`, `ai_success_message`.
+- Diğer: `common_error`, `share_error_with_message_prefix`, `recipe_edit_photos_title`, `cooking_mode_steps`, `error_server_unexpected`.
+
+**Varlıklar.**
+- `assets/logo.png` `pubspec.yaml`'ın `assets` listesinde, yani uygulamaya paketleniyor (216 KB). Ama Dart kodunda kullanılmıyor; yalnızca `flutter_native_splash` açılış ekranını üretirken okuyor. Dosya kalmalı; yalnızca `assets` listesinden çıkarılabilir.
+- `logo_white_bg.png` ve `logo_adaptive_foreground.png` ikon üretiminde kullanılıyor; kalmalı.
+
+**Kökteki tek seferlik betikler.** Uygulamayla ilgisi yok.
+- `fix_tr.dart`: `flutter analyze`'daki `avoid_print` bulgusu buradan geliyor.
+- `update_langs.py`
+
+**Geçici test dosyaları.** `build/gecici_test/` (Aşama 2–10 test görüntüleri). `build/` git'e girmiyor; istersen silebilirsin.
