@@ -51,3 +51,6 @@ cd backend && npm start
 - 2026-11-10: Tarif ve klasör önce cihaza yazılır, Firebase beklenmez; fotoğraf arkadan yüklenir.
 - 2026-11-10: Çıkıştan önce tarifler buluta yedeklenir; yedeklenemezse kullanıcı uyarılır ("Yine de çık").
 - 2026-11-10: Açılış reklamı yalnızca açılıştan sonraki 4 saniyede yüklenirse ve kullanıcı ana ekrandaysa gösterilir.
+- 2026-11-11: 20 tarif sınırı her yoldan geçerli (Ne pişirsem, klasöre taşıma). Ödüllü reklam yüklenemezse hak yine verilir. Sunucuda istek metni en fazla 1000 karakter.
+- 2026-11-11: Telefon dikeye kilitli (iPad döner). Değerlendirme isteğinde 7 gün ilk açılıştan sayılır. Zamanlayıcı bildirimi yaklaşık zamanlı kalır.
+- 2026-11-11: Crashlytics ve "silinenler listesi" (silinen tarifin başka cihazdan geri gelmesi) yayından sonraya.
