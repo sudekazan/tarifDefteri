@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import 'kil/kil.dart';
@@ -30,28 +31,29 @@ class TarifKucukGorsel extends StatelessWidget {
     if (y == null || y.isEmpty) {
       icerik = yerTutucu(Icons.restaurant_menu_rounded);
     } else if (y.startsWith('http')) {
-      icerik = Image.network(
-        y,
+      // Görsel cihazda saklanır (internetsiz de açılır) ve bellekte küçük
+      // çözülür. Yatay fotoğraf kırpılınca bulanmasın diye kutunun 2 katı.
+      final bellekGenisligi =
+          (boyut * MediaQuery.devicePixelRatioOf(context) * 2).round();
+      icerik = CachedNetworkImage(
+        imageUrl: y,
         fit: BoxFit.cover,
-        loadingBuilder: (context, child, ilerleme) {
-          if (ilerleme == null) return child;
-          return Container(
-            color: r.solukYuzey,
-            alignment: Alignment.center,
-            child: SizedBox.square(
-              dimension: 20,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: r.birincil,
-                value: ilerleme.expectedTotalBytes != null
-                    ? ilerleme.cumulativeBytesLoaded /
-                        ilerleme.expectedTotalBytes!
-                    : null,
-              ),
+        memCacheWidth: bellekGenisligi,
+        fadeInDuration: Duration.zero,
+        fadeOutDuration: Duration.zero,
+        progressIndicatorBuilder: (context, url, ilerleme) => Container(
+          color: r.solukYuzey,
+          alignment: Alignment.center,
+          child: SizedBox.square(
+            dimension: 20,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: r.birincil,
+              value: ilerleme.progress,
             ),
-          );
-        },
-        errorBuilder: (_, __, ___) => yerTutucu(Icons.broken_image_rounded),
+          ),
+        ),
+        errorWidget: (_, __, ___) => yerTutucu(Icons.broken_image_rounded),
       );
     } else if (File(y).existsSync()) {
       icerik = Image.file(

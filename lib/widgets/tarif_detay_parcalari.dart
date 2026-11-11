@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../utils/recipe_link_helper.dart';
@@ -480,24 +481,20 @@ class TarifGorseli extends StatelessWidget {
     );
 
     if (yol.startsWith('http')) {
-      return Image.network(
-        yol,
+      return CachedNetworkImage(
+        imageUrl: yol,
         fit: BoxFit.cover,
-        loadingBuilder: (context, child, ilerleme) {
-          if (ilerleme == null) return child;
-          return Container(
-            color: r.solukYuzey,
-            alignment: Alignment.center,
-            child: CircularProgressIndicator(
-              color: r.birincil,
-              value: ilerleme.expectedTotalBytes != null
-                  ? ilerleme.cumulativeBytesLoaded /
-                        ilerleme.expectedTotalBytes!
-                  : null,
-            ),
-          );
-        },
-        errorBuilder: (_, __, ___) =>
+        fadeInDuration: Duration.zero,
+        fadeOutDuration: Duration.zero,
+        progressIndicatorBuilder: (context, url, ilerleme) => Container(
+          color: r.solukYuzey,
+          alignment: Alignment.center,
+          child: CircularProgressIndicator(
+            color: r.birincil,
+            value: ilerleme.progress,
+          ),
+        ),
+        errorWidget: (_, __, ___) =>
             hata(Icons.broken_image_rounded, yuklenemediMetni),
       );
     }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'dart:io';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -203,7 +204,12 @@ class _TarifDetayState extends State<TarifDetay> {
       context: context,
       builder: (context) => KilBuyukFoto(
         child: imagePath.startsWith('http')
-            ? Image.network(imagePath, fit: BoxFit.contain)
+            ? CachedNetworkImage(
+                imageUrl: imagePath,
+                fit: BoxFit.contain,
+                fadeInDuration: Duration.zero,
+                fadeOutDuration: Duration.zero,
+              )
             : Image.file(File(imagePath), fit: BoxFit.contain),
       ),
     );
