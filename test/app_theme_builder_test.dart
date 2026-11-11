@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:tarif_defteri/builders/app_theme_builder.dart';
@@ -25,6 +26,25 @@ List<TextStyle> stiller(TextTheme t) => [
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  test('gömülü fontlar internetsiz yüklenir', () async {
+    // Dosya eksikse ya da adı uymuyorsa fontlariHazirla hata fırlatır.
+    await AppThemeBuilder.fontlariHazirla();
+    expect(GoogleFonts.config.allowRuntimeFetching, isFalse);
+
+    final dosyalar =
+        (await AssetManifest.loadFromAssetBundle(rootBundle)).listAssets();
+    expect(
+      dosyalar,
+      containsAll([
+        'assets/fonts/Quicksand-Medium.ttf',
+        'assets/fonts/Quicksand-Bold.ttf',
+        'assets/fonts/Caveat-Bold.ttf',
+        'assets/fonts/OFL-Quicksand.txt',
+        'assets/fonts/OFL-Caveat.txt',
+      ]),
+    );
+  });
 
   for (final (ad, kurucu, renkler) in [
     ('açık', AppThemeBuilder.buildLightTheme, KilRenkleri.acik),

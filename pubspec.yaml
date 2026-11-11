@@ -69,5 +69,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/google_g.png
+    # Quicksand 500/700 ve Caveat 700 (google_fonts adı uyan dosyayı kendisi bulur)
+    - assets/fonts/
     - assets/lang/
     - assets/animations/

@@ -9,8 +9,23 @@ import '../theme/kil_renkleri.dart';
 /// Metin ve arayüz Quicksand 500/700. Bileşenler yazı stilini
 /// `Theme.of(context).textTheme` üzerinden alır ve kalınlığı değiştirmez;
 /// böylece google_fonts doğru ağırlıktaki font dosyasını yükler.
+///
+/// Font dosyaları uygulamayla gelir (`assets/fonts/`); internetten indirilmez.
+/// Yeni bir ağırlık kullanılacaksa dosyası oraya ve [fontlariHazirla]'ya eklenir.
 class AppThemeBuilder {
   const AppThemeBuilder._();
+
+  /// İnternetten font indirmeyi kapatır ve gömülü fontları yükler. İlk kare
+  /// çizilmeden önce çağrılır ki yazılar sistem fontuyla görünüp değişmesin.
+  /// Gömülü dosya bulunamazsa hata fırlatır.
+  static Future<void> fontlariHazirla() async {
+    GoogleFonts.config.allowRuntimeFetching = false;
+    await GoogleFonts.pendingFonts([
+      GoogleFonts.quicksand(fontWeight: FontWeight.w500),
+      GoogleFonts.quicksand(fontWeight: FontWeight.w700),
+      GoogleFonts.caveat(fontWeight: FontWeight.w700),
+    ]);
+  }
 
   static ThemeData buildLightTheme() =>
       _tema(KilRenkleri.acik, KilRenkleri.koyu, Brightness.light);

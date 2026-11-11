@@ -21,6 +21,13 @@ void main() async {
   // çoklu görev desteği nedeniyle sistem bu kilidi uygulamaz; orada döner.)
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
+  // Fontlar uygulamanın içinden yüklenir, internetten indirilmez.
+  try {
+    await AppThemeBuilder.fontlariHazirla();
+  } catch (e) {
+    debugPrint('Font yükleme hatası: $e');
+  }
+
   try {
     await EasyLocalization.ensureInitialized();
   } catch (e) {
