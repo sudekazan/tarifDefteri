@@ -1,2 +1,3 @@
-CFBundleDisplayName = "Rezepte";
-CFBundleName = "Rezepte";
+NSCameraUsageDescription = "Der Kamerazugriff wird benötigt, um Fotos Ihrer Rezepte aufzunehmen.";
+NSPhotoLibraryUsageDescription = "Der Zugriff auf Ihre Fotos wird benötigt, um Ihren Rezepten Fotos hinzuzufügen.";
+NSUserTrackingUsageDescription = "Wir benötigen diese Erlaubnis, um Ihnen ein besseres Werbeerlebnis zu bieten.";

@@ -1,2 +1,3 @@
-CFBundleDisplayName = "Receitas";
-CFBundleName = "Receitas";
+NSCameraUsageDescription = "O acesso à câmera é necessário para tirar fotos das suas receitas.";
+NSPhotoLibraryUsageDescription = "O acesso à galeria é necessário para adicionar fotos às suas receitas.";
+NSUserTrackingUsageDescription = "Precisamos desta permissão para oferecer a você uma experiência de anúncios melhor.";

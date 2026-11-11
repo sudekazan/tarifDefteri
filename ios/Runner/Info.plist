@@ -27,6 +27,15 @@
 		<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 		<key>CFBundleInfoDictionaryVersion</key>
 		<string>6.0</string>
+		<key>CFBundleLocalizations</key>
+		<array>
+			<string>tr</string>
+			<string>en</string>
+			<string>de</string>
+			<string>es</string>
+			<string>fr</string>
+			<string>pt</string>
+		</array>
 		<key>CFBundleName</key>
 		<string>tarif_defteri_yeni</string>
 		<key>CFBundlePackageType</key>

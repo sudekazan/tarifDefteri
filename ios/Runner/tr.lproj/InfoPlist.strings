@@ -1,2 +1,3 @@
-CFBundleDisplayName = "Tarif Defteri";
-CFBundleName = "Tarif Defteri";
+NSCameraUsageDescription = "Tarif fotoğrafı çekmek için kameraya erişim gereklidir.";
+NSPhotoLibraryUsageDescription = "Tariflere fotoğraf eklemek için galeriye erişim gereklidir.";
+NSUserTrackingUsageDescription = "Size daha iyi reklam deneyimi sunabilmek için bu izne ihtiyacımız var.";

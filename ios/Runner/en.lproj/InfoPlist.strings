@@ -1,2 +1,3 @@
-CFBundleDisplayName = "Recipe Keeper";
-CFBundleName = "Recipe Keeper";
+NSCameraUsageDescription = "Camera access is needed to take photos of your recipes.";
+NSPhotoLibraryUsageDescription = "Photo library access is needed to add photos to your recipes.";
+NSUserTrackingUsageDescription = "We need this permission to give you a better ad experience.";
