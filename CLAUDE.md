@@ -54,3 +54,4 @@ cd backend && npm start
 - 2026-11-11: 20 tarif sınırı her yoldan geçerli (Ne pişirsem, klasöre taşıma). Ödüllü reklam yüklenemezse hak yine verilir. Sunucuda istek metni en fazla 1000 karakter.
 - 2026-11-11: Telefon dikeye kilitli (iPad döner). Değerlendirme isteğinde 7 gün ilk açılıştan sayılır. Zamanlayıcı bildirimi yaklaşık zamanlı kalır.
 - 2026-11-11: Crashlytics ve "silinenler listesi" (silinen tarifin başka cihazdan geri gelmesi) yayından sonraya.
+- 2026-11-16: Koyu mod kahverengi yerine nötr "Kömür" paleti (zemin #141414, yumuşak terrakota #E07A5A); web sitesi (hosting/) yalnızca açık mod.

@@ -68,7 +68,7 @@ class KilRenkleri extends ThemeExtension<KilRenkleri> {
   /// Sekme zemini, alınanlar, pasif düğme.
   final Color solukYuzey;
 
-  /// Süs kenarı (1.2–1.4:1). Açık modda kart gölgesi de bu renktir.
+  /// Süs kenarı (1.2–1.6:1). Açık modda kart gölgesi de bu renktir.
   final Color kenar;
 
   /// Bir öğeyi tanıtan kenar (onay kutusu, metin kutusu), en az 3:1.
@@ -144,33 +144,33 @@ class KilRenkleri extends ThemeExtension<KilRenkleri> {
 
   static const KilRenkleri koyu = KilRenkleri(
     sertGolge: false,
-    zemin: Color(0xFF1C1412),
-    kart: Color(0xFF2A1F1B),
-    solukYuzey: Color(0xFF241A16),
-    kenar: Color(0xFF4A3830),
-    tanitanKenar: Color(0xFF8A7268),
-    ustCizgi: Color(0xFF6B5246),
-    anaYazi: Color(0xFFFAF3EE),
-    solukYazi: Color(0xFFC9B8AE),
-    baslik: Color(0xFFFDBA74),
-    birincil: Color(0xFFFB923C),
-    birincilUstuYazi: Color(0xFF1C1412),
-    birincilGolge: Color(0xFFC2410C),
-    oneCikanKart: Color(0xFF3B2418),
-    oneCikanKartYazi: Color(0xFFFDBA74),
-    vurgu: Color(0xFF34D399),
-    vurguUstuYazi: Color(0xFF000000),
-    vurguGolge: Color(0xFF059669),
-    seciliCipZemin: Color(0xFF3B2418),
-    seciliCipYazi: Color(0xFFFDBA74),
+    zemin: Color(0xFF141414),
+    kart: Color(0xFF202020),
+    solukYuzey: Color(0xFF1A1A1A),
+    kenar: Color(0xFF333333),
+    tanitanKenar: Color(0xFF757575),
+    ustCizgi: Color(0xFF3D3D3D),
+    anaYazi: Color(0xFFF5F5F4),
+    solukYazi: Color(0xFFB4AFAA),
+    baslik: Color(0xFFF2A68A),
+    birincil: Color(0xFFE07A5A),
+    birincilUstuYazi: Color(0xFF141414),
+    birincilGolge: Color(0xFFB85C40),
+    oneCikanKart: Color(0xFF3A2520),
+    oneCikanKartYazi: Color(0xFFF2A68A),
+    vurgu: Color(0xFF5FCB98),
+    vurguUstuYazi: Color(0xFF141414),
+    vurguGolge: Color(0xFF3B9E72),
+    seciliCipZemin: Color(0xFF3A2520),
+    seciliCipYazi: Color(0xFFF2A68A),
     hata: Color(0xFFF87171),
-    hataUstuYazi: Color(0xFF1C1412),
-    hataZemin: Color(0xFF4A1D1D),
+    hataUstuYazi: Color(0xFF141414),
+    hataZemin: Color(0xFF3D1F1F),
     hataZeminYazi: Color(0xFFFCA5A5),
-    klasorFavori: KlasorRenk(zemin: Color(0xFF3F1D25), ikon: Color(0xFFFDA4AF)),
-    klasorTatli: KlasorRenk(zemin: Color(0xFF3B2418), ikon: Color(0xFFFDBA74)),
-    klasorCorba: KlasorRenk(zemin: Color(0xFF0F3A2E), ikon: Color(0xFF6EE7B7)),
-    klasorKahvalti: KlasorRenk(zemin: Color(0xFF3A2C12), ikon: Color(0xFFFCD34D)),
+    klasorFavori: KlasorRenk(zemin: Color(0xFF3A2028), ikon: Color(0xFFF5A3B5)),
+    klasorTatli: KlasorRenk(zemin: Color(0xFF3A2520), ikon: Color(0xFFF2A68A)),
+    klasorCorba: KlasorRenk(zemin: Color(0xFF1C3328), ikon: Color(0xFF7FD3A9)),
+    klasorKahvalti: KlasorRenk(zemin: Color(0xFF3A3018), ikon: Color(0xFFF2CD6B)),
   );
 
   /// Temada `KilRenkleri` yoksa (ör. eski bir test teması) parlaklığa göre seçer.

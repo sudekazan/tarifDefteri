@@ -60,6 +60,37 @@ void main() {
     });
   }
 
+  group('koyu mod (Kömür)', () {
+    const r = KilRenkleri.koyu;
+
+    test('süs kenarı ve üst çizgi 1.2–1.6 arası', () {
+      final ciftler = <String, (Color, Color)>{
+        'kenar / zemin': (r.kenar, r.zemin),
+        'kenar / kart': (r.kenar, r.kart),
+        'üst çizgi / kart': (r.ustCizgi, r.kart),
+      };
+      ciftler.forEach((ad, cift) {
+        expect(kontrast(cift.$1, cift.$2), inInclusiveRange(1.2, 1.6),
+            reason: ad);
+      });
+    });
+
+    test('zemin, yüzeyler ve kenarlar nötr gri (kahverengi yok)', () {
+      final renkler = <String, Color>{
+        'zemin': r.zemin,
+        'kart': r.kart,
+        'soluk yüzey': r.solukYuzey,
+        'kenar': r.kenar,
+        'üst çizgi': r.ustCizgi,
+        'tanıtan kenar': r.tanitanKenar,
+      };
+      renkler.forEach((ad, c) {
+        expect(c.r, c.g, reason: ad);
+        expect(c.g, c.b, reason: ad);
+      });
+    });
+  });
+
   test('açık modda sert gölge var, koyu modda yok', () {
     expect(KilRenkleri.acik.sertGolge, isTrue);
     expect(KilRenkleri.koyu.sertGolge, isFalse);

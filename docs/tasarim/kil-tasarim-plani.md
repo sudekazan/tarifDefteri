@@ -19,43 +19,45 @@ Ekranlarda renk koda sabit yazılmaz. Hepsi bir `ThemeExtension`'dan (aşağıda
 
 | Görev | Açık | Koyu |
 |---|---|---|
-| Zemin | `#FFFBEB` krem | `#1C1412` koyu kahve |
-| Kart / yüzey | `#FFFFFF` | `#2A1F1B` |
-| Soluk yüzey (sekme zemini, alınanlar) | `#F8F2F0` | `#241A16` |
-| Kenar ve kart gölgesi | `#F2E6E2` | `#4A3830` (yalnız kenar) |
-| Ana yazı | `#0F172A` | `#FAF3EE` |
-| Soluk yazı | `#475569` | `#C9B8AE` |
-| Başlık / birincil (terrakota) | `#9A3412` | `#FDBA74` (başlık), `#FB923C` (düğme) |
-| Birincil üstündeki yazı | `#FFFFFF` | `#1C1412` |
-| Birincil düğme gölgesi | `#7C2D12` | gölge yok, kenar `#C2410C` |
-| Öne çıkan kart (kiremit) | `#C2410C`, yazı beyaz | `#3B2418`, yazı `#FDBA74` |
-| Vurgu (adaçayı) | `#059669`, yazı siyah | `#34D399`, yazı siyah |
-| Seçili çip zemini / yazısı | `#FFEDD5` / `#9A3412` | `#3B2418` / `#FDBA74` |
-| Hata | `#DC2626`, üstündeki yazı beyaz | `#F87171`, üstündeki yazı `#1C1412` |
-| Hata kutusu zemini / yazısı | `#FEE2E2` / `#991B1B` | `#4A1D1D` / `#FCA5A5` |
-| Tanıtan kenar (onay kutusu, metin kutusu) | `#8A766F` | `#8A7268` |
-| Vurgu düğmesi gölgesi | `#047857` | gölge yok, kenar `#059669` |
-| Koyu kartın üst çizgisi | — | `#6B5246` |
+| Zemin | `#FFFBEB` krem | `#141414` kömür |
+| Kart / yüzey | `#FFFFFF` | `#202020` |
+| Soluk yüzey (sekme zemini, alınanlar) | `#F8F2F0` | `#1A1A1A` |
+| Kenar ve kart gölgesi | `#F2E6E2` | `#333333` (yalnız kenar) |
+| Ana yazı | `#0F172A` | `#F5F5F4` |
+| Soluk yazı | `#475569` | `#B4AFAA` |
+| Başlık / birincil (terrakota) | `#9A3412` | `#F2A68A` (başlık), `#E07A5A` (düğme, yumuşak terrakota) |
+| Birincil üstündeki yazı | `#FFFFFF` | `#141414` |
+| Birincil düğme gölgesi | `#7C2D12` | gölge yok, kenar `#B85C40` |
+| Öne çıkan kart (kiremit) | `#C2410C`, yazı beyaz | `#3A2520`, yazı `#F2A68A` |
+| Vurgu (adaçayı) | `#059669`, yazı siyah | `#5FCB98`, yazı `#141414` |
+| Seçili çip zemini / yazısı | `#FFEDD5` / `#9A3412` | `#3A2520` / `#F2A68A` |
+| Hata | `#DC2626`, üstündeki yazı beyaz | `#F87171`, üstündeki yazı `#141414` |
+| Hata kutusu zemini / yazısı | `#FEE2E2` / `#991B1B` | `#3D1F1F` / `#FCA5A5` |
+| Tanıtan kenar (onay kutusu, metin kutusu) | `#8A766F` | `#757575` |
+| Vurgu düğmesi gölgesi | `#047857` | gölge yok, kenar `#3B9E72` |
+| Koyu kartın üst çizgisi | — | `#3D3D3D` |
 
-Ölçülen kontrastlar (WCAG): açık modda ana yazı 17.2, soluk yazı 7.3, terrakota başlık 7.0, terrakota düğmede beyaz 7.3, kiremit kartta beyaz 5.2, adaçayında siyah 5.6, seçili çip 6.4. Koyu modda ana yazı 16.5, soluk yazı 8.4, başlık 10.8, turuncu düğmede koyu yazı 8.0, adaçayında siyah 10.9, seçili çip 8.6.
+Ölçülen kontrastlar (WCAG): açık modda ana yazı 17.2, soluk yazı 7.3, terrakota başlık 7.0, terrakota düğmede beyaz 7.3, kiremit kartta beyaz 5.2, adaçayında siyah 5.6, seçili çip 6.4. Koyu modda (Kömür, 2026-11-16) kartta ana yazı 14.9, soluk yazı 7.5; zeminde başlık 9.3; terrakota düğmede koyu yazı 6.2, adaçayında koyu yazı 9.2, öne çıkan kart ve seçili çip 7.2; adaçayı kartta 8.1.
 
 Aşama 1'de ölçülenler (zemin / kart / soluk yüzey üzerinde):
 - **Hata, açık:** `#DC2626` zeminde 4.66, kartta 4.83, hata düğmesinde beyaz 4.83. Soluk yüzeyde 4.36 kalıyor; hata yazısı soluk yüzeyin (sekme zemini, alınanlar) üstüne konmaz.
-- **Hata, koyu:** `#F87171` zeminde 6.55, kartta 5.79, soluk yüzeyde 6.15; üstündeki koyu yazı 6.55. Hata kutusu yazısı açıkta 6.8, koyuda 7.5.
-- **Tanıtan kenar, açık `#8A766F`:** 4.13 / 4.28 / 3.87. **Koyu `#8A7268`:** 4.05 / 3.58 / 3.80. Metin kutusu kenarı 1.5 px, odakta 2 px birincil renk.
-- **Onay kutusu:** işaretliyken adaçayı zemin, siyah onay işareti. Adaçayı kartın üstünde açıkta 3.77, koyuda 8.34.
-- Süs kenarı (`#F2E6E2` / `#4A3830`) 1.1–1.6 arası; bir öğeyi tanıtmak için kullanılmaz.
+- **Hata, koyu:** `#F87171` zeminde 6.66, kartta 5.89, soluk yüzeyde 6.29; üstündeki koyu yazı 6.66. Hata kutusu yazısı açıkta 6.8, koyuda 7.8.
+- **Tanıtan kenar, açık `#8A766F`:** 4.13 / 4.28 / 3.87. **Koyu `#757575`:** 4.00 / 3.54 / 3.78. Metin kutusu kenarı 1.5 px, odakta 2 px birincil renk.
+- **Onay kutusu:** işaretliyken adaçayı zemin, siyah onay işareti. Adaçayı kartın üstünde açıkta 3.77, koyuda 8.13.
+- Süs kenarı (`#F2E6E2` / `#333333`) 1.1–1.6 arası (koyuda kartta 1.29, zeminde 1.46; üst çizgi `#3D3D3D` kartta 1.50); bir öğeyi tanıtmak için kullanılmaz.
+- Koyu düğme kenarları: terrakota `#B85C40` zeminde 4.07, adaçayı `#3B9E72` zeminde 5.54.
+- Koyu zemin, yüzeyler ve kenarlar nötr gri; kahverengi ton yok (testte denetleniyor).
 
-Kenarlar yalnızca süs; 1.2 ile 1.4 arası. Bir öğeyi tanıtan kenarlar (onay kutusu, metin kutusu) en az 3:1 olmalı; renkleri yukarıdaki tabloda.
+Kenarlar yalnızca süs; 1.2 ile 1.6 arası. Bir öğeyi tanıtan kenarlar (onay kutusu, metin kutusu) en az 3:1 olmalı; renkleri yukarıdaki tabloda.
 
 Klasör ikon renkleri (zemin / ikon, ikonun zemine kontrastı):
 
 | Klasör | Açık | Koyu |
 |---|---|---|
-| Favoriler | `#FFE4E6` / `#BE123C` (5.2) | `#3F1D25` / `#FDA4AF` (7.9) |
-| Tatlılar | `#FFEDD5` / `#9A3412` (6.4) | `#3B2418` / `#FDBA74` (8.6) |
-| Çorbalar | `#D1FAE5` / `#065F46` (6.8) | `#0F3A2E` / `#6EE7B7` (8.3) |
-| Kahvaltılıklar | `#FEF3C7` / `#92400E` (6.4) | `#3A2C12` / `#FCD34D` (9.4) |
+| Favoriler | `#FFE4E6` / `#BE123C` (5.2) | `#3A2028` / `#F5A3B5` (7.6) |
+| Tatlılar | `#FFEDD5` / `#9A3412` (6.4) | `#3A2520` / `#F2A68A` (7.2) |
+| Çorbalar | `#D1FAE5` / `#065F46` (6.8) | `#1C3328` / `#7FD3A9` (7.6) |
+| Kahvaltılıklar | `#FEF3C7` / `#92400E` (6.4) | `#3A3018` / `#F2CD6B` (8.5) |
 
 Bunlar `KilRenkleri.klasorFavori` vb. olarak kodda. Kontrastlar `test/kil_renkleri_test.dart` içinde denetleniyor; renk değişirse test uyarır.
 
@@ -207,6 +209,6 @@ Her aşamadan sonra: `flutter analyze`, ilgili testler, simülatörde açık ve 
 - Premium satın alma düğmesinin metni.
 - Mağaza ekran görüntüleri ve uygulama ikonu yeni tarza göre yenilenecek mi?
 - ~~Profil ekranında hesap bilgisinin altında neler olacak?~~ Karar (Sude): özet ya da sayı yok; hemen ayarlar listesi başlar (aşama 9).
-- Açılış ekranı (`flutter_native_splash`) kil kremi / koyu kahveye geçsin mi? (Aşama 10)
+- ~~Açılış ekranı (`flutter_native_splash`) kil kremi / koyu kahveye geçsin mi?~~ Kremi `#FFFBEB`, koyu kömür `#141414` (2026-11-16).
 - Büyük yazıda iç sayfa ve ana sayfa başlıklarına da 2 kat sınırı uygulansın mı? (Aşama 10)
 - Gece notlarındaki "Aşama 10 / silinebilecekler" listesi silinsin mi?
