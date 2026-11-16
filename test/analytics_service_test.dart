@@ -84,7 +84,21 @@ void main() {
       'tarif_paylasildi',
     ]);
     expect(olaylar.first.$2, {'source': 'ana_ekran'});
-    expect(olaylar.last.$2, {'kaynak': 'klasorler'});
+    expect(olaylar.last.$2, {'kaynak': 'klasorler', 'yontem': 'metin'});
+  });
+
+  test('paylaşım linki olayları', () async {
+    await AnalyticsService.tarifPaylasildi(kaynak: 'tarif_detay', yontem: 'link');
+    await AnalyticsService.paylasilanTarifAcildi(bulundu: true);
+    await AnalyticsService.paylasilanTarifEklendi();
+
+    expect(olaylar.map((o) => o.$1), [
+      'tarif_paylasildi',
+      'paylasilan_tarif_acildi',
+      'paylasilan_tarif_eklendi',
+    ]);
+    expect(olaylar.first.$2, {'kaynak': 'tarif_detay', 'yontem': 'link'});
+    expect(olaylar[1].$2, {'bulundu': 'true'});
   });
 
   test('setIsPro kullanıcı özelliğini metin olarak ayarlar', () async {

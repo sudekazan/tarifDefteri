@@ -84,3 +84,6 @@ Sude hepsini onayladı; ayrıntılı liste `gece-notlari.md` → "Aşama 10 / si
 
 ### Mağaza ekran görüntüleri (soru 13b)
 - Kil tasarımıyla yeniden çekilecek. Sude gerçek cihaz derlemesini yapıp tasarımı onayladıktan sonra.
+
+### Tarifi uygulamadan uygulamaya paylaşma (2026-11-16) — kod yazıldı, yayına alınmadı
+- Tarifly linki (tarifly.web.app/t/KOD); ayrıntılar ve kalan adımlar: `docs/tarif-paylasim.md`.

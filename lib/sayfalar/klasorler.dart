@@ -13,12 +13,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:share_plus/share_plus.dart';
+import '../utils/tarif_paylas.dart';
 import 'klasor_kayit.dart';
 import '../services/analytics_service.dart';
 import '../utils/arama_metni.dart';
 import '../services/firebase_service.dart';
-import '../utils/magaza_linki.dart';
 import '../services/ad_service.dart';
 import '../utils/klasor_adi.dart';
 import '../utils/tarif_kayit.dart';
@@ -804,36 +803,12 @@ class _FavoriTariflerSayfasiState extends State<FavoriTariflerSayfasi> {
   }
 
   /// Tarif içeriğini paylaşır
-  Future<void> _tarifPaylas(BuildContext btnContext, TarifData tarif) async {
-    try {
-      String shareText = '📖 ${tarif.tarif_adi}\n\n';
-      shareText += tarif.tarif_aciklama;
-      shareText += '\n\n━━━━━━━━━━━━━━━━━━\n';
-      shareText += 'share_from_app'.tr();
-      shareText += '\n${'share_download_cta'.tr()} $magazaLinki';
-
-      // iOS için butonun konumunu al (iPad popup için)
-      final box = btnContext.findRenderObject() as RenderBox?;
-      final sharePositionOrigin =
-          box != null ? box.localToGlobal(Offset.zero) & box.size : null;
-
-      await Share.share(
-        shareText,
-        subject: tarif.tarif_adi,
-        sharePositionOrigin: sharePositionOrigin,
+  Future<void> _tarifPaylas(BuildContext dugmeContext, TarifData tarif) => tarifiPaylas(
+        context: context,
+        dugmeContext: dugmeContext,
+        tarif: tarif,
+        kaynak: 'klasorler',
       );
-      AnalyticsService.tarifPaylasildi(kaynak: 'klasorler');
-    } catch (e) {
-      if (mounted) {
-        KilBildirim.goster(
-          context,
-          'share_error_generic'.tr(),
-          tur: KilBildirimTuru.hata,
-          sure: const Duration(seconds: 2),
-        );
-      }
-    }
-  }
 
   @override
   void dispose() {

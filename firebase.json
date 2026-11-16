@@ -11,5 +11,42 @@
                 "*.local"
             ]
         }
+    ],
+    "hosting": [
+        {
+            "site": "tarifly",
+            "public": "hosting",
+            "ignore": [
+                "firebase.json",
+                "**/node_modules/**"
+            ],
+            "cleanUrls": true,
+            "rewrites": [
+                {
+                    "source": "/t/**",
+                    "destination": "/t.html"
+                }
+            ],
+            "headers": [
+                {
+                    "source": "/.well-known/apple-app-site-association",
+                    "headers": [
+                        {
+                            "key": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                {
+                    "source": "/t.html",
+                    "headers": [
+                        {
+                            "key": "Cache-Control",
+                            "value": "no-cache"
+                        }
+                    ]
+                }
+            ]
+        }
     ]
 }

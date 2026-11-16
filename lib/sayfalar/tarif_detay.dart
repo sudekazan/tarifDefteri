@@ -8,16 +8,15 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:tarif_defteri/tarifler_data/tarif_data.dart';
 import 'package:tarif_defteri/sayfalar/tarif_olusturma.dart';
 import 'package:tarif_defteri/sayfalar/yemek_yapma_modu.dart';
-import 'package:share_plus/share_plus.dart';
+import '../utils/tarif_paylas.dart';
+import '../utils/tarif_bolumleri.dart';
 import '../widgets/banner_ad_widget.dart';
 import '../services/revenuecat_service.dart';
 import '../utils/tarif_kayit.dart';
 import '../widgets/kil/kil.dart';
 import '../widgets/tarif_detay_parcalari.dart';
-import '../utils/magaza_linki.dart';
 import '../utils/recipe_link_helper.dart';
 import '../utils/porsiyon_olcekleyici.dart';
-import '../services/analytics_service.dart';
 
 class TarifDetay extends StatefulWidget {
   final TarifData tarif;
@@ -57,146 +56,10 @@ class _TarifDetayState extends State<TarifDetay> {
   }
 
   void _parseTarifAciklama() {
-    if (widget.tarif.tarif_aciklama_json != null && widget.tarif.tarif_aciklama_json!.isNotEmpty) {
-      try {
-        final List<dynamic> decoded = json.decode(widget.tarif.tarif_aciklama_json!);
-        sections = decoded.map((e) {
-          // Geri dönen öğelerin listeler olduğundan emin olalım
-          return {
-            'title': e['title'],
-            'type': e['type'],
-            'items': List<String>.from(e['items'] ?? []),
-            'isExpanded': e['isExpanded'] ?? true
-          };
-        }).toList();
-        return;
-      } catch (e) {
-        debugPrint('JSON parsing error in tarif_detay: $e');
-      }
-    }
-
-    String tarifAciklama = widget.tarif.tarif_aciklama;
-    if (tarifAciklama.isEmpty) return;
-    
-    final lines = tarifAciklama.split('\n');
-    String currentSection = '';
-    String currentType = '';
-    List<String> currentItems = [];
-    
-    // Helper to check headers (Improved)
-    bool isHeader(String line, List<String> keywords) {
-      String lower = line.replaceAll(':', '').trim().toLowerCase();
-      
-      // Ignore numbered items or bullets (prevent false positives like "2. İç malzemelerini karıştırın")
-      if (RegExp(r'^\d+').hasMatch(lower)) return false;
-      if (lower.startsWith('*') || lower.startsWith('-') || lower.startsWith('•')) return false;
-
-      // Çok uzun satırları başlık olarak kabul etme (Yanlış pozitifleri önle)
-      if (lower.length > 40) return false; 
-      
-      for (var k in keywords) {
-         if (lower.contains(k.toLowerCase())) return true;
-      }
-      return false;
-    }
-    
-    for (String line in lines) {
-      final trimmed = line.trim();
-      if (trimmed.isEmpty) continue;
-      
-      // Başlık kontrolü (Çok dilli ve esnek)
-      if (isHeader(trimmed, ['malzemeler', 'ingredients', 'içindekiler'])) {
-        _addSectionIfNotEmpty(currentSection, currentType, currentItems);
-        currentSection = trimmed.replaceAll(':', '');
-        currentType = 'malzemeler';
-        currentItems = [];
-      } else if (isHeader(trimmed, ['harç', 'filling', 'iç harcı'])) {
-        _addSectionIfNotEmpty(currentSection, currentType, currentItems);
-        currentSection = trimmed.replaceAll(':', '');
-        currentType = 'harc';
-        currentItems = [];
-      } else if (isHeader(trimmed, ['hamuru', 'dough', 'hamur'])) {
-        _addSectionIfNotEmpty(currentSection, currentType, currentItems);
-        currentSection = trimmed.replaceAll(':', '');
-        currentType = 'hamur';
-        currentItems = [];
-      } else if (isHeader(trimmed, ['şerbeti', 'syrup', 'şerbet', 'serbet'])) {
-        _addSectionIfNotEmpty(currentSection, currentType, currentItems);
-        currentSection = trimmed.replaceAll(':', '');
-        currentType = 'serbet';
-        currentItems = [];
-      } else if (isHeader(trimmed, ['sosu', 'sauce', 'sos'])) {
-        _addSectionIfNotEmpty(currentSection, currentType, currentItems);
-        currentSection = trimmed.replaceAll(':', '');
-        currentType = 'sos';
-        currentItems = [];
-      } else if (isHeader(trimmed, ['püf noktası', 'tips', 'puf noktasi', 'chef notes'])) {
-        _addSectionIfNotEmpty(currentSection, currentType, currentItems);
-        currentSection = trimmed.replaceAll(':', '');
-        currentType = 'puf_noktasi';
-        currentItems = [];
-      } else if (isHeader(trimmed, ['yapılışı', 'instructions', 'steps', 'hazırlanışı', 'tarif', 'yapilis'])) {
-        _addSectionIfNotEmpty(currentSection, currentType, currentItems);
-        currentSection = trimmed.replaceAll(':', '');
-        currentType = 'yapilis';
-        currentItems = [];
-      } else if (isHeader(trimmed, ['linkler', 'links'])) {
-        _addSectionIfNotEmpty(currentSection, currentType, currentItems);
-        currentSection = trimmed.replaceAll(':', '');
-        currentType = 'linkler';
-        currentItems = [];
-      } else if (trimmed.startsWith('*') || trimmed.startsWith('•') || trimmed.startsWith('-') || RegExp(r'^\d+\.').hasMatch(trimmed) || trimmed.startsWith('🔗')) {
-        // Madde ekle
-        String item = trimmed;
-        if (trimmed.startsWith('*') || trimmed.startsWith('•') || trimmed.startsWith('-')) {
-          item = trimmed.substring(1).trim();
-        } else if (trimmed.startsWith('🔗')) {
-          item = trimmed.replaceFirst('🔗', '').trim();
-        } else {
-          item = trimmed.replaceFirst(RegExp(r'^\d+\.\s*'), '').trim();
-        }
-        
-        if (item.isNotEmpty) {
-           // Eğer madde geldi ama henüz bir başlık yoksa, varsayılan olarak 'Malzemeler' başlat
-           if (currentSection.isEmpty) {
-             currentSection = 'recipe_section_ingredients'.tr();
-             currentType = 'malzemeler';
-           }
-           currentItems.add(item);
-        }
-      } else {
-        // Başlık değil, madde işareti yok. Düz metin.
-        // Eğer kısa ve kalınsa başlık olabilir ama yukarıdaki kelimelere uymamış
-        // Veya bir önceki maddenin devamı.
-        
-        if (currentSection.isEmpty && currentItems.isEmpty) {
-           // Belki de "Genel" bir başlık? Veya AI sadece "Malzemeler İçin:" dedi ama split yüzünden ayrı kaldı?
-           // Şimdilik görmezden gel veya Description'a ekle.
-           // Ancak üstteki 'isHeader' zaten çoğu şeyi yakalar.
-        } else if (currentItems.isNotEmpty) {
-           // Bir önceki maddeye ekle (multiline support)
-           currentItems[currentItems.length - 1] += ' $trimmed';
-        } else {
-            // Section var ama madde yok. Description gibi ekle.
-            currentItems.add(trimmed);
-        }
-      }
-    }
-    
-    // Son section'ı ekle
-    _addSectionIfNotEmpty(currentSection, currentType, currentItems);
-  }
-  
-  void _addSectionIfNotEmpty(String title, String type, List<String> items) {
-    // items boş olsa bile eğer title varsa ekle (nadiren başlık olup içerik olmayabilir ama başlık kaybolmasın)
-    // Ancak usually title ve items lazım. Fakat veri kaybını önlemek için title varsa ekleyelim.
-    if (title.isNotEmpty && items.isNotEmpty) {
-      sections.add({
-        'title': title,
-        'type': type,
-        'items': List.from(items),
-      });
-    }
+    sections = tarifBolumleriniCoz(
+      widget.tarif,
+      varsayilanBaslik: 'recipe_section_ingredients'.tr(),
+    );
   }
 
   void _showBigPhoto(String imagePath) {
@@ -215,55 +78,12 @@ class _TarifDetayState extends State<TarifDetay> {
     );
   }
 
-  Future<void> _paylas(BuildContext dugmeContext) async {
-    try {
-      // Tarif bilgilerini düzenli formatta hazırla
-      String shareText = '📖 ${widget.tarif.tarif_adi}\n\n';
-
-      // Sections varsa onları kullan, yoksa ham açıklamayı kullan
-      if (sections.isNotEmpty) {
-        for (var section in sections) {
-          shareText += '${section['title']}\n';
-          shareText += '${'─' * 20}\n';
-          for (int i = 0; i < section['items'].length; i++) {
-            if (section['type'] == 'yapilis') {
-              shareText += '${i + 1}. ${section['items'][i]}\n';
-            } else {
-              shareText += '• ${section['items'][i]}\n';
-            }
-          }
-          shareText += '\n';
-        }
-      } else {
-        shareText += widget.tarif.tarif_aciklama;
-      }
-
-      shareText += '\n━━━━━━━━━━━━━━━━━━\n';
-      shareText += 'share_from_app'.tr();
-      shareText += '\n${'share_download_cta'.tr()} $magazaLinki';
-
-      // iOS için butonun konumunu al
-      final box = dugmeContext.findRenderObject() as RenderBox?;
-      final sharePositionOrigin =
-          box != null ? box.localToGlobal(Offset.zero) & box.size : null;
-
-      await Share.share(
-        shareText,
-        subject: widget.tarif.tarif_adi,
-        sharePositionOrigin: sharePositionOrigin,
+  Future<void> _paylas(BuildContext dugmeContext) => tarifiPaylas(
+        context: context,
+        dugmeContext: dugmeContext,
+        tarif: widget.tarif,
+        kaynak: 'tarif_detay',
       );
-      AnalyticsService.tarifPaylasildi(kaynak: 'tarif_detay');
-    } catch (e) {
-      debugPrint('Tarif paylaşma hatası: $e');
-      if (mounted) {
-        KilBildirim.goster(
-          context,
-          'share_error_generic'.tr(),
-          tur: KilBildirimTuru.hata,
-        );
-      }
-    }
-  }
 
   Future<void> _duzenle() async {
     final guncelTarif = await Navigator.push(

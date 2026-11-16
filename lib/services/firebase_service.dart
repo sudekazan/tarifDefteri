@@ -14,6 +14,7 @@ import '../tarifler_data/tarif_data.dart';
 import '../tarifler_data/klasor_data.dart';
 import '../utils/error_helper.dart';
 import 'revenuecat_service.dart';
+import 'tarif_paylasim_service.dart';
 
 /// Kullanıcı Google/Apple sign-in akışını kendi isteğiyle iptal ettiğinde
 /// (ör. hesap seçim ekranını kapatınca) fırlatılır; bu durumda hata
@@ -690,6 +691,10 @@ class FirebaseService {
     if (!isUserLoggedIn) throw Exception('Kullanıcı giriş yapmamış');
 
     final currentUserId = userId!;
+
+    // 0. Paylaşım linkleriyle herkese açılmış tarif kopyalarını sil
+    await TarifPaylasimService(firestore: _firestore, auth: _auth)
+        .kullanicininPaylasimlariniSil(currentUserId);
 
     // 1. Kullanıcının tüm tariflerini sil
     final tariflerSnapshot = await _firestore

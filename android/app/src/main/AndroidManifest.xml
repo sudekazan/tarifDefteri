@@ -33,6 +33,18 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+
+            <!-- Tarifly paylaşım linkleri (https://tarifly.web.app/t/KOD) uygulamada
+                 açılır. Doğrulama: tarifly.web.app/.well-known/assetlinks.json -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="https" android:host="tarifly.web.app" android:pathPrefix="/t/"/>
+            </intent-filter>
+
+            <!-- Linki Flutter'ın yönlendiricisi değil app_links işler. -->
+            <meta-data android:name="flutter_deeplinking_enabled" android:value="false"/>
         </activity>
         
         <meta-data

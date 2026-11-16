@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Tarifly</title>
+  <meta name="description" content="Tarifly'de paylaşılan bir tarif.">
+  <meta property="og:site_name" content="Tarifly">
+  <meta property="og:title" content="Tarifly'de bir tarif">
+  <meta property="og:description" content="Tarifi aç, tek dokunuşla defterine ekle.">
+  <meta property="og:image" content="https://tarifly.web.app/logo.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="apple-itunes-app" content="app-id=6759447259">
+  <link rel="icon" href="/logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/stil.css">
+</head>
+<body>
+  <main class="sayfa">
+    <header class="ust">
+      <img src="/logo.png" alt="" width="40" height="40" class="logo">
+      <span class="marka">Tarifly</span>
+    </header>
+
+    <p id="durum" class="durum" role="status"></p>
+
+    <article id="tarif" class="tarif" hidden>
+      <h1 id="ad" class="baslik"></h1>
+      <div id="resimler" class="resimler"></div>
+      <div id="bolumler"></div>
+    </article>
+
+    <section class="cagri kart" aria-labelledby="cagri-baslik">
+      <h2 id="cagri-baslik" data-metin="ctaBaslik"></h2>
+      <p data-metin="ctaMetin"></p>
+      <div class="dugmeler">
+        <a id="ios" class="dugme" href="https://apps.apple.com/app/id6759447259" data-metin="appStore"></a>
+        <a id="android" class="dugme" href="https://play.google.com/store/apps/details?id=com.sudekazan.tarif_defteri_yeni" data-metin="googlePlay"></a>
+      </div>
+    </section>
+  </main>
+  <script src="/metinler.js"></script>
+  <script src="/tarif.js"></script>
+</body>
+</html>

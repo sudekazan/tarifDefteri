@@ -1,12 +1,17 @@
+import 'dart:async';
+
+import 'package:app_links/app_links.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 import '../services/revenuecat_service.dart';
+import '../services/tarif_paylasim_service.dart';
 import '../widgets/banner_ad_widget.dart';
 import '../widgets/kil/kil.dart';
 import 'alisveris_listesi.dart';
 import 'bugun_ne_pisisem_sayfasi.dart';
 import 'klasorler.dart';
+import 'paylasilan_tarif_sayfasi.dart';
 import 'profil_sayfasi.dart';
 
 /// Uygulamanın ana kabuğu: alt sekme çubuğu ve dört sekme (Defterim,
@@ -64,6 +69,44 @@ class _AnaKabukState extends State<AnaKabuk> with RouteAware {
     (_) => _SekmeSinyali(),
   );
 
+  StreamSubscription<Uri>? _linkAboneligi;
+
+  @override
+  void initState() {
+    super.initState();
+    // Tarifly paylaşım linkleri (uygulama kapalıyken açan ilk link dahil).
+    // Testte sahte sekmelerle çalışılır; link dinlenmez.
+    if (widget.sekmeKurucu == null) {
+      _linkAboneligi = AppLinks().uriLinkStream.listen(
+            _linkGeldi,
+            onError: (Object e) => debugPrint('Link dinleme hatası: $e'),
+          );
+    }
+  }
+
+  void _linkGeldi(Uri uri) {
+    final kod = linktenPaylasimKodu(uri);
+    if (kod == null || !mounted) return;
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => PaylasilanTarifSayfasi(
+          kod: kod,
+          eklenince: _defterimiTazele,
+        ),
+      ),
+    );
+  }
+
+  /// Paylaşılan tarif eklenince Defterim sekmesi seçilir ve listesi tazelenir.
+  void _defterimiTazele() {
+    if (!mounted) return;
+    if (_secili != AnaKabuk.defterim) {
+      _sekmeyeGec(AnaKabuk.defterim);
+    } else {
+      _sinyaller[AnaKabuk.defterim].bildir();
+    }
+  }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -74,6 +117,7 @@ class _AnaKabukState extends State<AnaKabuk> with RouteAware {
   @override
   void dispose() {
     AnaKabuk.rotaGozlemcisi.unsubscribe(this);
+    _linkAboneligi?.cancel();
     for (final s in _sinyaller) {
       s.dispose();
     }

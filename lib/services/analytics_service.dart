@@ -105,9 +105,21 @@ class AnalyticsService {
       _log('tarif_kaydedildi', {'is_ai_generated': _bool(isAiGenerated)});
 
   /// Bir tarif paylaşıldığında. [kaynak]: "tarif_detay", "klasor_ici" veya
-  /// "klasorler".
-  static Future<void> tarifPaylasildi({required String kaynak}) =>
-      _log('tarif_paylasildi', {'kaynak': kaynak});
+  /// "klasorler". [yontem]: "link" (Tarifly linki) ya da "metin" (giriş yok
+  /// veya link oluşturulamadı).
+  static Future<void> tarifPaylasildi({
+    required String kaynak,
+    String yontem = 'metin',
+  }) =>
+      _log('tarif_paylasildi', {'kaynak': kaynak, 'yontem': yontem});
+
+  /// Paylaşım linkiyle bir tarif açıldığında. [bulundu]: tarif var mıydı.
+  static Future<void> paylasilanTarifAcildi({required bool bulundu}) =>
+      _log('paylasilan_tarif_acildi', {'bulundu': _bool(bulundu)});
+
+  /// Paylaşım linkiyle açılan tarif deftere eklendiğinde.
+  static Future<void> paylasilanTarifEklendi() =>
+      _log('paylasilan_tarif_eklendi');
 
   /// Yemek yapma modu açıldığında.
   static Future<void> yemekModuAcildi() => _log('yemek_modu_acildi');

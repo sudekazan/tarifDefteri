@@ -1,0 +1,10 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["75W22TJ5MZ.com.sudekazan.tarifDefteri"],
+        "components": [{ "/": "/t/*", "comment": "Tarifly paylaşım linkleri" }]
+      }
+    ]
+  }
+}
