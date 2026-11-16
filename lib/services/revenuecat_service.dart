@@ -28,6 +28,11 @@ class RevenueCatService {
 
   static bool get isProUser => _isPro;
 
+  /// Yalnızca testler için (ör. mağaza görselleri reklamsız çizilsin).
+  /// Analitiğe bildirmez.
+  @visibleForTesting
+  static set proDurumuTest(bool deger) => _isPro = deger;
+
   /// Pro durumunu günceller ve Firebase'e `is_pro` kullanıcı özelliği
   /// olarak bildirir.
   static void _setPro(bool isPro) {
