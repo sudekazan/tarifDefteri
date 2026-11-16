@@ -27,6 +27,8 @@ import 'package:tarif_defteri/sayfalar/klasor_ici.dart';
 import 'package:tarif_defteri/sayfalar/tarif_detay.dart';
 import 'package:tarif_defteri/sayfalar/yemek_yapma_modu.dart';
 import 'package:tarif_defteri/services/revenuecat_service.dart';
+import 'package:tarif_defteri/utils/klasor_adi.dart';
+import 'package:tarif_defteri/widgets/tarif_ekle_alt_sayfasi.dart';
 
 import 'ornek_veriler.dart';
 
@@ -40,8 +42,10 @@ class _Cihaz {
   final double altBosluk;
 }
 
-// iPhone 6.9": 1320 × 2868. Google Play telefon: 1080 × 2160 (en fazla 2:1).
+// iPhone 6.9": 1320 × 2868. iPad 13": 2064 × 2752.
+// Google Play telefon: 1080 × 2160 (en fazla 2:1).
 const _iphone = _Cihaz('iphone_6.9', Size(440, 956), 3, 62, 34);
+const _ipad = _Cihaz('ipad_13', Size(1032, 1376), 2, 24, 20);
 const _android = _Cihaz('android', Size(360, 720), 3, 28, 16);
 
 Future<void> _fontYukle(String aile, String yol) async {
@@ -71,11 +75,13 @@ class _DurumCubugu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ios = cihaz == _iphone;
+    // iPad'in durum çubuğu ince; Android'inki gibi ortalanır.
+    final ios = cihaz != _android;
+    final tablet = cihaz == _ipad;
     const renk = Color(0xFF1C1B1A);
     final yazi = TextStyle(
       fontFamily: ios ? 'SFStatus' : 'Roboto',
-      fontSize: ios ? 17 : 14,
+      fontSize: tablet ? 13 : (ios ? 17 : 14),
       fontWeight: FontWeight.w600,
       color: renk,
       decoration: TextDecoration.none,
@@ -83,20 +89,25 @@ class _DurumCubugu extends StatelessWidget {
     return SizedBox(
       height: cihaz.ustBosluk,
       child: Padding(
-        padding: EdgeInsets.fromLTRB(ios ? 52 : 18, ios ? 18 : 0, ios ? 36 : 14, 0),
+        padding: tablet
+            ? const EdgeInsets.symmetric(horizontal: 20)
+            : EdgeInsets.fromLTRB(ios ? 52 : 18, ios ? 18 : 0, ios ? 36 : 14, 0),
         child: Row(
-          crossAxisAlignment:
-              ios ? CrossAxisAlignment.start : CrossAxisAlignment.center,
+          crossAxisAlignment: ios && !tablet
+              ? CrossAxisAlignment.start
+              : CrossAxisAlignment.center,
           children: [
             Text(ios ? '9:41' : '9:30', style: yazi),
             const Spacer(),
-            Icon(Icons.signal_cellular_alt_rounded, size: ios ? 20 : 16, color: renk),
-            const SizedBox(width: 5),
-            Icon(Icons.wifi_rounded, size: ios ? 20 : 16, color: renk),
+            if (!tablet) ...[
+              Icon(Icons.signal_cellular_alt_rounded, size: ios ? 20 : 16, color: renk),
+              const SizedBox(width: 5),
+            ],
+            Icon(Icons.wifi_rounded, size: tablet ? 16 : (ios ? 20 : 16), color: renk),
             const SizedBox(width: 5),
             Icon(
               ios ? Icons.battery_full_rounded : Icons.battery_full,
-              size: ios ? 24 : 16,
+              size: tablet ? 20 : (ios ? 24 : 16),
               color: renk,
             ),
           ],
@@ -195,6 +206,17 @@ final _ekranlar = [
     '06_alisveris',
     (t, g, v) => _sekme(t, Icons.shopping_basket_outlined),
   ),
+  // "Yeni tarif" alt sayfası: üç ekleme yolu. Giriş yapılmış gibi çizilir,
+  // yoksa yapay zekâ seçeneği kilitli görünür.
+  _Ekran('07_tarif_ekle', (t, g, v) async {
+    unawaited(TarifEkleAltSayfasi.goster(
+      t.element(find.byType(AnaKabuk)),
+      klasorler: [for (final k in v.klasorler) v.klasorVerisi(k)],
+      baslangicKlasoru: v.ilkKlasor,
+      girisYapildi: true,
+      klasorAdi: klasorGorunenAdi,
+    ));
+  }),
 ];
 
 void main() {
@@ -212,7 +234,7 @@ void main() {
   });
 
   for (final dil in OrnekVeriler.diller) {
-    for (final cihaz in [_iphone, _android]) {
+    for (final cihaz in [_iphone, _ipad, _android]) {
       for (final ekran in _ekranlar) {
         testWidgets('$dil ${cihaz.ad} ${ekran.ad}', (tester) async {
           await _ciz(tester, dil, cihaz, ekran);

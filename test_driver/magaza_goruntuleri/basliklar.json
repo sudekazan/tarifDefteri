@@ -1,0 +1,54 @@
+{
+  "_not": "Mağaza görsellerinin başlıkları. Metinler App Store'daki 1.0.24 görsellerinden alındı (ios/fastlane/screenshots). Sıra mağazadaki sıradır; 'ekran' test_driver çıktısındaki dosya adı, 'renk' ikinci satırın rengi (terrakota ya da adacayi).",
+  "ekranlar": [
+    {"ad": "1_bugun_ne_pisirsem", "ekran": "05_ne_pisirsem", "renk": "terrakota"},
+    {"ad": "2_ana_sayfa", "ekran": "01_defterim", "renk": "adacayi"},
+    {"ad": "3_tarif_ekleme_yontemi", "ekran": "07_tarif_ekle", "renk": "terrakota"},
+    {"ad": "4_yemek_yapma_modu", "ekran": "04_yemek_modu", "renk": "adacayi"},
+    {"ad": "5_tarif_detayi", "ekran": "03_tarif", "renk": "adacayi"}
+  ],
+  "metinler": {
+    "tr": [
+      ["Dolabındakileri yaz,", "tarifi anında al.", "Yapay zekâ şefin saniyeler içinde tarifini oluştursun."],
+      ["Tüm tariflerin,", "tek bir yerde.", "Klasörle, favori tarifini asla kaybetme."],
+      ["Yaz, AI'a sor,", "ya da linkten çek.", "Üç farklı yöntemle tarif defterini doldur."],
+      ["Adım adım pişir,", "elin boş kalsın.", "Malzemeleri işaretle, adımları sırayla takip et."],
+      ["Her tarif,", "düzenli ve hazır.", "Fotoğraf, malzeme ve adımlar tek ekranda."]
+    ],
+    "en": [
+      ["List what you have,", "get a recipe fast.", "Let AI craft your recipe in seconds."],
+      ["All your recipes,", "in one place.", "Organize with folders, never lose a favorite."],
+      ["Write, ask AI,", "or paste a link.", "Three ways to fill your recipe book."],
+      ["Cook step by step,", "hands stay free.", "Check off ingredients, follow steps in order."],
+      ["Every recipe,", "organized, ready.", "Photos, ingredients, and steps in one screen."]
+    ],
+    "de": [
+      ["Zutaten eintippen,", "sofort ein Rezept.", "Deine KI zaubert dein Rezept in Sekunden."],
+      ["Alle Rezepte,", "an einem Ort.", "Ordne sie in Ordnern, verliere nie ein Lieblingsrezept."],
+      ["Tippen, KI fragen,", "oder Link nutzen.", "Drei Wege, dein Rezeptbuch zu füllen."],
+      ["Schritt für Schritt,", "ganz ohne Hektik.", "Hake Zutaten ab, folge den Schritten der Reihe nach."],
+      ["Jedes Rezept,", "ordentlich bereit.", "Foto, Zutaten und Schritte auf einem Bildschirm."]
+    ],
+    "es": [
+      ["Escribe y listo,", "receta al instante.", "Tu chef IA crea tu receta en segundos."],
+      ["Todas tus recetas,", "en un lugar.", "Organiza con carpetas, no pierdas tus favoritas."],
+      ["Escribe o pregunta,", "o importa un enlace.", "Tres formas de llenar tu recetario."],
+      ["Cocina paso a paso,", "manos libres.", "Marca los ingredientes, sigue los pasos en orden."],
+      ["Cada receta,", "lista y ordenada.", "Foto, ingredientes y pasos en una sola pantalla."]
+    ],
+    "fr": [
+      ["Notez vos aliments,", "recette instantanée.", "Votre chef IA crée la recette en quelques secondes."],
+      ["Toutes vos recettes,", "au même endroit.", "Classez-les en dossiers, ne perdez plus vos favorites."],
+      ["Écrivez ou demandez,", "ou importez un lien.", "Trois façons de remplir votre carnet de recettes."],
+      ["Étape par étape,", "mains libres.", "Cochez les ingrédients, suivez les étapes dans l'ordre."],
+      ["Chaque recette,", "prête et rangée.", "Photo, ingrédients et étapes sur un seul écran."]
+    ],
+    "pt": [
+      ["Escreva o que tem,", "receba a receita.", "Seu chef de IA cria a receita em segundos."],
+      ["Todas as receitas,", "em um só lugar.", "Organize em pastas, nunca perca uma favorita."],
+      ["Escreva ou pergunte,", "ou importe um link.", "Três formas de preencher seu caderno de receitas."],
+      ["Passo a passo,", "mãos livres.", "Marque os ingredientes, siga os passos em ordem."],
+      ["Cada receita,", "pronta e organizada.", "Foto, ingredientes e passos em uma só tela."]
+    ]
+  }
+}
