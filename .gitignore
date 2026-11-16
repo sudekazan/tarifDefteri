@@ -48,3 +48,6 @@ app.*.map.json
 /android/app/release
 backend/.env
 node_modules/
+
+# Firebase deploy önbelleği
+.firebase/

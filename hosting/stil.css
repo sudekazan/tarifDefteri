@@ -1,5 +1,7 @@
-/* Tarifly kil paleti (lib/theme/kil_renkleri.dart ile aynı renkler). */
+/* Tarifly kil paleti (lib/theme/kil_renkleri.dart açık tema). Sayfa her
+   zaman açık renkte; koyu mod yok. */
 :root {
+  color-scheme: light;
   --zemin: #FFFBEB;
   --kart: #FFFFFF;
   --kenar: #F2E6E2;
@@ -12,22 +14,6 @@
   --birincil-golge: #7C2D12;
   --isaret: #059669;
 }
-@media (prefers-color-scheme: dark) {
-  :root {
-    --zemin: #1C1412;
-    --kart: #2A1F1B;
-    --kenar: #4A3830;
-    --golge: #120C0A;
-    --ana-yazi: #FAF3EE;
-    --soluk-yazi: #C9B8AE;
-    --baslik: #FDBA74;
-    --birincil: #FB923C;
-    --birincil-ustu: #1C1412;
-    --birincil-golge: #C2410C;
-    --isaret: #34D399;
-  }
-}
-
 * { box-sizing: border-box; }
 
 body {
