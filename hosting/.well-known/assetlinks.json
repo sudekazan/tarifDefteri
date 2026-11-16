@@ -4,7 +4,7 @@
     "target": {
       "namespace": "android_app",
       "package_name": "com.sudekazan.tarif_defteri_yeni",
-      "sha256_cert_fingerprints": ["PLAY_UYGULAMA_IMZALAMA_SHA256_BURAYA"]
+      "sha256_cert_fingerprints": ["A9:1D:DA:19:98:58:04:D3:91:49:5F:DD:31:9E:A8:AD:D0:29:08:73:BB:EB:B7:9A:6B:BA:6C:91:AD:5B:E1:F7"]
     }
   }
 ]

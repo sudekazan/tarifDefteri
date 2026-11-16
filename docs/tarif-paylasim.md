@@ -38,7 +38,7 @@ match /paylasilanTarifler/{kod} {
 
 1. Firestore kuralını yukarıdaki gibi ekle.
 2. Apple Developer → Identifiers → `com.sudekazan.tarifDefteri` → "Associated Domains" açık olsun (Xcode otomatik imzalama da açabilir).
-3. Play Console → Uygulama bütünlüğü → Uygulama imzalama → SHA-256 parmak izini `hosting/.well-known/assetlinks.json` içindeki `PLAY_UYGULAMA_IMZALAMA_SHA256_BURAYA` yerine yaz.
+3. Play uygulama imzalama SHA-256 parmak izi `hosting/.well-known/assetlinks.json` içinde (2026-11-16 eklendi).
 4. Siteyi yayına al: `firebase deploy --only hosting:tarifly`
 5. Kontrol: `https://tarifly.web.app/.well-known/apple-app-site-association` ve `.../assetlinks.json` açılmalı.
 6. Gerçek cihazda dene: bir tarifi paylaş, linke başka telefondan dokun.
