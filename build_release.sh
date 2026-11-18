@@ -6,10 +6,13 @@
 echo "🚀 Tarif Defteri Build Başlatılıyor..."
 echo ""
 
-# Clean build
-echo "🧹 Build temizleniyor..."
-flutter clean
-echo ""
+# Temiz derleme yalnızca istenirse: ./build_release.sh --clean
+# (Her seferinde clean yapmak önbelleği siler, derlemeyi uzatır.)
+if [ "$1" == "--clean" ]; then
+    echo "🧹 Build temizleniyor..."
+    flutter clean
+    echo ""
+fi
 
 # Pub get
 echo "📦 Paketler indiriliyor..."
