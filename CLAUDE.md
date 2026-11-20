@@ -11,7 +11,7 @@ Kişisel tarif defteri: klasörler, zengin metinli tarif oluşturma, yemek yapma
 - Ekranlar: `lib/sayfalar/` (çoğu), `lib/screens/` (ayarlar, tema, güncelleme)
 - Durum: `lib/managers/app_state_manager.dart`. Modeller: `lib/tarifler_data/`
 - Servisler: `lib/services/` (firebase, ai_recipe, ad, revenuecat, review, analytics)
-- Yapay zekâ sunucusu: `backend/server.js` (Express, Render'da `tarif-defteri-api.onrender.com`, OpenRouter). Anahtarlar Render ortam değişkenlerinde.
+- Yapay zekâ sunucusu: `backend/server.js` (Express, OpenRouter). Kendi sunucuda `api.dijitaltarifdefteri.com.tr` adresinde Docker ile çalışır; `backend/` değişince `.github/workflows/sunucuya-yayinla.yml` yayınlar. Anahtarlar `sudekazan/sunucu` reposunun `TARIF_API_ENV` secret'ında. Eski Render adresi (`tarif-defteri-api.onrender.com`) eski uygulama sürümleri için geçici olarak açık.
 - `functions/index.js` içindeki `generateRecipe` yorum satırında; yapay zekâ istekleri `backend/` üzerinden gidiyor.
 
 # Komutlar
