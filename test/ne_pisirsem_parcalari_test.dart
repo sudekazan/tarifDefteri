@@ -13,6 +13,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tarif_defteri/sayfalar/bugun_ne_pisisem_sayfasi.dart';
 import 'package:tarif_defteri/tarifler_data/klasor_data.dart';
+import 'package:tarif_defteri/widgets/ana_sayfa_parcalari.dart';
 import 'package:tarif_defteri/widgets/ai_chef_loading_animation.dart';
 import 'package:tarif_defteri/widgets/ai_hak_doldu_dialog.dart';
 import 'package:tarif_defteri/widgets/kil/kil.dart';
@@ -527,4 +528,39 @@ void main() {
       }
     }
   });
+
+  // --- Premium rozeti sağ kenarda (2026-11-21 tasarımı) ---
+  for (final geriVar in [false, true]) {
+    testWidgets('ne pişirsem başlığı: rozet sağ kenarda (geriVar: $geriVar)',
+        (tester) async {
+      _ekran(tester, 390);
+      await tester.pumpWidget(_sar(Scaffold(
+        body: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              NePisirsemBasligi(
+                // Kısa başlık: test fontunda uzun başlık satırı doldurup
+                // rozeti zaten sağa itiyor, yapışık hali ayırt edilemiyordu.
+                baslik: 'Ne?',
+                geriVar: geriVar,
+                proRozeti: ProRozeti(
+                  etiket: "Premium'a geç",
+                  anlamEtiketi: "Premium'a Geç",
+                  onPressed: () {},
+                ),
+              ),
+            ],
+          ),
+        ),
+      )));
+      final alan = tester.getRect(find.byType(NePisirsemBasligi));
+      final r = tester.getRect(find.byType(ProRozeti));
+      // Sağ kenara ulaşmalı. geriVar dalında KilSayfaBasligi eylemleri
+      // optik hizalama için kenardan 6 px dışarı kaydırır (_icPay).
+      expect(r.right, greaterThanOrEqualTo(alan.right - 1));
+      expect(tester.takeException(), isNull);
+    });
+  }
 }

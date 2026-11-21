@@ -74,9 +74,13 @@ class NePisirsemBasligi extends StatelessWidget {
         children: [yazi, proRozeti!],
       );
     }
+    // Başlık solda, rozet sağ kenarda: rozet başlığın hemen yanında durunca
+    // kullanıcılar onu "Premium'sunuz" gibi bir durum bilgisi sanıyordu.
     return Row(
       children: [
-        Flexible(child: yazi),
+        Expanded(
+          child: Align(alignment: AlignmentDirectional.centerStart, child: yazi),
+        ),
         const SizedBox(width: 8),
         proRozeti!,
       ],
