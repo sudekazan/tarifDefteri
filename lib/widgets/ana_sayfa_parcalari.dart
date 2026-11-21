@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import 'kil/kil.dart';
@@ -24,6 +26,29 @@ class ProRozeti extends StatelessWidget {
 
   static const double dokunmaBoyutu = 48;
   static const double yaziSiniri = 2.0;
+
+  // build'deki ölçüler: simge 16 + boşluk 4 + yatay iç boşluk 2x10 +
+  // kenarlık 2x2. Değişirse [dogalGenislik] de değişmeli (testle korunur).
+  static const double _yaziDisiGenislik = 16 + 4 + 2 * 10 + 2 * 2;
+
+  /// Rozetin tek satırda kapladığı genişlik (dokunma alanı dahil). Başlığın
+  /// yanına sığıp sığmadığına yerleşimden önce karar vermek için.
+  static double dogalGenislik(BuildContext context, String etiket) {
+    final tp = TextPainter(
+      text: TextSpan(
+        text: etiket,
+        style: Theme.of(context).textTheme.labelMedium,
+      ),
+      textDirection: Directionality.of(context),
+      textScaler: MediaQuery.textScalerOf(
+        context,
+      ).clamp(maxScaleFactor: yaziSiniri),
+      maxLines: 1,
+    )..layout();
+    final genislik = tp.width + _yaziDisiGenislik;
+    tp.dispose();
+    return math.max(genislik, dokunmaBoyutu);
+  }
 
   @override
   Widget build(BuildContext context) {

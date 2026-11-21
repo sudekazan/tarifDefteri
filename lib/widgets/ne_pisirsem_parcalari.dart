@@ -1,6 +1,9 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import 'ai_chef_loading_animation.dart';
+import 'ana_sayfa_parcalari.dart';
 import 'kil/kil.dart';
 
 // "Bugün ne pişirsem" sekmesinin kil parçaları. Metinleri çağıran sayfa
@@ -66,25 +69,65 @@ class NePisirsemBasligi extends StatelessWidget {
         ),
       ),
     );
-    if (proRozeti == null) return yazi;
-    // Büyük yazıda rozet başlığın altına iner; yanında başlığa yer kalmıyordu.
-    if (ustUste) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [yazi, proRozeti!],
-      );
-    }
-    // Başlık solda, rozet sağ kenarda: rozet başlığın hemen yanında durunca
-    // kullanıcılar onu "Premium'sunuz" gibi bir durum bilgisi sanıyordu.
-    return Row(
-      children: [
-        Expanded(
-          child: Align(alignment: AlignmentDirectional.centerStart, child: yazi),
-        ),
-        const SizedBox(width: 8),
-        proRozeti!,
-      ],
+    final rozet = proRozeti;
+    if (rozet == null) return yazi;
+    final baslikStili = Theme.of(
+      context,
+    ).textTheme.headlineLarge?.copyWith(color: r.baslik);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Rozet yanındayken başlığın en uzun kelimesi kalan yere sığmıyorsa
+        // kelime ortasından bölünürdü; o zaman rozet başlığın altına iner.
+        final sigmiyor = ustUste ||
+            (rozet is ProRozeti &&
+                constraints.hasBoundedWidth &&
+                _enUzunKelime(context, baslikStili) >
+                    constraints.maxWidth -
+                        ProRozeti.dogalGenislik(context, rozet.etiket) -
+                        8);
+        if (sigmiyor) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [yazi, rozet],
+          );
+        }
+        // Başlık solda, rozet sağ kenarda: rozet başlığın hemen yanında
+        // durunca kullanıcılar onu "Premium'sunuz" gibi bir durum bilgisi
+        // sanıyordu.
+        return Row(
+          children: [
+            Expanded(
+              child: Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: yazi,
+              ),
+            ),
+            const SizedBox(width: 8),
+            rozet,
+          ],
+        );
+      },
     );
+  }
+
+  /// Başlığın en uzun kelimesinin genişliği (başlıkla aynı ölçek sınırıyla).
+  double _enUzunKelime(BuildContext context, TextStyle? stil) {
+    final olcek = MediaQuery.textScalerOf(
+      context,
+    ).clamp(maxScaleFactor: nePisirsemBaslikSiniri);
+    var enUzun = 0.0;
+    for (final kelime in baslik.split(RegExp(r'\s+'))) {
+      if (kelime.isEmpty) continue;
+      final tp = TextPainter(
+        text: TextSpan(text: kelime, style: stil),
+        textDirection: Directionality.of(context),
+        textScaler: olcek,
+        maxLines: 1,
+      )..layout();
+      enUzun = math.max(enUzun, tp.width);
+      tp.dispose();
+    }
+    return enUzun;
   }
 }
 

@@ -563,4 +563,48 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   }
+
+  testWidgets(
+      'ne pişirsem başlığı: rozet yanına sığmazsa alta iner, kelime bölünmez',
+      (tester) async {
+    _ekran(tester, 320);
+    const baslik = 'Ne pişir';
+    await tester.pumpWidget(_sar(
+      Scaffold(
+        body: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              NePisirsemBasligi(
+                baslik: baslik,
+                geriVar: false,
+                proRozeti: ProRozeti(
+                  etiket: "Premium'a geç",
+                  anlamEtiketi: "Premium'a Geç",
+                  onPressed: () {},
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      yaziOlcegi: 1.3,
+    ));
+    expect(tester.takeException(), isNull);
+    final yazi = tester.getRect(find.text(baslik));
+    final stil = tester.widget<Text>(find.text(baslik)).style;
+    for (final kelime in baslik.split(' ')) {
+      final tp = TextPainter(
+        text: TextSpan(text: kelime, style: stil),
+        textDirection: Directionality.of(tester.element(find.text(baslik))),
+        textScaler: const TextScaler.linear(1.3),
+      )..layout();
+      expect(tp.width, lessThanOrEqualTo(yazi.width + 0.5),
+          reason: '"$kelime" başlık kutusuna sığmalı (ortasından bölünmemeli)');
+      tp.dispose();
+    }
+    expect(tester.getRect(find.byType(ProRozeti)).top,
+        greaterThanOrEqualTo(yazi.bottom));
+  });
 }

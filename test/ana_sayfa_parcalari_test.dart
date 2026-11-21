@@ -289,4 +289,19 @@ void main() {
       });
     }
   }
+
+  for (final olcek in const [1.0, 1.3, 3.2]) {
+    testWidgets('Pro rozeti: dogalGenislik gerçek genişlikle aynı (${olcek}x)',
+        (tester) async {
+      await tester.pumpWidget(_sar(
+        Align(alignment: Alignment.centerLeft, child: rozet("Premium'a geç")),
+        genislik: 900,
+        yaziOlcegi: olcek,
+      ));
+      final gercek = tester.getSize(find.byType(ProRozeti)).width;
+      final hesap = ProRozeti.dogalGenislik(
+          tester.element(find.byType(ProRozeti)), "Premium'a geç");
+      expect((gercek - hesap).abs(), lessThan(0.5));
+    });
+  }
 }
