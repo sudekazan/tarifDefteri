@@ -223,4 +223,70 @@ void main() {
       });
     }
   }
+
+  // --- Premium rozeti: sağ kenar ve uzun metin (2026-11-21 tasarımı) ---
+  Widget rozet(String etiket) => ProRozeti(
+        etiket: etiket,
+        anlamEtiketi: "Premium'a Geç",
+        onPressed: () {},
+      );
+
+  testWidgets('ana sayfa başlığı: rozet sağ kenarda', (tester) async {
+    await tester.pumpWidget(_sar(AnaSayfaBasligi(
+      baslik: const Text('Tarifly'),
+      proRozeti: rozet("Premium'a geç"),
+    )));
+    final alan = tester.getRect(find.byType(AnaSayfaBasligi));
+    final r = tester.getRect(find.byType(ProRozeti));
+    final yazi = tester.getRect(find.text('Tarifly'));
+    expect((alan.right - r.right).abs(), lessThan(1));
+    expect(r.center.dy, inInclusiveRange(yazi.top, yazi.bottom));
+    expect((yazi.left - alan.left).abs(), lessThan(1));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('ana sayfa başlığı: büyük yazıda rozet başlığın altına iner',
+      (tester) async {
+    await tester.pumpWidget(_sar(
+      AnaSayfaBasligi(
+        baslik: const Text('Tarifly'),
+        proRozeti: rozet("Premium'a geç"),
+      ),
+      genislik: 320,
+      yaziOlcegi: 3.2,
+    ));
+    expect(tester.takeException(), isNull);
+    final r = tester.getRect(find.byType(ProRozeti));
+    final yazi = tester.getRect(find.text('Tarifly'));
+    expect(r.top, greaterThanOrEqualTo(yazi.bottom));
+  });
+
+  testWidgets('ana sayfa başlığı: rozet yoksa yalnızca başlık', (tester) async {
+    await tester.pumpWidget(_sar(
+      const AnaSayfaBasligi(baslik: Text('Tarifly')),
+    ));
+    expect(find.byType(ProRozeti), findsNothing);
+    expect(find.text('Tarifly'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  for (final renkler in const [KilRenkleri.acik, KilRenkleri.koyu]) {
+    final mod = renkler.sertGolge ? 'açık' : 'koyu';
+    for (final etiket in const ["Premium'a geç", 'Passer à Premium']) {
+      testWidgets('Pro rozeti uzun metinde taşmaz ($mod, "$etiket")',
+          (tester) async {
+        await tester.pumpWidget(_sar(
+          rozet(etiket),
+          genislik: 320,
+          yaziOlcegi: 3.2,
+          renkler: renkler,
+        ));
+        expect(tester.takeException(), isNull);
+        expect(find.text(etiket), findsOneWidget);
+        final metin = tester.widget<Text>(find.text(etiket));
+        expect(metin.overflow, isNot(TextOverflow.ellipsis));
+        expect(metin.softWrap, isNot(false));
+      });
+    }
+  }
 }

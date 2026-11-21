@@ -524,33 +524,30 @@ class _KlasorlerState extends State<Klasorler> {
   }
 
   Widget _baslik() {
-    // Rozet yanına sığmazsa (büyük yazı) başlığın altına iner; başlık
-    // kısalmaz.
-    return Wrap(
-      spacing: 8,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      children: [
-        Semantics(
-          header: true,
-          // Caveat (headlineLarge, 34); büyük yazıda en fazla 2 kat büyür,
-          // yoksa "Tarifly" kısalıyordu.
-          child: MediaQuery.withClampedTextScaling(
-            maxScaleFactor: KilSayfaBasligi.baslikSiniri,
-            child: Text(
-              'app_title'.tr(),
-              style: Theme.of(context).textTheme.headlineLarge,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
+    // Başlık solda, rozet sağ kenarda; rozet sığmazsa (büyük yazı) başlığın
+    // altına iner, başlık kısalmaz.
+    return AnaSayfaBasligi(
+      baslik: Semantics(
+        header: true,
+        // Caveat (headlineLarge, 34); büyük yazıda en fazla 2 kat büyür,
+        // yoksa "Tarifly" kısalıyordu.
+        child: MediaQuery.withClampedTextScaling(
+          maxScaleFactor: KilSayfaBasligi.baslikSiniri,
+          child: Text(
+            'app_title'.tr(),
+            style: Theme.of(context).textTheme.headlineLarge,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ),
-        if (!RevenueCatService.isProUser)
-          ProRozeti(
-            etiket: 'home_pro_badge'.tr(),
-            anlamEtiketi: 'premium_title'.tr(),
-            onPressed: _premiumAc,
-          ),
-      ],
+      ),
+      proRozeti: RevenueCatService.isProUser
+          ? null
+          : ProRozeti(
+              etiket: 'home_pro_badge'.tr(),
+              anlamEtiketi: 'premium_title'.tr(),
+              onPressed: _premiumAc,
+            ),
     );
   }
 

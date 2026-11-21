@@ -77,7 +77,9 @@ class ProRozeti extends StatelessWidget {
                       color: r.seciliCipYazi,
                     ),
                     const SizedBox(width: 4),
-                    Text(etiket, style: yazi),
+                    // Uzun metin ("Premium'a geç", "Passer à Premium") dar
+                    // ekranda taşmasın: kısaltılmaz, alt satıra iner.
+                    Flexible(child: Text(etiket, style: yazi)),
                   ],
                 ),
               ),
@@ -85,6 +87,40 @@ class ProRozeti extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Ana sayfa başlığı: başlık solda, [proRozeti] sağ kenarda. Rozet sığmazsa
+/// (büyük yazı) başlığın altına, sola yaslı iner; başlık kısalmaz.
+/// Rozet başlığın hemen yanında dururken kullanıcılar onu "Premium'sunuz"
+/// gibi bir durum bilgisi sanıyordu; sağ kenarda bir eylem olarak okunur.
+class AnaSayfaBasligi extends StatelessWidget {
+  const AnaSayfaBasligi({super.key, required this.baslik, this.proRozeti});
+
+  final Widget baslik;
+
+  /// Pro kullanıcıda null.
+  final Widget? proRozeti;
+
+  @override
+  Widget build(BuildContext context) {
+    final rozet = proRozeti;
+    if (rozet == null) {
+      return Align(alignment: AlignmentDirectional.centerStart, child: baslik);
+    }
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // spaceBetween ancak Wrap tüm genişliği kaplarsa iki kenara dağıtır.
+        final wrap = Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 8,
+          children: [baslik, rozet],
+        );
+        if (!constraints.hasBoundedWidth) return wrap;
+        return SizedBox(width: constraints.maxWidth, child: wrap);
+      },
     );
   }
 }
