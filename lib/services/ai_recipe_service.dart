@@ -29,7 +29,7 @@ class AiRecipeService {
   // Platforma göre doğru localhost adresini bulur
   String get _baseUrl {
     // Uygulama yayına alındığı için artık tüm platformlarda canlı sunucuyu kullanıyoruz
-    return 'https://tarif-defteri-api.onrender.com/api';
+    return 'https://api.dijitaltarifdefteri.com.tr/api';
   }
 
   Future<String> _getIdToken() async {
