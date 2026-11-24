@@ -154,7 +154,7 @@ void main() {
       await tester.pumpWidget(_sar(_profil(cagrilar, gizlilikSecenekleri: true)));
       await tester.pumpAndSettle();
 
-      await _dokun(tester, "Premium'a Geç");
+      await _dokun(tester, "Premium'a geç");
       await _dokun(tester, 'Satın Alımlarımı Geri Yükle');
       await _dokun(tester, 'Koyu Mod');
       await _dokun(tester, 'Dil');
