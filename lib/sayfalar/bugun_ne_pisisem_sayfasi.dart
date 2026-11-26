@@ -97,7 +97,7 @@ class _BugunNePisisemSayfasiState extends State<BugunNePisisemSayfasi> {
 
   List<KlasorData> _klasorListesi = [];
   KlasorData? _hedefKlasor;
-  int _kalanHak = 3;
+  int _kalanHak = RevenueCatService.freeWeeklyAiLimit;
   bool _isLoading = false;
 
   @override
@@ -132,7 +132,7 @@ class _BugunNePisisemSayfasiState extends State<BugunNePisisemSayfasi> {
   }
 
   Future<void> _verileriYukle() async {
-    final remaining = await RevenueCatService.getRemainingAiUses();
+    final remaining = await RevenueCatService.getRemainingAiUses(mod: AiModu.malzeme);
     final prefs = await SharedPreferences.getInstance();
     final klasorJsonList = prefs.getStringList('klasorler') ?? [];
 
@@ -257,15 +257,13 @@ class _BugunNePisisemSayfasiState extends State<BugunNePisisemSayfasi> {
     }
 
     // Limit Kontrolü
-    bool canUseAi = await RevenueCatService.canUseAi();
+    bool canUseAi = await RevenueCatService.canUseAi(mod: AiModu.malzeme);
     if (!mounted) return;
     if (!canUseAi) {
       AnalyticsService.aiLimitDoldu(kaynak: 'ne_pisirsem');
       _showAiLimitChoiceDialog();
       return;
     }
-
-    setState(() => _isLoading = true);
 
     // Prompt Oluştur
     String prompt = '${'what_to_cook_prompt_ingredients_prefix'.tr()}${_secilenMalzemeler.map(_malzemeAdi).join(', ')}. ';
@@ -279,6 +277,13 @@ class _BugunNePisisemSayfasiState extends State<BugunNePisisemSayfasi> {
 
     final languageCode = context.locale.languageCode;
 
+    // Premium: önce 3 kısa öneri kartı, seçilenin tamamı üretilir.
+    if (RevenueCatService.isProUser) {
+      await _premiumOnerileriUret(prompt, languageCode);
+      return;
+    }
+
+    setState(() => _isLoading = true);
     try {
       // AI Şef'in ücretsiz günlük hakları artık reklamsız kullanılır;
       // reklam yalnızca hak bittiğinde isteğe bağlı "+1 hak" olarak sunulur
@@ -286,7 +291,7 @@ class _BugunNePisisemSayfasiState extends State<BugunNePisisemSayfasi> {
       final recipeFuture = _aiRecipeService.generateRecipe(
         prompt,
         languageCode: languageCode,
-        mode: 'ingredients',
+        mode: AiModu.malzeme,
       );
       await _handleRecipeResult(recipeFuture);
     } catch (e) {
@@ -297,12 +302,52 @@ class _BugunNePisisemSayfasiState extends State<BugunNePisisemSayfasi> {
     }
   }
 
+  /// Premium akışı: öneri kartlarını ister (bir hak), kullanıcı birini
+  /// seçince o tarifin tamamını hak düşmeden üretir.
+  Future<void> _premiumOnerileriUret(String prompt, String languageCode) async {
+    setState(() => _isLoading = true);
+    final AiOneriSonucu sonuc;
+    try {
+      sonuc = await _aiRecipeService.suggestRecipes(prompt, languageCode: languageCode);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      if (e is AiLimitExceededException) {
+        AnalyticsService.aiLimitDoldu(kaynak: 'ne_pisirsem');
+        _showAiLimitChoiceDialog();
+      } else {
+        _showErrorDialog(e);
+      }
+      return;
+    }
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+
+    final secilen = await KilAltSayfa.goster<int>(
+      context,
+      baslik: 'what_to_cook_suggestions_title'.tr(),
+      builder: (sayfaContext) => TarifOneriListesi(
+        aciklama: 'what_to_cook_suggestions_subtitle'.tr(),
+        oneriler: [
+          for (final o in sonuc.oneriler) (baslik: o.baslik, aciklama: o.aciklama),
+        ],
+        onSec: (i) => Navigator.pop(sayfaContext, i),
+      ),
+    );
+    if (secilen == null || !mounted) return;
+
+    setState(() => _isLoading = true);
+    await _handleRecipeResult(
+      _aiRecipeService.generateFromSuggestion(sonuc.suggestionId, secilen),
+    );
+  }
+
   Future<void> _handleRecipeResult(Future<AiRecipeResult> recipeFuture) async {
     try {
       final aiResult = await recipeFuture;
       final recipeData = aiResult.recipeData;
       AnalyticsService.aiKullanildi(isPro: RevenueCatService.isProUser, kaynak: 'ne_pisirsem');
-      await RevenueCatService.syncRemainingFromServer(aiResult.remaining);
+      await RevenueCatService.syncRemainingFromServer(aiResult.remaining, mod: AiModu.malzeme);
       _verileriYukle();
 
       if (!mounted) return;
@@ -355,7 +400,7 @@ class _BugunNePisisemSayfasiState extends State<BugunNePisisemSayfasi> {
       if (mounted) {
         setState(() => _isLoading = false);
         if (e is AiLimitExceededException) {
-          await RevenueCatService.syncRemainingFromServer(0);
+          await RevenueCatService.syncRemainingFromServer(0, mod: AiModu.malzeme);
           AnalyticsService.aiLimitDoldu(kaynak: 'ne_pisirsem');
           _showAiLimitChoiceDialog();
         } else {
@@ -420,8 +465,8 @@ class _BugunNePisisemSayfasiState extends State<BugunNePisisemSayfasi> {
       },
       onAdClosed: () async {
         if (!rewardEarned) return; // Reklam tam izlenmeden kapatıldı
-        final newRemaining = await _aiRecipeService.grantBonusUse();
-        await RevenueCatService.syncRemainingFromServer(newRemaining);
+        final newRemaining = await _aiRecipeService.grantBonusUse(mod: AiModu.malzeme);
+        await RevenueCatService.syncRemainingFromServer(newRemaining, mod: AiModu.malzeme);
         if (mounted) {
           _tarifiUret();
         }

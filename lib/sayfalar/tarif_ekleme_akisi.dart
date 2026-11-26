@@ -267,7 +267,7 @@ class TarifEklemeAkisi {
       return;
     }
 
-    bool canUseAi = await RevenueCatService.canUseAi();
+    bool canUseAi = await RevenueCatService.canUseAi(mod: AiModu.yemekAdi);
     if (!canUseAi) {
       AnalyticsService.aiLimitDoldu(kaynak: isUrl ? 'link' : 'klasor_ai');
       _showAiLimitChoiceDialog(input, isUrl);
@@ -347,7 +347,7 @@ class TarifEklemeAkisi {
         isFavorite: false,
       );
 
-      await RevenueCatService.syncRemainingFromServer(aiResult.remaining);
+      await RevenueCatService.syncRemainingFromServer(aiResult.remaining, mod: AiModu.yemekAdi);
       if (!context.mounted) return;
 
       // Navigate to Edit Page with Pre-filled Data
@@ -416,8 +416,8 @@ class TarifEklemeAkisi {
       },
       onAdClosed: () async {
         if (!rewardEarned) return; // Reklam tam izlenmeden kapatıldı
-        final newRemaining = await _aiRecipeService.grantBonusUse();
-        await RevenueCatService.syncRemainingFromServer(newRemaining);
+        final newRemaining = await _aiRecipeService.grantBonusUse(mod: AiModu.yemekAdi);
+        await RevenueCatService.syncRemainingFromServer(newRemaining, mod: AiModu.yemekAdi);
         if (context.mounted) {
           _generateAndNavigate(input, isUrl);
         }
@@ -437,7 +437,7 @@ class TarifEklemeAkisi {
     } catch (_) {}
 
     if (e is AiLimitExceededException) {
-      RevenueCatService.syncRemainingFromServer(0);
+      RevenueCatService.syncRemainingFromServer(0, mod: AiModu.yemekAdi);
       AnalyticsService.aiLimitDoldu(kaynak: isUrl ? 'link' : 'klasor_ai');
       if (input != null) {
         _showAiLimitChoiceDialog(input, isUrl);

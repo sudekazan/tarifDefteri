@@ -603,3 +603,81 @@ class AiBeklemeKatmani extends StatelessWidget {
     );
   }
 }
+
+/// Premium öneri penceresi: yapay zekânın malzemelerden çıkardığı kısa
+/// tarif kartları. Birine dokununca [onSec] o kartın sırasıyla çağrılır.
+class TarifOneriListesi extends StatelessWidget {
+  const TarifOneriListesi({
+    super.key,
+    required this.aciklama,
+    required this.oneriler,
+    required this.onSec,
+  });
+
+  /// Pencerenin üstündeki kısa yönlendirme metni.
+  final String aciklama;
+
+  /// (başlık, kısa açıklama) çiftleri.
+  final List<({String baslik, String aciklama})> oneriler;
+  final ValueChanged<int> onSec;
+
+  @override
+  Widget build(BuildContext context) {
+    final r = context.kil;
+    final yaziTemasi = Theme.of(context).textTheme;
+
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            aciklama,
+            style: yaziTemasi.bodyMedium?.copyWith(color: r.solukYazi),
+          ),
+          for (var i = 0; i < oneriler.length; i++) ...[
+            const SizedBox(height: 12),
+            KilKart(
+              anlamEtiketi: oneriler[i].baslik,
+              onTap: () => onSec(i),
+              padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          oneriler[i].baslik,
+                          style: yaziTemasi.titleMedium?.copyWith(
+                            color: r.anaYazi,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        if (oneriler[i].aciklama.isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            oneriler[i].aciklama,
+                            style: yaziTemasi.bodyMedium?.copyWith(
+                              color: r.solukYazi,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  ExcludeSemantics(
+                    child: Icon(
+                      Icons.chevron_right_rounded,
+                      color: r.solukYazi,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}

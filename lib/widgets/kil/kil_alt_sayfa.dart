@@ -76,7 +76,12 @@ class KilAltSayfa extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
                 child: Semantics(
                   header: true,
-                  child: Text(baslik!, style: baslikStili),
+                  // Caveat başlıklar en fazla 2 kat büyür; yoksa en büyük
+                  // yazıda başlık pencereyi doldurup içeriği taşırıyordu.
+                  child: MediaQuery.withClampedTextScaling(
+                    maxScaleFactor: 2.0,
+                    child: Text(baslik!, style: baslikStili),
+                  ),
                 ),
               ),
             Flexible(child: Padding(padding: dolgu, child: child)),

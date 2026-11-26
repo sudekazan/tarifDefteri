@@ -211,43 +211,55 @@ class RevenueCatService {
     return [];
   }
 
-  /// Ücretsiz günlük AI Şef hakkı (backend/server.js FREE_DAILY_AI_LIMIT ile aynı).
-  static const int freeDailyAiLimit = 3;
+  /// Ücretsiz haftalık AI hakkı; iki özellik ayrı sayılır (yemek adıyla 5,
+  /// malzemeden 5). backend/server.js FREE_WEEKLY_AI_LIMIT ile aynı.
+  static const int freeWeeklyAiLimit = 5;
 
-  /// Backend günlük sayacı UTC tarihine göre tutar; yerel anahtar da UTC
-  /// olmalı. Yerel tarih kullanılınca Türkiye'de 00:00-03:00 arasında hakkını
-  /// bitiren kullanıcının ertesi günü yerelde 0 hakla başlıyor, sunucu izin
-  /// verse bile uygulama AI Şef'i engelliyordu.
-  static String _bugununAiAnahtari() =>
-      'ai_remaining_${DateTime.now().toUtc().toIso8601String().substring(0, 10)}';
+  /// Haftanın başlangıcı (pazartesi, UTC) YYYY-MM-DD biçiminde. Sunucu
+  /// sayacı da bu tarihe göre tutar; haklar pazartesi 00:00 UTC'de yenilenir.
+  @visibleForTesting
+  static String haftaBaslangici([DateTime? simdi]) {
+    final utc = (simdi ?? DateTime.now()).toUtc();
+    final gun = DateTime.utc(utc.year, utc.month, utc.day);
+    final pazartesi = gun.subtract(
+      Duration(days: gun.weekday - DateTime.monday),
+    );
+    return pazartesi.toIso8601String().substring(0, 10);
+  }
+
+  static String _aiAnahtari(String mod) =>
+      'ai_remaining_w_${haftaBaslangici()}_$mod';
 
   /// Yerel hızlı ön kontrol; asıl karar backend'indir.
-  static Future<bool> canUseAi() async {
+  static Future<bool> canUseAi({required String mod}) async {
     if (_isPro) return true;
-    return await getRemainingAiUses() > 0;
+    return await getRemainingAiUses(mod: mod) > 0;
   }
 
   /// Backend'in döndürdüğü gerçek "kalan hak" sayısını yerelde saklar.
-  /// Reklam bonuslarıyla kalan hak 3'ün üstüne çıkabildiği için değer
-  /// kırpılmaz (eskiden 3'e kırpılıyor, rozet yanlış sayı gösteriyordu).
-  static Future<void> syncRemainingFromServer(int? remaining) async {
+  /// Reklam bonuslarıyla kalan hak 5'in üstüne çıkabildiği için kırpılmaz.
+  static Future<void> syncRemainingFromServer(
+    int? remaining, {
+    required String mod,
+  }) async {
     if (remaining == null || _isPro) return;
 
     final prefs = await SharedPreferences.getInstance();
-    final bugun = _bugununAiAnahtari();
-    await prefs.setInt(bugun, remaining < 0 ? 0 : remaining);
+    await prefs.setInt(_aiAnahtari(mod), remaining < 0 ? 0 : remaining);
 
-    // Önceki günlerin sayaçlarını (eski 'ai_usage_' biçimi dahil) temizle.
+    // Önceki haftaların ve eski günlük biçimin sayaçlarını temizle.
+    final buHafta = 'ai_remaining_w_${haftaBaslangici()}_';
     for (final key in prefs.getKeys().toList()) {
-      if (key != bugun && (key.startsWith('ai_remaining_') || key.startsWith('ai_usage_'))) {
+      if ((key.startsWith('ai_remaining_') || key.startsWith('ai_usage_')) &&
+          !key.startsWith(buHafta)) {
         await prefs.remove(key);
       }
     }
   }
 
-  static Future<int> getRemainingAiUses() async {
+  static Future<int> getRemainingAiUses({required String mod}) async {
     if (_isPro) return 999;
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getInt(_bugununAiAnahtari()) ?? freeDailyAiLimit;
+    return prefs.getInt(_aiAnahtari(mod)) ?? freeWeeklyAiLimit;
   }
 }

@@ -607,4 +607,53 @@ void main() {
     expect(tester.getRect(find.byType(ProRozeti)).top,
         greaterThanOrEqualTo(yazi.bottom));
   });
+
+  group('TarifOneriListesi', () {
+    const oneriler = [
+      (baslik: 'Fırında Sebzeli Tavuk', aciklama: 'Tek tepside, az bulaşıkla akşam yemeği.'),
+      (baslik: 'Kremalı Mantarlı Makarna', aciklama: 'On beş dakikada hazır, doyurucu.'),
+      (baslik: 'Domatesli Yumurta', aciklama: ''),
+    ];
+
+    Future<void> ac(WidgetTester tester, ValueChanged<int> onSec, {double yaziOlcegi = 1}) async {
+      await tester.pumpWidget(_sar(
+        Builder(
+          builder: (context) => Scaffold(
+            body: Center(
+              child: TextButton(
+                onPressed: () => KilAltSayfa.goster<void>(
+                  context,
+                  baslik: 'Hangisini pişirelim?',
+                  builder: (_) => TarifOneriListesi(
+                    aciklama: 'Malzemelerinize uygun üç tarif.',
+                    oneriler: oneriler,
+                    onSec: onSec,
+                  ),
+                ),
+                child: const Text('aç'),
+              ),
+            ),
+          ),
+        ),
+        yaziOlcegi: yaziOlcegi,
+      ));
+      await tester.tap(find.text('aç'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('dokunulan kartın sırası döner', (tester) async {
+      _ekran(tester, 390);
+      int? secilen;
+      await ac(tester, (i) => secilen = i);
+      expect(find.byType(KilKart), findsNWidgets(3));
+      await tester.tap(find.text('Kremalı Mantarlı Makarna'));
+      expect(secilen, 1);
+    });
+
+    testWidgets('en büyük yazıda dar ekranda taşmaz', (tester) async {
+      _ekran(tester, 320, 640);
+      await ac(tester, (_) {}, yaziOlcegi: 3.2);
+      expect(tester.takeException(), isNull);
+    });
+  });
 }
