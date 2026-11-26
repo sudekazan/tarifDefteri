@@ -220,6 +220,19 @@ async function refundUsage(slot) {
     }
 }
 
+/** Bu hafta kalan hakkı daha az olan tür (eşitse yemek adı). */
+async function modeWithFewerRemaining(firebaseUid) {
+    try {
+        const snap = await usageSlot(firebaseUid, false, 'dish_name').docRef.get();
+        const data = snap.exists ? snap.data() : {};
+        const kalan = (mode) => FREE_WEEKLY_AI_LIMIT + (data[`bonus_${mode}`] || 0) - (data[`count_${mode}`] || 0);
+        return kalan('ingredients') < kalan('dish_name') ? 'ingredients' : 'dish_name';
+    } catch (error) {
+        console.error('Kalan hak okunamadı (Firestore):', error.message);
+        return 'dish_name';
+    }
+}
+
 /**
  * Kullanıcı ödüllü reklam izlediğinde o haftaya, hakkı biten özellik için
  * +1 ekstra hak tanır. Haftada toplam en fazla MAX_BONUS_USES_PER_WEEK kez.
@@ -311,13 +324,17 @@ app.get('/health', (req, res) => {
 // Ödüllü reklam izlendikten sonra o haftaya, hakkı biten özellik için +1 hak tanır.
 app.post('/api/grant-bonus-ai-use', ipLimiter, authenticate, userLimiter, async (req, res) => {
     const firebaseUid = req.user.uid;
-    const mode = normalizeMode(req.body?.mode);
     const isPro = await isProUserViaRevenueCat(firebaseUid);
 
     if (isPro) {
         // Premium kullanıcı için bonus kavramı yok.
         return res.json({ success: true, remaining: null });
     }
+
+    // Eski uygulama sürümü tür göndermez; bonusu hakkı daha az kalan türe ver.
+    const mode = req.body?.mode
+        ? normalizeMode(req.body.mode)
+        : await modeWithFewerRemaining(firebaseUid);
 
     const result = await grantBonusUse(firebaseUid, mode);
     if (!result.granted) {
