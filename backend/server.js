@@ -360,13 +360,22 @@ function measurementRuleFor(languageCode) {
 }
 
 function ingredientsValidationRule(languageCode) {
-    return `=== VALIDATION ===
-The ingredients may be an imperfect or unusual combination — that's expected and fine: do your
-best to invent a plausible, edible recipe from (most of) them, improvising a reasonable addition
-only when truly necessary. Only return an error if the input contains NO real food ingredients at
-all (e.g. random objects, gibberish). When you do return an error, give a SPECIFIC, helpful reason
-(e.g. which ingredients you couldn't work with, or that the requested meal type doesn't fit them) —
-never a vague "something went wrong" message:
+    return `=== CHOOSING THE DISH (CRITICAL) ===
+The user lists what they have at home. Treat it as a pantry, NOT a shopping list for one dish:
+- You do NOT have to use all of the ingredients. Pick the subset that naturally goes together
+  and leave the rest out. Using 2-3 of them is perfectly fine.
+- The dish MUST be a real, well-known dish that people actually cook today — the kind found on
+  popular home-cooking recipe sites in the cuisine of '${languageCode}' (e.g. for 'tr': menemen,
+  ton balıklı makarna, mantar sote, kremalı makarna). Never invent an odd, random combination.
+- You may assume common pantry basics are available (salt, pepper, oil, water, flour, sugar,
+  onion, spices) even if not listed.
+- If a meal preference is given (e.g. breakfast), choose a real dish that fits that meal.
+
+=== VALIDATION ===
+Return an error ONLY if no real, commonly cooked dish can be made from any reasonable subset of
+the ingredients plus pantry basics (or the input contains no real food at all). If any sensible
+real dish is possible, ALWAYS return it. When you do return an error, give a SPECIFIC reason
+(e.g. which ingredient is missing for a real dish) — never a vague "could not create" message:
 { "success": false, "message": "<specific, helpful reason translated to '${languageCode}'>" }`;
 }
 
@@ -381,9 +390,10 @@ The user already picked this dish from earlier suggestions. The "baslik" value M
 "${chosen.baslik}"`
         : mode === 'ingredients'
         ? `=== TITLE (CRITICAL) ===
-The user input is a list of ingredients and preferences, NOT a dish name. Invent a natural,
-appetizing dish name in '${languageCode}' for something that can realistically be cooked from
-them — NEVER just list or concatenate the ingredient names as the title.`
+The user input is a list of ingredients and preferences, NOT a dish name. Use the real, commonly
+known name of the dish in '${languageCode}' (the name people would search for on a recipe site).
+NEVER build the title by listing or joining ingredient names (bad: "Domatesli Biberli Mantarlı
+Pirinç"; good: "Menemen", "Mantar Sote").`
         : `=== FOOD NAME INTERPRETATION ===
 Always interpret the dish name in the culinary/cultural context of language code '${languageCode}'.
 Examples:
@@ -465,7 +475,9 @@ User's language code: '${languageCode}'
 - Write ALL text values in this language ONLY. Never mix languages.
 
 === TITLES (CRITICAL) ===
-Each title is a natural, appetizing dish name — NEVER just a list of the ingredient names.
+Each title is the real, commonly known name of the dish (the name people would search for on a
+recipe site) — NEVER built by listing or joining ingredient names. Each of the 3 dishes may use a
+different subset of the ingredients.
 Each description is ONE short sentence (max 110 characters) saying what makes the dish appealing.
 
 ${ingredientsValidationRule(languageCode)}
@@ -558,6 +570,7 @@ app.post('/api/suggest-recipes', ipLimiter, authenticate, userLimiter, async (re
         const result = await generateSuggestions({ userPrompt, languageCode });
 
         if (result.success === false) {
+            console.log(`AI refused suggestions | Prompt: "${userPrompt}" | Reason: "${result.message}"`);
             return res.json({ success: false, message: result.message || null, remaining: usage.remaining });
         }
 
@@ -659,6 +672,7 @@ app.post('/api/generate-recipe', ipLimiter, authenticate, userLimiter, async (re
         const recipeData = await generateFullRecipe({ userPrompt, mode, languageCode });
 
         if (recipeData.success === false) {
+            console.log(`AI refused recipe | Mode: ${mode} | Reason: "${recipeData.message}"`);
             // Mesajı yapay zekâ kullanıcının dilinde yazar; yoksa istemci kendi
             // çevrilmiş metnini gösterir (İngilizce yedek metin göndermiyoruz).
             return res.json({ success: false, message: recipeData.message || null, remaining });
