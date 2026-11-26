@@ -34,6 +34,27 @@ class AiOneriSonucu {
   const AiOneriSonucu({required this.suggestionId, required this.oneriler});
 }
 
+/// grantBonusUse() sonucu.
+enum BonusDurumu {
+  /// Sunucu ek hakkı verdi.
+  verildi,
+
+  /// Bu haftanın reklam ek hakkı sınırı dolu.
+  sinirDoldu,
+
+  /// Ağ ya da sunucu hatası.
+  hata,
+}
+
+class BonusHakSonucu {
+  final BonusDurumu durum;
+
+  /// Yeni kalan hak (yalnızca [BonusDurumu.verildi] iken dolu olabilir).
+  final int? kalan;
+
+  const BonusHakSonucu(this.durum, [this.kalan]);
+}
+
 /// Backend haftalık ücretsiz AI Şef limitini (429) döndürdüğünde fırlatılır.
 class AiLimitExceededException implements Exception {
   final String message;
@@ -209,26 +230,36 @@ class AiRecipeService {
   }
 
   /// Kullanıcı ödüllü reklamı tam izlediğinde çağrılır; o haftaya [mod]
-  /// için +1 ekstra hak tanır ve yeni "kalan hak" sayısını döndürür.
-  /// Haftalık bonus hakkı da dolmuşsa null döner.
-  Future<int?> grantBonusUse({required String mod}) async {
+  /// için +1 ekstra hak ister.
+  Future<BonusHakSonucu> grantBonusUse({required String mod}) async {
     try {
       final response = await _post('grant-bonus-ai-use', {
         'mode': mod,
       }, const Duration(seconds: 15));
-
-      if (response.statusCode != 200) {
-        debugPrint(
-          'grantBonusUse failed: ${response.statusCode} ${response.body}',
-        );
-        return null;
-      }
-
-      final data = jsonDecode(response.body) as Map<String, dynamic>;
-      return data['remaining'] is int ? data['remaining'] as int : null;
+      return bonusYanitiniCoz(response.statusCode, response.body);
     } catch (e) {
       debugPrint('grantBonusUse error: $e');
-      return null;
+      return const BonusHakSonucu(BonusDurumu.hata);
     }
+  }
+
+  /// Bonus yanıtını sonuca çevirir. 429 iki anlama gelir: saatlik istek
+  /// sınırı (`rateLimited: true`) ya da haftalık reklam ek hakkı sınırı.
+  @visibleForTesting
+  static BonusHakSonucu bonusYanitiniCoz(int durumKodu, String govde) {
+    Map<String, dynamic>? data;
+    try {
+      data = jsonDecode(govde) as Map<String, dynamic>;
+    } catch (_) {}
+
+    if (durumKodu == 200) {
+      final kalan = data?['remaining'];
+      return BonusHakSonucu(BonusDurumu.verildi, kalan is int ? kalan : null);
+    }
+    debugPrint('grantBonusUse failed: $durumKodu $govde');
+    if (durumKodu == 429 && data != null && data['rateLimited'] != true) {
+      return const BonusHakSonucu(BonusDurumu.sinirDoldu);
+    }
+    return const BonusHakSonucu(BonusDurumu.hata);
   }
 }

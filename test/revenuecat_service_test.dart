@@ -1,8 +1,8 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tarif_defteri/services/ai_recipe_service.dart';
 import 'package:tarif_defteri/services/revenuecat_service.dart';
-import 'package:tarif_defteri/utils/ai_modu.dart';
 
 void main() {
   group('AI kalan hak sayacı', () {
@@ -49,6 +49,55 @@ void main() {
       expect(RevenueCatService.haftaBaslangici(DateTime.utc(2026, 11, 26, 12)), '2026-11-23');
       expect(RevenueCatService.haftaBaslangici(DateTime.utc(2026, 11, 23)), '2026-11-23');
       expect(RevenueCatService.haftaBaslangici(DateTime.utc(2026, 11, 22, 23, 59)), '2026-11-16');
+    });
+  });
+
+  group('reklam ek hakkı', () {
+    setUp(() => SharedPreferences.setMockInitialValues({}));
+
+    test('haftada 3 ek hak kazanılınca reklam seçeneği kapanır', () async {
+      expect(await RevenueCatService.bonusHakKaldiMi(), isTrue);
+      for (var i = 0; i < RevenueCatService.maxWeeklyBonusUses; i++) {
+        await RevenueCatService.bonusKazanildi();
+      }
+      expect(await RevenueCatService.bonusHakKaldiMi(), isFalse);
+    });
+
+    test('sunucu sınır doldu derse reklam seçeneği hemen kapanır', () async {
+      await RevenueCatService.bonusHakkiniBitir();
+      expect(await RevenueCatService.bonusHakKaldiMi(), isFalse);
+    });
+
+    test('önceki haftanın ek hak sayacı yeni haftayı etkilemez', () async {
+      SharedPreferences.setMockInitialValues({'ai_bonus_w_2026-01-05': 3});
+      expect(await RevenueCatService.bonusHakKaldiMi(), isTrue);
+      await RevenueCatService.bonusKazanildi();
+      final keys = (await SharedPreferences.getInstance()).getKeys();
+      expect(keys.where((k) => k.startsWith('ai_bonus_w_')).length, 1);
+    });
+  });
+
+  group('bonus yanıtı', () {
+    test('200 ek hak verildi, kalan hak okunur', () {
+      final s = AiRecipeService.bonusYanitiniCoz(200, '{"success":true,"remaining":2}');
+      expect(s.durum, BonusDurumu.verildi);
+      expect(s.kalan, 2);
+    });
+
+    test('429 haftalık ek hak sınırı', () {
+      final s = AiRecipeService.bonusYanitiniCoz(
+          429, '{"success":false,"message":"Weekly bonus ad limit reached."}');
+      expect(s.durum, BonusDurumu.sinirDoldu);
+    });
+
+    test('429 saatlik istek sınırı ek hak sınırı sayılmaz', () {
+      final s = AiRecipeService.bonusYanitiniCoz(
+          429, '{"success":false,"rateLimited":true}');
+      expect(s.durum, BonusDurumu.hata);
+    });
+
+    test('sunucu hatası', () {
+      expect(AiRecipeService.bonusYanitiniCoz(503, '<html>').durum, BonusDurumu.hata);
     });
   });
 

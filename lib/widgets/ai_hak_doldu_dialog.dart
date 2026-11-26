@@ -5,18 +5,25 @@ import 'kil/kil.dart';
 
 enum AiHakDolduSecim { reklamIzle, proyaGec }
 
-/// Ücretsiz kullanıcının günlük AI Şef hakkı bittiğinde gösterilir.
+/// Ücretsiz kullanıcının haftalık AI hakkı bittiğinde gösterilir.
 /// Kullanıcının seçimini döndürür; diyalog dışına basıp kapatırsa ya da
 /// "Daha sonra" derse `null` döner. Navigasyonu çağıran ekran yapar.
-Future<AiHakDolduSecim?> aiHakDolduDialogGoster(BuildContext context) {
+/// [reklamVar] false ise (bu haftanın reklam ek hakları bitti) reklam
+/// seçeneği gösterilmez; yoksa izlenen reklam hak getirmezdi.
+Future<AiHakDolduSecim?> aiHakDolduDialogGoster(
+  BuildContext context, {
+  bool reklamVar = true,
+}) {
   return showDialog<AiHakDolduSecim>(
     context: context,
-    builder: (_) => const _AiHakDolduDialog(),
+    builder: (_) => _AiHakDolduDialog(reklamVar: reklamVar),
   );
 }
 
 class _AiHakDolduDialog extends StatelessWidget {
-  const _AiHakDolduDialog();
+  const _AiHakDolduDialog({required this.reklamVar});
+
+  final bool reklamVar;
 
   @override
   Widget build(BuildContext context) {
@@ -65,26 +72,38 @@ class _AiHakDolduDialog extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             Text(
-              'ai_limit_choice_body'.tr(),
+              (reklamVar ? 'ai_limit_choice_body' : 'ai_limit_choice_body_no_ad')
+                  .tr(),
               textAlign: TextAlign.center,
               style: yaziTemasi.bodyLarge
                   ?.copyWith(color: r.solukYazi, height: 1.45),
             ),
             const SizedBox(height: 24),
-            KilDugme.birincil(
-              etiket: 'ai_limit_choice_watch_ad'.tr(),
-              ikon: Icons.ondemand_video_rounded,
-              tamGenislik: true,
-              onPressed: () =>
-                  Navigator.pop(context, AiHakDolduSecim.reklamIzle),
-            ),
-            const SizedBox(height: 10),
-            KilDugme.ikincil(
-              etiket: 'ai_limit_choice_go_pro'.tr(),
-              ikon: Icons.workspace_premium_rounded,
-              tamGenislik: true,
-              onPressed: () => Navigator.pop(context, AiHakDolduSecim.proyaGec),
-            ),
+            if (reklamVar) ...[
+              KilDugme.birincil(
+                etiket: 'ai_limit_choice_watch_ad'.tr(),
+                ikon: Icons.ondemand_video_rounded,
+                tamGenislik: true,
+                onPressed: () =>
+                    Navigator.pop(context, AiHakDolduSecim.reklamIzle),
+              ),
+              const SizedBox(height: 10),
+              KilDugme.ikincil(
+                etiket: 'ai_limit_choice_go_pro'.tr(),
+                ikon: Icons.workspace_premium_rounded,
+                tamGenislik: true,
+                onPressed: () =>
+                    Navigator.pop(context, AiHakDolduSecim.proyaGec),
+              ),
+            ] else
+              // Reklam ek hakları bitti: Premium tek seçenek, öne çıkar.
+              KilDugme.birincil(
+                etiket: 'ai_limit_choice_go_pro'.tr(),
+                ikon: Icons.workspace_premium_rounded,
+                tamGenislik: true,
+                onPressed: () =>
+                    Navigator.pop(context, AiHakDolduSecim.proyaGec),
+              ),
             const SizedBox(height: 4),
             TextButton(
               onPressed: () => Navigator.pop(context),

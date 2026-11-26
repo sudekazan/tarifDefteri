@@ -324,6 +324,8 @@
   "premium_plan_lifetime_desc": "Pagamento único, Premium para sempre",
   "ai_limit_choice_title": "Seus usos gratuitos desta semana acabaram",
   "ai_limit_choice_body": "Você já usou suas solicitações gratuitas do Chef IA desta semana. Elas são renovadas toda segunda-feira. Assista a um anúncio curto para ganhar +1 ou assine o Premium para criar muito mais receitas todos os dias.",
+  "ai_limit_choice_body_no_ad": "Você já usou suas solicitações gratuitas do Chef IA e os usos extras por anúncios desta semana. Eles são renovados na segunda-feira. Assine o Premium para criar muito mais receitas todos os dias.",
+  "ai_bonus_limit_reached": "Você já usou os usos extras por anúncios desta semana. Eles são renovados na segunda-feira.",
   "ai_limit_choice_go_pro": "Tornar-se Premium",
   "ai_limit_choice_watch_ad": "Assistir anúncio, ganhar +1",
   "ai_limit_pro_title": "Limite diário de IA atingido",

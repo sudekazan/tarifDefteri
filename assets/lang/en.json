@@ -324,6 +324,8 @@
   "premium_plan_lifetime_desc": "One-time payment, Premium forever",
   "ai_limit_choice_title": "You're out of free uses this week",
   "ai_limit_choice_body": "You've used this week's free AI Chef requests. They renew every Monday. Watch a short ad to earn +1 extra, or go Premium to create many more recipes every day.",
+  "ai_limit_choice_body_no_ad": "You've used this week's free AI Chef requests and the extra uses from ads. They renew on Monday. Go Premium to create many more recipes every day.",
+  "ai_bonus_limit_reached": "You've used this week's extra uses from ads. They renew on Monday.",
   "ai_limit_choice_go_pro": "Go Premium",
   "ai_limit_choice_watch_ad": "Watch Ad for +1 Use",
   "ai_limit_pro_title": "Daily AI limit reached",

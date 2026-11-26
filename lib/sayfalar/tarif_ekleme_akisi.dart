@@ -389,7 +389,9 @@ class TarifEklemeAkisi {
       );
       return;
     }
-    final secim = await aiHakDolduDialogGoster(context);
+    final reklamVar = await RevenueCatService.bonusHakKaldiMi();
+    if (!context.mounted) return;
+    final secim = await aiHakDolduDialogGoster(context, reklamVar: reklamVar);
     if (!context.mounted) return;
     switch (secim) {
       case AiHakDolduSecim.reklamIzle:
@@ -416,8 +418,24 @@ class TarifEklemeAkisi {
       },
       onAdClosed: () async {
         if (!rewardEarned) return; // Reklam tam izlenmeden kapatıldı
-        final newRemaining = await _aiRecipeService.grantBonusUse(mod: AiModu.yemekAdi);
-        await RevenueCatService.syncRemainingFromServer(newRemaining, mod: AiModu.yemekAdi);
+        final sonuc = await _aiRecipeService.grantBonusUse(mod: AiModu.yemekAdi);
+        if (sonuc.durum == BonusDurumu.sinirDoldu) {
+          // Haftanın ek hakları bitmiş (ör. başka cihazda): tekrar denemek
+          // aynı pencereyi açıp reklamı boşa izletirdi.
+          await RevenueCatService.bonusHakkiniBitir();
+          if (context.mounted) {
+            KilBildirim.goster(
+              context,
+              'ai_bonus_limit_reached'.tr(),
+              tur: KilBildirimTuru.uyari,
+            );
+          }
+          return;
+        }
+        if (sonuc.durum == BonusDurumu.verildi) {
+          await RevenueCatService.bonusKazanildi();
+        }
+        await RevenueCatService.syncRemainingFromServer(sonuc.kalan, mod: AiModu.yemekAdi);
         if (context.mounted) {
           _generateAndNavigate(input, isUrl);
         }

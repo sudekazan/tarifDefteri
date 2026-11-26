@@ -12,6 +12,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tarif_defteri/sayfalar/bugun_ne_pisisem_sayfasi.dart';
+import 'package:tarif_defteri/services/revenuecat_service.dart';
 import 'package:tarif_defteri/tarifler_data/klasor_data.dart';
 import 'package:tarif_defteri/widgets/ana_sayfa_parcalari.dart';
 import 'package:tarif_defteri/widgets/ai_chef_loading_animation.dart';
@@ -292,6 +293,36 @@ void main() {
       expect(secim, AiHakDolduSecim.reklamIzle);
     });
 
+    testWidgets('reklam ek hakkı bitince diyalogda reklam seçeneği yok', (
+      tester,
+    ) async {
+      AiHakDolduSecim? secim;
+      await tester.pumpWidget(
+        _sar(
+          Builder(
+            builder: (context) => Scaffold(
+              body: Center(
+                child: TextButton(
+                  onPressed: () async => secim = await aiHakDolduDialogGoster(
+                    context,
+                    reklamVar: false,
+                  ),
+                  child: const Text('aç'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('aç'));
+      await tester.pumpAndSettle();
+      expect(find.text('ai_limit_choice_watch_ad'.tr()), findsNothing);
+      expect(find.text('ai_limit_choice_body_no_ad'.tr()), findsOneWidget);
+      await tester.tap(find.text('ai_limit_choice_go_pro'.tr()));
+      await tester.pumpAndSettle();
+      expect(secim, AiHakDolduSecim.proyaGec);
+    });
+
     for (final koyu in [false, true]) {
       testWidgets(
         '+1 hak diyaloğu ${koyu ? 'koyu' : 'açık'} modda 320 genişlik ve '
@@ -327,6 +358,31 @@ void main() {
       KlasorData(klasor_id: 11, klasor_adi: 'Akşam yemekleri'),
       KlasorData(klasor_id: 12, klasor_adi: 'Pratik'),
     ];
+
+    testWidgets('rozet malzeme türünün haftalık kalan hakkını gösterir', (
+      tester,
+    ) async {
+      final hafta = RevenueCatService.haftaBaslangici();
+      SharedPreferences.setMockInitialValues({
+        'klasorler': [for (final k in klasorler) json.encode(k.toMap())],
+        'ai_remaining_w_${hafta}_ingredients': 2,
+        'ai_remaining_w_${hafta}_dish_name': 0,
+        // Eski günlük biçim okunmaz.
+        'ai_remaining_2026-11-25': 1,
+      });
+      await tester.pumpWidget(_sar(const BugunNePisisemSayfasi()));
+      await tester.pumpAndSettle();
+      expect(find.text('Bu Haftaki Şef Hakkınız: 2 / 5'), findsOneWidget);
+    });
+
+    testWidgets('bu hafta hiç kullanılmadıysa rozet 5 / 5 gösterir', (
+      tester,
+    ) async {
+      _klasorler(klasorler);
+      await tester.pumpWidget(_sar(const BugunNePisisemSayfasi()));
+      await tester.pumpAndSettle();
+      expect(find.text('Bu Haftaki Şef Hakkınız: 5 / 5'), findsOneWidget);
+    });
 
     testWidgets('popüler malzeme seçilir, kaldırılır ve temizlenir', (
       tester,

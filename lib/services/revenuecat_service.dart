@@ -257,6 +257,40 @@ class RevenueCatService {
     }
   }
 
+  /// Reklamla haftada kazanılabilecek en fazla ek hak (iki tür toplamı).
+  /// backend/server.js MAX_BONUS_USES_PER_WEEK ile aynı.
+  static const int maxWeeklyBonusUses = 3;
+
+  static String _bonusAnahtari() => 'ai_bonus_w_${haftaBaslangici()}';
+
+  /// Bu hafta reklamla ek hak kazanılabilir mi? Değilse hak bitti
+  /// penceresinde reklam seçeneği gösterilmez (izlenen reklam boşa gider).
+  static Future<bool> bonusHakKaldiMi() async {
+    if (_isPro) return false;
+    final prefs = await SharedPreferences.getInstance();
+    return (prefs.getInt(_bonusAnahtari()) ?? 0) < maxWeeklyBonusUses;
+  }
+
+  /// Sunucu reklam ek hakkı verdiğinde sayılır.
+  static Future<void> bonusKazanildi() =>
+      _bonusSayaciniYaz((sayi) => sayi + 1);
+
+  /// Sunucu bu haftanın ek hak sınırının dolduğunu söylediğinde çağrılır
+  /// (ör. haklar başka cihazda kullanıldı).
+  static Future<void> bonusHakkiniBitir() =>
+      _bonusSayaciniYaz((_) => maxWeeklyBonusUses);
+
+  static Future<void> _bonusSayaciniYaz(int Function(int) yeni) async {
+    final prefs = await SharedPreferences.getInstance();
+    final anahtar = _bonusAnahtari();
+    await prefs.setInt(anahtar, yeni(prefs.getInt(anahtar) ?? 0));
+    for (final key in prefs.getKeys().toList()) {
+      if (key.startsWith('ai_bonus_w_') && key != anahtar) {
+        await prefs.remove(key);
+      }
+    }
+  }
+
   static Future<int> getRemainingAiUses({required String mod}) async {
     if (_isPro) return 999;
     final prefs = await SharedPreferences.getInstance();
