@@ -68,17 +68,24 @@ app.use(express.static(path.join(__dirname, 'public')));
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const REVENUECAT_SECRET_KEY = process.env.REVENUECAT_SECRET_KEY;
 
-// Ücretsiz kullanıcılar için günlük AI Şef hakkı (Flutter tarafındaki
-// RevenueCatService.canUseAi() ile aynı değer olmalı).
-const FREE_DAILY_AI_LIMIT = 3;
+// Ücretsiz kullanıcılar için haftalık AI hakkı; iki özellik ayrı sayılır
+// (yemek adıyla 5, malzemeden 5). Flutter tarafındaki
+// RevenueCatService.freeWeeklyAiLimit ile aynı değer olmalı.
+const FREE_WEEKLY_AI_LIMIT = 5;
 
-// Pro kullanıcılar da artık tamamen sınırsız değil; normal kullanımı
-// rahatça karşılayan ama otomatik/kötüye kullanımı önleyen bir tavan.
+// Premium kullanıcılar da tamamen sınırsız değil; normal kullanımı
+// rahatça karşılayan ama otomatik/kötüye kullanımı önleyen günlük tavan.
 const PRO_DAILY_AI_LIMIT = 20;
 
-// Ücretsiz kullanıcının ödüllü reklam izleyerek günde kazanabileceği
-// azami ekstra hak sayısı (reklam "vergi" değil, isteğe bağlı ödül olsun diye).
-const MAX_BONUS_USES_PER_DAY = 3;
+// Ücretsiz kullanıcının ödüllü reklam izleyerek haftada kazanabileceği
+// azami ekstra hak sayısı (iki özellik toplamı).
+const MAX_BONUS_USES_PER_WEEK = 3;
+// İstek metninin (yemek adı, link ya da malzeme listesi) en fazla uzunluğu.
+const MAX_PROMPT_LENGTH = 1000;
+// Premium öneri kartlarından seçilen tarifin tamamı bu süre içinde üretilebilir.
+const SUGGESTION_TTL_MS = 24 * 60 * 60 * 1000;
+
+const normalizeMode = (mode) => (mode === 'ingredients' ? 'ingredients' : 'dish_name');
 
 // Flutter tarafındaki RevenueCatService._entitlementID ile aynı kimlikler.
 const PRO_ENTITLEMENT_IDS = ['recipe_keeper_custom_cookbook_pro', 'pro', 'premium'];
@@ -122,37 +129,68 @@ async function isProUserViaRevenueCat(firebaseUid) {
 }
 
 /**
- * Kullanıcının günlük AI Şef hakkını Firestore'da (transaction ile) kontrol eder ve artırır.
- * [baseLimit]: free kullanıcı için FREE_DAILY_AI_LIMIT, pro kullanıcı için PRO_DAILY_AI_LIMIT.
- * [allowBonus]: sadece free kullanıcılar reklamla kazanılmış bonusUses hakkı kullanabilir.
+ * Haftanın başlangıcı: pazartesi 00:00 UTC, YYYY-MM-DD biçiminde.
+ * Flutter tarafındaki RevenueCatService.haftaBaslangici ile aynı hesap.
  */
-async function checkAndIncrementDailyUsage(firebaseUid, baseLimit, allowBonus) {
-    const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD (UTC)
-    const docRef = admin.firestore().collection('aiUsage').doc(`${firebaseUid}_${today}`);
+function weekStartUtc(date = new Date()) {
+    const d = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+    const daysSinceMonday = (d.getUTCDay() + 6) % 7;
+    d.setUTCDate(d.getUTCDate() - daysSinceMonday);
+    return d.toISOString().slice(0, 10);
+}
 
+/**
+ * Bir isteğin hangi sayaçtan düşeceğini belirler. Hak düşülürken ve iade
+ * edilirken aynı belge kullanılsın diye istek başında bir kez hesaplanır
+ * (istek gün ya da hafta sınırını aşarsa yanlış yere iade olmasın).
+ * Ücretsiz: haftalık belge, özelliğe göre ayrı sayaç + o özelliğin reklam bonusu.
+ * Premium: günlük belge, iki özellik ortak sayaç.
+ */
+function usageSlot(firebaseUid, isPro, mode) {
+    const db = admin.firestore();
+    if (isPro) {
+        const today = new Date().toISOString().slice(0, 10);
+        return {
+            docRef: db.collection('aiUsage').doc(`${firebaseUid}_${today}`),
+            countField: 'count',
+            bonusField: null,
+            baseLimit: PRO_DAILY_AI_LIMIT,
+        };
+    }
+    return {
+        docRef: db.collection('aiUsageWeekly').doc(`${firebaseUid}_${weekStartUtc()}`),
+        countField: `count_${mode}`,
+        bonusField: `bonus_${mode}`,
+        baseLimit: FREE_WEEKLY_AI_LIMIT,
+    };
+}
+
+/**
+ * Kullanıcının AI hakkını Firestore'da (transaction ile) kontrol eder ve artırır.
+ */
+async function checkAndIncrementUsage(slot) {
     try {
         return await admin.firestore().runTransaction(async (tx) => {
-            const snap = await tx.get(docRef);
-            const currentCount = snap.exists ? (snap.data().count || 0) : 0;
-            const bonusUses = allowBonus && snap.exists ? (snap.data().bonusUses || 0) : 0;
-            const effectiveLimit = baseLimit + bonusUses;
+            const snap = await tx.get(slot.docRef);
+            const data = snap.exists ? snap.data() : {};
+            const currentCount = data[slot.countField] || 0;
+            const bonusUses = slot.bonusField ? (data[slot.bonusField] || 0) : 0;
+            const effectiveLimit = slot.baseLimit + bonusUses;
 
             if (currentCount >= effectiveLimit) {
                 return { allowed: false, remaining: 0 };
             }
 
-            tx.set(docRef, {
-                count: currentCount + 1,
+            tx.set(slot.docRef, {
+                [slot.countField]: currentCount + 1,
                 updatedAt: admin.firestore.FieldValue.serverTimestamp(),
             }, { merge: true });
 
-            return { allowed: true, remaining: effectiveLimit - (currentCount + 1), today };
+            return { allowed: true, remaining: effectiveLimit - (currentCount + 1) };
         });
     } catch (error) {
-        console.error('Günlük kullanım kontrolü hatası (Firestore):', error.message);
-        // ÖNEMLİ: Altyapı sorununda sınırsız izin vermek maliyet riski oluşturur
-        // (önceki haliyle bu catch bloğu "allowed: true, remaining: null" döndürüp
-        // hem free hem pro kullanıcıyı fiilen sınırsız yapıyordu). Güvenli taraf:
+        console.error('Kullanım kontrolü hatası (Firestore):', error.message);
+        // Altyapı sorununda sınırsız izin vermek maliyet riski oluşturur;
         // isteği reddet, UI "limit doldu" değil "geçici sorun" mesajı göstersin.
         return { allowed: false, remaining: null, infraError: true };
     }
@@ -160,19 +198,17 @@ async function checkAndIncrementDailyUsage(firebaseUid, baseLimit, allowBonus) {
 
 /**
  * Tarif üretimi teknik bir hata yüzünden (OpenRouter zaman aşımı, bozuk JSON)
- * başarısız olduğunda, checkAndIncrementDailyUsage'ın düştüğü hakkı geri verir.
- * Kullanıcı tarif alamadığı bir istek için hak kaybetmemeli.
- * [today]: hakkın düşüldüğü gün (istek gece yarısını aşarsa yanlış güne iade olmasın).
+ * başarısız olduğunda düşülen hakkı geri verir. Kullanıcı tarif alamadığı
+ * bir istek için hak kaybetmemeli.
  */
-async function refundDailyUsage(firebaseUid, today) {
-    const docRef = admin.firestore().collection('aiUsage').doc(`${firebaseUid}_${today}`);
+async function refundUsage(slot) {
     try {
         await admin.firestore().runTransaction(async (tx) => {
-            const snap = await tx.get(docRef);
-            const currentCount = snap.exists ? (snap.data().count || 0) : 0;
+            const snap = await tx.get(slot.docRef);
+            const currentCount = snap.exists ? (snap.data()[slot.countField] || 0) : 0;
             if (currentCount > 0) {
-                tx.set(docRef, {
-                    count: currentCount - 1,
+                tx.set(slot.docRef, {
+                    [slot.countField]: currentCount - 1,
                     updatedAt: admin.firestore.FieldValue.serverTimestamp(),
                 }, { merge: true });
             }
@@ -184,31 +220,46 @@ async function refundDailyUsage(firebaseUid, today) {
     }
 }
 
+/** Bu hafta kalan hakkı daha az olan tür (eşitse yemek adı). */
+async function modeWithFewerRemaining(firebaseUid) {
+    try {
+        const snap = await usageSlot(firebaseUid, false, 'dish_name').docRef.get();
+        const data = snap.exists ? snap.data() : {};
+        const kalan = (mode) => FREE_WEEKLY_AI_LIMIT + (data[`bonus_${mode}`] || 0) - (data[`count_${mode}`] || 0);
+        return kalan('ingredients') < kalan('dish_name') ? 'ingredients' : 'dish_name';
+    } catch (error) {
+        console.error('Kalan hak okunamadı (Firestore):', error.message);
+        return 'dish_name';
+    }
+}
+
 /**
- * Kullanıcı ödüllü reklam izlediğinde o güne +1 ekstra AI Şef hakkı tanır.
- * Günde en fazla MAX_BONUS_USES_PER_DAY kez kullanılabilir.
+ * Kullanıcı ödüllü reklam izlediğinde o haftaya, hakkı biten özellik için
+ * +1 ekstra hak tanır. Haftada toplam en fazla MAX_BONUS_USES_PER_WEEK kez.
  */
-async function grantBonusUse(firebaseUid) {
-    const today = new Date().toISOString().slice(0, 10);
-    const docRef = admin.firestore().collection('aiUsage').doc(`${firebaseUid}_${today}`);
+async function grantBonusUse(firebaseUid, mode) {
+    const slot = usageSlot(firebaseUid, false, mode);
 
     try {
         return await admin.firestore().runTransaction(async (tx) => {
-            const snap = await tx.get(docRef);
-            const currentCount = snap.exists ? (snap.data().count || 0) : 0;
-            const bonusUses = snap.exists ? (snap.data().bonusUses || 0) : 0;
+            const snap = await tx.get(slot.docRef);
+            const data = snap.exists ? snap.data() : {};
+            const currentCount = data[slot.countField] || 0;
+            const bonusUses = data[slot.bonusField] || 0;
+            const bonusTotal = data.bonusTotal || 0;
 
-            if (bonusUses >= MAX_BONUS_USES_PER_DAY) {
+            if (bonusTotal >= MAX_BONUS_USES_PER_WEEK) {
                 return { granted: false, remaining: 0 };
             }
 
             const newBonusUses = bonusUses + 1;
-            tx.set(docRef, {
-                bonusUses: newBonusUses,
+            tx.set(slot.docRef, {
+                [slot.bonusField]: newBonusUses,
+                bonusTotal: bonusTotal + 1,
                 updatedAt: admin.firestore.FieldValue.serverTimestamp(),
             }, { merge: true });
 
-            const effectiveLimit = FREE_DAILY_AI_LIMIT + newBonusUses;
+            const effectiveLimit = FREE_WEEKLY_AI_LIMIT + newBonusUses;
             return { granted: true, remaining: Math.max(0, effectiveLimit - currentCount) };
         });
     } catch (error) {
@@ -259,7 +310,8 @@ app.get('/api/status', (req, res) => {
         status: 'ok',
         message: 'Tarif Defteri API is running!',
         endpoints: {
-            generateRecipe: 'POST /api/generate-recipe'
+            generateRecipe: 'POST /api/generate-recipe',
+            suggestRecipes: 'POST /api/suggest-recipes'
         }
     });
 });
@@ -269,74 +321,65 @@ app.get('/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// Ödüllü reklam izlendikten sonra o güne +1 ekstra AI Şef hakkı tanır.
+// Ödüllü reklam izlendikten sonra o haftaya, hakkı biten özellik için +1 hak tanır.
 app.post('/api/grant-bonus-ai-use', ipLimiter, authenticate, userLimiter, async (req, res) => {
     const firebaseUid = req.user.uid;
     const isPro = await isProUserViaRevenueCat(firebaseUid);
 
     if (isPro) {
-        // Pro kullanıcı zaten sınırsız; bonus kavramı onun için anlamsız.
+        // Premium kullanıcı için bonus kavramı yok.
         return res.json({ success: true, remaining: null });
     }
 
-    const result = await grantBonusUse(firebaseUid);
+    // Eski uygulama sürümü tür göndermez; bonusu hakkı daha az kalan türe ver.
+    const mode = req.body?.mode
+        ? normalizeMode(req.body.mode)
+        : await modeWithFewerRemaining(firebaseUid);
+
+    const result = await grantBonusUse(firebaseUid, mode);
     if (!result.granted) {
         return res.status(429).json({
             success: false,
-            message: 'Daily bonus ad limit reached.',
+            message: 'Weekly bonus ad limit reached.',
         });
     }
 
     return res.json({ success: true, remaining: result.remaining });
 });
 
-// Recipe API Endpoint
-app.post('/api/generate-recipe', ipLimiter, authenticate, userLimiter, async (req, res) => {
-    const userPrompt = req.body.prompt;
-    const languageCode = req.body.language || 'en';
-    // 'dish_name': kullanıcı tek bir yemek adı/link girdi (AI Şef).
-    // 'ingredients': kullanıcı elindeki malzemeleri girdi (Bugün Ne Pişirsem).
-    const mode = req.body.mode === 'ingredients' ? 'ingredients' : 'dish_name';
+/** Yapay zekâ yanıtındaki JSON'u ayrıştırır (kod çitlerini temizleyerek). */
+function parseAiJson(rawContent) {
+    const jsonContent = rawContent.replace(/```json\n?/g, '').replace(/\n?```/g, '');
+    return JSON.parse(jsonContent);
+}
 
-    if (!userPrompt || typeof userPrompt !== 'string' || userPrompt.trim().length === 0) {
-        return res.status(400).json({ success: false, message: 'Please enter a valid food name.' });
-    }
-
-    // Hem free hem pro kullanıcı artık günlük bir tavana tabi (free: düşük +
-    // reklamla bonus, pro: cömert ama sınırsız değil — maliyet güvenliği).
-    const firebaseUid = req.user.uid;
-    const isPro = await isProUserViaRevenueCat(firebaseUid);
-    const baseLimit = isPro ? PRO_DAILY_AI_LIMIT : FREE_DAILY_AI_LIMIT;
-
-    const usage = await checkAndIncrementDailyUsage(firebaseUid, baseLimit, !isPro);
-    if (!usage.allowed) {
-        if (usage.infraError) {
-            // Firestore'a ulaşılamadı: limiti sessizce atlamak yerine kullanıcıya
-            // "geçici sorun" diyoruz; bunu "hakkın bitti" ile karıştırmamalı.
-            return res.status(503).json({
-                success: false,
-                message: 'Usage check temporarily unavailable. Please try again in a few minutes.',
-                remaining: null,
-            });
-        }
-        return res.status(429).json({
-            success: false,
-            message: isPro
-                ? 'Daily Pro AI Chef limit reached. Please try again tomorrow.'
-                : 'Daily free AI Chef limit reached. Upgrade to Pro for a higher limit.',
-            remaining: 0,
-            isPro,
-        });
-    }
-    const remaining = usage.remaining;
-
-    console.log(`Recipe requested: "${userPrompt}" | Mode: ${mode} | Language: ${languageCode} | Pro: ${isPro}`);
-
-    const measurementRule = languageCode === 'en'
+function measurementRuleFor(languageCode) {
+    return languageCode === 'en'
         ? 'Use US Imperial measurements (cups, oz, tbsp, tsp, °F) for all quantities and temperatures.'
         : 'Use metric measurements (grams, ml, °C) for all quantities and temperatures.';
+}
 
-    const titleRule = mode === 'ingredients'
+function ingredientsValidationRule(languageCode) {
+    return `=== VALIDATION ===
+The ingredients may be an imperfect or unusual combination — that's expected and fine: do your
+best to invent a plausible, edible recipe from (most of) them, improvising a reasonable addition
+only when truly necessary. Only return an error if the input contains NO real food ingredients at
+all (e.g. random objects, gibberish). When you do return an error, give a SPECIFIC, helpful reason
+(e.g. which ingredients you couldn't work with, or that the requested meal type doesn't fit them) —
+never a vague "something went wrong" message:
+{ "success": false, "message": "<specific, helpful reason translated to '${languageCode}'>" }`;
+}
+
+/**
+ * Tam tarifi üretir. [chosen] verilirse (Premium öneri kartından seçilen
+ * tarif) başlık ve kısa açıklama ona göre sabitlenir.
+ */
+async function generateFullRecipe({ userPrompt, mode, languageCode, chosen }) {
+    const titleRule = chosen
+        ? `=== TITLE (CRITICAL) ===
+The user already picked this dish from earlier suggestions. The "baslik" value MUST be exactly:
+"${chosen.baslik}"`
+        : mode === 'ingredients'
         ? `=== TITLE (CRITICAL) ===
 The user input is a list of ingredients and preferences, NOT a dish name. Invent a natural,
 appetizing dish name in '${languageCode}' for something that can realistically be cooked from
@@ -350,31 +393,33 @@ Examples:
 Apply the meaning that is most natural and common in the cuisine of the given language.`;
 
     const validationRule = mode === 'ingredients'
-        ? `=== VALIDATION ===
-The ingredients may be an imperfect or unusual combination — that's expected and fine: do your
-best to invent a plausible, edible recipe from (most of) them, improvising a reasonable addition
-only when truly necessary. Only return an error if the input contains NO real food ingredients at
-all (e.g. random objects, gibberish). When you do return an error, give a SPECIFIC, helpful reason
-(e.g. which ingredients you couldn't work with, or that the requested meal type doesn't fit them) —
-never a vague "something went wrong" message:
-{ "success": false, "message": "<specific, helpful reason translated to '${languageCode}'>" }`
+        ? ingredientsValidationRule(languageCode)
         : `=== VALIDATION ===
 If the input is clearly NOT a food or drink name in any language, return:
 { "success": false, "message": "<appropriate error message translated to '${languageCode}'>" }`;
 
-    try {
-        const response = await openai.chat.completions.create({
-            model: "openai/gpt-4o-mini",
-            messages: [
-                {
-                    "role": "system",
-                    "content": `You are an expert chef assistant. Your job is to generate a detailed, reliable recipe ${mode === 'ingredients' ? 'from the ingredients and preferences the user provides' : 'for the dish the user requests'}.
+    let userContent;
+    if (chosen) {
+        userContent = `Ingredients/preferences: ${userPrompt}
+Write the full recipe for the dish the user picked: "${chosen.baslik}" — ${chosen.aciklama}`;
+    } else if (mode === 'ingredients') {
+        userContent = `Generate a recipe using these ingredients/preferences: ${userPrompt}`;
+    } else {
+        userContent = `Generate a recipe for: ${userPrompt}`;
+    }
+
+    const response = await openai.chat.completions.create({
+        model: "openai/gpt-4o-mini",
+        messages: [
+            {
+                "role": "system",
+                "content": `You are an expert chef assistant. Your job is to generate a detailed, reliable recipe ${mode === 'ingredients' ? 'from the ingredients and preferences the user provides' : 'for the dish the user requests'}.
 
 === LANGUAGE (HIGHEST PRIORITY) ===
 User's language code: '${languageCode}'
 - Write ALL text values in the JSON response in this language ONLY.
 - Never mix languages.
-- ${measurementRule}
+- ${measurementRuleFor(languageCode)}
 
 ${titleRule}
 
@@ -395,23 +440,223 @@ Success:
 
 Error:
 { "success": false, "message": "Reason in '${languageCode}'" }`
-                },
-                {
-                    "role": "user",
-                    "content": mode === 'ingredients'
-                        ? `Generate a recipe using these ingredients/preferences: ${userPrompt}`
-                        : `Generate a recipe for: ${userPrompt}`
-                }
-            ],
-            temperature: 0.7,
-        }, {
-            timeout: 30000, // OpenRouter yanıt vermezse isteği 30sn sonra düşür
+            },
+            { "role": "user", "content": userContent }
+        ],
+        temperature: 0.7,
+    }, {
+        timeout: 30000, // OpenRouter yanıt vermezse isteği 30sn sonra düşür
+    });
+
+    return parseAiJson(response.choices[0].message.content);
+}
+
+/** Malzemelerden 3 farklı kısa tarif önerisi üretir (yalnızca Premium). */
+async function generateSuggestions({ userPrompt, languageCode }) {
+    const response = await openai.chat.completions.create({
+        model: "openai/gpt-4o-mini",
+        messages: [
+            {
+                "role": "system",
+                "content": `You are an expert chef assistant. Suggest exactly 3 clearly DIFFERENT dishes that can realistically be cooked from the ingredients and preferences the user provides.
+
+=== LANGUAGE (HIGHEST PRIORITY) ===
+User's language code: '${languageCode}'
+- Write ALL text values in this language ONLY. Never mix languages.
+
+=== TITLES (CRITICAL) ===
+Each title is a natural, appetizing dish name — NEVER just a list of the ingredient names.
+Each description is ONE short sentence (max 110 characters) saying what makes the dish appealing.
+
+${ingredientsValidationRule(languageCode)}
+
+=== RESPONSE FORMAT (CRITICAL) ===
+Return ONLY valid JSON. No markdown, no code fences, no extra text. Keys stay exactly as shown.
+
+Success:
+{
+    "oneriler": [
+        { "baslik": "Dish name", "aciklama": "One short sentence" },
+        { "baslik": "Dish name", "aciklama": "One short sentence" },
+        { "baslik": "Dish name", "aciklama": "One short sentence" }
+    ],
+    "success": true
+}
+
+Error:
+{ "success": false, "message": "Reason in '${languageCode}'" }`
+            },
+            { "role": "user", "content": `Ingredients/preferences: ${userPrompt}` }
+        ],
+        temperature: 0.9,
+    }, {
+        timeout: 30000,
+    });
+
+    return parseAiJson(response.choices[0].message.content);
+}
+
+/** İstek metnini doğrular; hata varsa 400 yanıtını gönderip false döner. */
+function validatePrompt(userPrompt, res) {
+    if (!userPrompt || typeof userPrompt !== 'string' || userPrompt.trim().length === 0) {
+        res.status(400).json({ success: false, message: 'Please enter a valid food name.' });
+        return false;
+    }
+    // Uzunluk sınırı: çok uzun metinle maliyet şişirilmesin (hak düşülmeden önce).
+    if (userPrompt.length > MAX_PROMPT_LENGTH) {
+        res.status(400).json({ success: false, message: 'The request text is too long.' });
+        return false;
+    }
+    return true;
+}
+
+/** Hak düşürmeyi dener; izin yoksa uygun yanıtı gönderip null döner. */
+async function chargeUsageOrRespond(slot, isPro, res) {
+    const usage = await checkAndIncrementUsage(slot);
+    if (usage.allowed) return usage;
+
+    if (usage.infraError) {
+        // Firestore'a ulaşılamadı: bunu "hakkın bitti" ile karıştırmamalı.
+        res.status(503).json({
+            success: false,
+            message: 'Usage check temporarily unavailable. Please try again in a few minutes.',
+            remaining: null,
+        });
+        return null;
+    }
+    res.status(429).json({
+        success: false,
+        message: isPro
+            ? 'Daily Premium AI limit reached. Please try again tomorrow.'
+            : 'Weekly free AI limit reached. Upgrade to Premium for a higher limit.',
+        remaining: 0,
+        isPro,
+    });
+    return null;
+}
+
+// Premium: malzemelerden 3 kısa öneri kartı. Bir hak düşer; seçilen kartın
+// tam tarifi /api/generate-recipe'ye suggestionId ile istenince hak düşmez.
+app.post('/api/suggest-recipes', ipLimiter, authenticate, userLimiter, async (req, res) => {
+    const userPrompt = req.body.prompt;
+    const languageCode = req.body.language || 'en';
+    if (!validatePrompt(userPrompt, res)) return;
+
+    const firebaseUid = req.user.uid;
+    const isPro = await isProUserViaRevenueCat(firebaseUid);
+    if (!isPro) {
+        return res.status(403).json({ success: false, message: 'Suggestions are a Premium feature.' });
+    }
+
+    const slot = usageSlot(firebaseUid, true, 'ingredients');
+    const usage = await chargeUsageOrRespond(slot, true, res);
+    if (!usage) return;
+
+    console.log(`Suggestions requested | Language: ${languageCode}`);
+
+    try {
+        const result = await generateSuggestions({ userPrompt, languageCode });
+
+        if (result.success === false) {
+            return res.json({ success: false, message: result.message || null, remaining: usage.remaining });
+        }
+
+        const oneriler = Array.isArray(result.oneriler)
+            ? result.oneriler
+                .filter((o) => o && typeof o.baslik === 'string' && o.baslik.trim())
+                .slice(0, 3)
+                .map((o) => ({
+                    baslik: o.baslik.trim(),
+                    aciklama: typeof o.aciklama === 'string' ? o.aciklama.trim() : '',
+                }))
+            : [];
+        if (oneriler.length === 0) {
+            throw new Error('Öneri listesi boş döndü');
+        }
+
+        const ref = await admin.firestore().collection('aiSuggestions').add({
+            uid: firebaseUid,
+            prompt: userPrompt,
+            language: languageCode,
+            oneriler,
+            used: false,
+            createdAt: Date.now(),
         });
 
-        const rawContent = response.choices[0].message.content;
-        let jsonContent = rawContent.replace(/```json\n?/g, "").replace(/\n?```/g, "");
+        return res.json({ success: true, suggestionId: ref.id, oneriler, remaining: usage.remaining });
+    } catch (error) {
+        console.error('Suggestion API Error:', error);
+        const refunded = await refundUsage(slot);
+        return res.status(500).json({
+            success: false,
+            message: 'Failed to generate suggestions. Please try again.',
+            remaining: refunded ? usage.remaining + 1 : usage.remaining,
+        });
+    }
+});
 
-        const recipeData = JSON.parse(jsonContent);
+// Recipe API Endpoint
+app.post('/api/generate-recipe', ipLimiter, authenticate, userLimiter, async (req, res) => {
+    const firebaseUid = req.user.uid;
+    const suggestionId = req.body.suggestionId;
+
+    // Premium öneri kartından seçilen tarif: hak öneri isteğinde düşüldü.
+    if (typeof suggestionId === 'string' && suggestionId) {
+        const index = Number.isInteger(req.body.suggestionIndex) ? req.body.suggestionIndex : -1;
+        const ref = admin.firestore().collection('aiSuggestions').doc(suggestionId);
+        let suggestion;
+        try {
+            const snap = await ref.get();
+            suggestion = snap.exists ? snap.data() : null;
+        } catch (error) {
+            console.error('Öneri okunamadı (Firestore):', error.message);
+            return res.status(503).json({ success: false, message: 'Please try again in a few minutes.' });
+        }
+
+        const chosen = suggestion?.oneriler?.[index];
+        if (!suggestion || suggestion.uid !== firebaseUid || suggestion.used || !chosen ||
+            Date.now() - (suggestion.createdAt || 0) > SUGGESTION_TTL_MS) {
+            return res.status(410).json({ success: false, suggestionExpired: true, message: 'Suggestion is no longer valid.' });
+        }
+
+        try {
+            const recipeData = await generateFullRecipe({
+                userPrompt: suggestion.prompt,
+                mode: 'ingredients',
+                languageCode: suggestion.language || 'en',
+                chosen,
+            });
+            if (recipeData.success === false) {
+                return res.json({ success: false, message: recipeData.message || null });
+            }
+            // Yalnızca başarıda kullanıldı sayılır; hata olursa kullanıcı tekrar dener.
+            await ref.update({ used: true }).catch((e) => console.error('Öneri işaretlenemedi:', e.message));
+            return res.json({ success: true, data: recipeData });
+        } catch (error) {
+            console.error('API Error (suggestion):', error);
+            return res.status(500).json({ success: false, message: 'Failed to generate recipe. Please try again.' });
+        }
+    }
+
+    const userPrompt = req.body.prompt;
+    const languageCode = req.body.language || 'en';
+    // 'dish_name': kullanıcı tek bir yemek adı/link girdi (AI Şef).
+    // 'ingredients': kullanıcı elindeki malzemeleri girdi (Bugün Ne Pişirsem).
+    const mode = normalizeMode(req.body.mode);
+    if (!validatePrompt(userPrompt, res)) return;
+
+    // Ücretsiz: özelliğe göre haftalık hak (+ reklam bonusu).
+    // Premium: iki özellik ortak günlük tavan.
+    const isPro = await isProUserViaRevenueCat(firebaseUid);
+    const slot = usageSlot(firebaseUid, isPro, mode);
+    const usage = await chargeUsageOrRespond(slot, isPro, res);
+    if (!usage) return;
+    const remaining = usage.remaining;
+
+    console.log(`Recipe requested: "${userPrompt}" | Mode: ${mode} | Language: ${languageCode} | Pro: ${isPro}`);
+
+    try {
+        const recipeData = await generateFullRecipe({ userPrompt, mode, languageCode });
 
         if (recipeData.success === false) {
             // Mesajı yapay zekâ kullanıcının dilinde yazar; yoksa istemci kendi
@@ -425,10 +670,11 @@ Error:
         console.error("API Error:", error);
         // Tarif üretilemedi: düşülen hakkı iade et ve güncel kalan hakkı dön ki
         // istemcideki sayaç doğru kalsın.
-        const refunded = await refundDailyUsage(firebaseUid, usage.today);
+        const refunded = await refundUsage(slot);
         return res.status(500).json({
             success: false,
-            message: 'Failed to generate recipe: ' + error.message,
+            // İç hata metni istemciye gitmez; ayrıntı yalnızca sunucu günlüğünde.
+            message: 'Failed to generate recipe. Please try again.',
             remaining: refunded ? remaining + 1 : remaining,
         });
     }
